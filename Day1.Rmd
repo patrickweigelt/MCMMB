@@ -1,0 +1,258 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+author: "Dylan Craven & Patrick Weigelt"
+date: "April 16, 2018"
+output: 
+  html_document: 
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Day 1: Basics and spatial data in R  
+
+<http://www.r-project.org/>
+
+
+### General remark
+
+Set the format your comupter uses to display numbers to 
+English format for exchanging data with others
+
+decimal symbol: " . "  
+Digit grouping symbol: " , "  
+List seperator: " , "  
+
+
+
+
+
+## 1. Getting started
+**Using R as a calulator**
+
+```{r, eval=FALSE}
+# use the console to do simple calculations
+2 + 2
+2 * 2
+8 / 2
+6 - 2
+sqrt(16) # sqrt() is a function
+16^(1/2)
+2^2
+1/2 ^ (-2)
+log10(10000)
+```
+What is the answer of each of the operations?  
+
+**Assign a value to an object**
+
+_Numbers_
+```{r}
+a <- 4
+b <- sqrt(16)
+number_3 <- 2 * 2
+```
+
+```{r}
+a
+number_3
+a*b
+number_3 / b
+```
+
+_Character strings_
+```{r}
+text_a <- "Hello"
+text_a
+
+text_a <- "Good bye" # overwrite the object
+text_a
+```
+
+
+In R Studio the objects are summed up at the top-right corner.  
+For seeing the stored objects use:
+```{r}
+ls()
+```
+
+
+## 2. Getting help in R
+
+`?function.name`
+`??keyword`
+
+```{r, eval=FALSE}
+?sqrt # will open help page in Help tab of RStudio or browser
+??squareroot
+```
+
+
+
+
+
+## 3. Data structures and indexing
+
+### a) Numbers \& characters
+_single values_
+
+```{r}
+mode(a)
+str(a)
+```
+
+```{r}
+mode(text_a)
+str(text_a)
+```
+
+### b) Vectors
+_a sequence of values of the same mode_
+
+Create a vector of numbers
+```{r}
+vector_1 <- c(1,5,6,3.4,10,11)
+vector_1
+```
+
+Indexing and modifying a vector
+```{r}
+vector_1[3]
+vector_1[3] <- 5
+vector_1[3]
+```
+
+Creating a sequence of numbers
+```{r}
+vector_2 <- c(1:6)
+vector_2
+vector_2 <- seq(1,12,by=2) # overwriting
+vector_2
+```
+
+```{r}
+vector_3 <- rep(c(1,2),3) # repeats c(1,2) three times
+vector_3
+```
+
+Create a vector of character strings
+```{r}
+vector_4 <- c("blue","red","green","yellow","grey","black")
+vector_4
+vector_4[4]
+```
+
+```{r}
+mode(vector_4)
+length(vector_2)
+mode(vector_2)
+```
+
+You can do calculations with numeric vectors just like with values
+
+```{r}
+mean(vector_2) # function for calculating the mean
+sd(vector_2)   # standard deviation
+```
+
+```{r}
+vector_2
+vector_2 ^ 2
+
+vector_5 <- vector_1 + vector_2
+vector_5
+```
+
+Plotting vectors
+```{r}
+plot(vector_2,vector_1)
+```
+
+### c) Arrays and matrices
+_tables of values of the same mode with n dimensions (matrix = 2 dimensions)_
+```{r}
+matrix_1 <- matrix(NA, nrow = 6, ncol = 6)
+matrix_1
+
+matrix_1 <- matrix(1:36, nrow = 6, ncol = 6) # Filling a matrix with a sequence of values
+matrix_1
+
+matrix_2 <- matrix(1:(6*6), nrow = 6, ncol = 6, byrow = TRUE)
+matrix_2
+```
+
+Indexing a matrix
+```{r}
+matrix_2[3,5] # row,column
+matrix_2[3,]  # select a row
+matrix_2[,5]  # select a column
+```
+You can do calculations with numeric matrices just like with values and vectors
+```{r}
+matrix_1 + 1
+matrix_1 ^ 2
+```
+
+```{r}
+matrix_1 + matrix_2 # matrix by matrix
+matrix_1 * vector_2 # matrix by vector
+                    # vector of length 6 is recycled!
+```
+
+```{r}
+mean(matrix_1)     # mean of all values in matrix
+colMeans(matrix_1) # mean values per column
+```
+
+
+### d) data.frames 
+_tables of values of one mode per column_
+
+Create a data.frame
+```{r}
+df_1 <- data.frame(ID = vector_2, number_1 = vector_1, colour = vector_4)
+df_1
+```
+
+
+```{r}
+str(df_1) 
+```
+Colour is a factor; makes sense if certain values or levels are repeated
+
+**Indexing**
+```{r}
+df_1[,3]        # by column number (also works for rows; [2,])
+df_1[,"colour"] # calling by column name
+df_1$colour     # calling by column name using $
+```
+
+```{r}
+levels(df_1[,3])
+df_1[,3] <- as.character(df_1[,3]) # change column to character vector
+str(df_1)
+```
+colour is a character vector
+
+```{r}
+plot(df_1$ID,df_1$number_1, col=df_1$colour)
+```
+
+## 4. data.frame exercise  
+
+1) Imagine a field study with 5 plots (1,2,3,...) in each of 3 vegetation types (forest, shrubland, grassland)  
+2) Create a data.frame with 1 row per plot and 2 columns for "vegetation_type" and "plot"  
+3) Every second day of a month a student visits one of the plots. Add a third column called "day" indicating when the student visits each plot: 1, 3, 5, ...
+
+```{r, echo=FALSE}
+plots <- data.frame(vegetation_type = rep(c("forest", "shrubland", "grassland"),each=5), plot = rep(1:5,3))
+plots$day <- seq(1,29,by=2)
+knitr::kable(plots, caption="Table 1: Dataframe excercise")
+```
+
+
+
+
