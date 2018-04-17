@@ -1,5 +1,6 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 1: Basics and spatial data in R"
 author: "Dylan Craven & Patrick Weigelt"
 date: "April 18, 2018"
 output: 
@@ -12,25 +13,30 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Day 1: Basics and spatial data in R  
 
-<http://www.r-project.org/>
-
-
-### General remark
+## 1. Preperation
 
 Set the format your comupter uses to display numbers to 
-English format for exchanging data with others
+English format for exchanging data with others:
 
-decimal symbol: " . "  
-Digit grouping symbol: " , "  
-List seperator: " , "  
+* decimal symbol: " . "  
+* Digit grouping symbol: " , "  
+* List seperator: " , "  
+&nbsp;
+
+Get QGIS from <https://www.qgis.org/>
+
+Get R from <http://www.r-project.org/>
+
+Get RStudio from <https://www.rstudio.com/>
+
+* Create a project for the class in RStudio and remember the project folder
+
+* Create a new R script for Day 1 and save it
 
 
 
-
-
-## 1. Getting started
+## 2. Getting started
 **Using R as a calulator**
 
 ```{r, eval=FALSE}
@@ -78,15 +84,14 @@ text_a
 &nbsp;
 
 
-In R Studio the objects are summed up at the top-right corner.  
-For seeing the stored objects use:
+In R Studio the objects are summed up at the top-right corner. For seeing the stored objects use:
 ```{r}
 ls()
 ```
 &nbsp;
 
 
-## 2. Getting help in R
+## 3. Getting help in R
 
 `?function.name`
 `??keyword`
@@ -98,7 +103,7 @@ ls()
 &nbsp;
 
 
-## 3. Data structures and indexing
+## 4. Data structures and indexing
 
 ### a) Numbers \& characters
 _single values_
@@ -116,16 +121,16 @@ str(text_a)
 
 
 ### b) Vectors
-_a sequence of values of the same mode_
+_sequences of values of the same mode_
 
-Create a vector of numbers
+**Create a vector of numbers**
 ```{r}
 vector_1 <- c(1,5,6,3.4,10,11)
 vector_1
 ```
 &nbsp;
 
-Indexing and modifying a vector
+**Indexing and modifying a vector**
 ```{r}
 vector_1[3]
 vector_1[3] <- 5
@@ -133,7 +138,7 @@ vector_1[3]
 ```
 &nbsp;
 
-Creating a sequence of numbers
+**Creating a sequence of numbers**
 ```{r}
 vector_2 <- c(1:6)
 vector_2
@@ -147,7 +152,7 @@ vector_3
 ```
 &nbsp;
 
-Create a vector of character strings
+**Create a vector of character strings**
 ```{r}
 vector_4 <- c("blue","red","green","yellow","grey","black")
 vector_4
@@ -162,7 +167,6 @@ mode(vector_2)
 &nbsp;
 
 You can do calculations with numeric vectors just like with values
-
 ```{r}
 mean(vector_2) # function for calculating the mean
 sd(vector_2)   # standard deviation
@@ -177,7 +181,7 @@ vector_5
 ```
 &nbsp;
 
-Plotting vectors
+**Plotting vectors**
 ```{r}
 plot(vector_2,vector_1)
 ```
@@ -197,7 +201,7 @@ matrix_2
 ```
 &nbsp;
 
-Indexing a matrix
+**Indexing a matrix**
 ```{r}
 matrix_2[3,5] # row,column
 matrix_2[3,]  # select a row
@@ -226,7 +230,7 @@ colMeans(matrix_1) # mean values per column
 ### d) data.frames 
 _tables of values of one mode per column_
 
-Create a data.frame
+**Create a data.frame**
 ```{r}
 df_1 <- data.frame(ID = vector_2, number_1 = vector_1, colour = vector_4)
 df_1
@@ -236,7 +240,7 @@ df_1
 ```{r}
 str(df_1) 
 ```
-Colour is a factor; makes sense if certain values or levels are repeated
+"colour" is a factor; makes sense if certain values or levels are repeated
 
 &nbsp;
 
@@ -259,7 +263,7 @@ colour is a character vector
 plot(df_1$ID,df_1$number_1, col=df_1$colour)
 ```
 
-## 4. data.frame exercise  
+## 5. data.frame exercise  
 
 1) Imagine a field study with 5 plots (1,2,3,...) in each of 3 vegetation types (forest, shrubland, grassland)  
 2) Create a data.frame with 1 row per plot and 2 columns for "vegetation_type" and "plot"  
@@ -273,23 +277,22 @@ knitr::kable(plots, caption="Table 1: Dataframe exercise")
 &nbsp;
 
 
-## 5. Loading and visualising environmental data
+## 6. Loading and visualising environmental raster layers  
 
-**Download the following raster layers and extract them to your R-project folder (.Rproj)**  
+**Download the following raster layers and extract them to your R-project folder ../data/**  
 _GMTED - Digital elevation data <https://lta.cr.usgs.gov/GMTED2010>_  
 [Elevation above sea level (mn30_grd.zip)](http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Grid_ZipFiles/mn30_grd.zip)
 
 _Chelsa - Climate data <http://chelsa-climate.org/>_  
 [Annual mean temperature (CHELSA_bio10_01_land.7z)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_01_land.7z)  
-[Mean annual precipitation (CHELSA_bio10_12_land.7z)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_12_land.7z)
+[Mean annual precipitation (CHELSA_bio10_12_land.7z)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_12_land.7z)  
 &nbsp;
 
 
-**Exercise: Open QGIS and add the raster layers to your project in QGIS**
+**Exercise: Open QGIS and add the raster layers to a project in QGIS**  
 &nbsp;
 
-Load raster library
-
+**Load raster library**  
 ```{r}
 # install.packages("raster") # install the raster package in case not done yet
 library(raster, quietly = TRUE)
@@ -299,7 +302,7 @@ rasterOptions(tmpdir="D:/rastertemp/") # raster saves large temporary files in y
 ```
 &nbsp;
 
-Import global digital elevation model at 30 arc seconds resolution
+**Import global digital elevation model and plot it**  
 ```{r}
 elev <- raster("data/mn30_grd")
 par(mfrow=c(1,1))
@@ -307,7 +310,7 @@ plot(elev)
 ```
 &nbsp;
 
-Import climate data from Chelsa at 30 arc seconds resolution
+**Import climate data from Chelsa and plot it**  
 ```{r}
 bio1 <- raster("data/CHELSA_bio10_1.tif")
 bio12 <- raster("data/CHELSA_bio10_12.tif")
@@ -316,8 +319,10 @@ bio12 <- raster("data/CHELSA_bio10_12.tif")
 plot(bio1)  # Temperature (*10 °C)
 plot(bio12) # Precipitation (mm)
 ```
+&nbsp;
 
-`str(bio1)`
+**Have a look at characteristics of the raster layers**  
+`str(bio1) # long output; try it out`
 
 ```{r}
 crs(bio1)
@@ -326,9 +331,10 @@ bio1@ncols
 bio1@nrows
 area(bio1)
 ```
+30 arc seconds resolution = ~1km² at the equator
 &nbsp;
 
-You can do calculations with the raster layers
+**You can do calculations with the raster layers**  
 ```{r}
 bio1 <- bio1/10      # Careful! this is computer intense and might take a long time
 plot(bio1)           # Temperature (°C)
