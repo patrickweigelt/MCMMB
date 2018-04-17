@@ -1,5 +1,5 @@
 # MCMMB
-![](/homes/dc78cahe/Downloads/lablogo_2017.png)
+![](lablogo_2017.png)
 
 Modern concepts and methods in macroecology and biogeography
 
