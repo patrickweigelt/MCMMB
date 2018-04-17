@@ -1,0 +1,87 @@
+---
+title: "Why R? and other questions"
+author: "Dylan Craven"
+date: "April 18, 2018"
+output: 
+  ioslides_presentation: 
+    highlight: espresso
+    incremental: yes
+    logo: ~/Downloads/lablogo_2017.png
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Overview
+
+- Why R?
+- What is R?
+- Basics of R & RStudio 
+- Where to get help with R  
+- R Data science resources
+- R & You
+
+## Why R?
+
+- Transparency
+- Reproducibility
+- Open science & lowering barriers  
+
+## What is R? (part I)
+
+- Statistical computing environment  
+    + Basic statistics (e.g. ANOVA, T-tests) 
+    + Complex modeling (machine learning, Bayesian stats, simulations...) 
+- Database manager  
+
+## What is R? (part II)  
+
+- Graphic design    
+- GIS 
+- Version control (via Github, etc.)  
+- Publisher (basic word processing, web pages, scientific articles, theses, books...)
+
+## Basics of R & RStudio
+
+Download R :<http://www.r-cran.org>  
+
+Download RStudio: <http://www.rstudio.com>
+
+Other options besides RStudio: Jupyter notebooks, Rodeo  
+
+
+## Basics of R & RStudio  
+
+- Integrated environment between scripts, output, figures, etc. 
+- Easy to configure
+- Large online user community for help
+- Lots of online courses (e.g. Datacamp, Coursera...)
+
+## Where to get help with R  
+
+- Cookbook for R <http://www.cookbook-r.com/>
+- Stackoverflow <http://www.stackoverflow.com>
+- Quick-R <https://www.statmethods.net/>
+- or do an online search (Google, DuckDuckGo) : 
+    * 'R package/function name error message'
+    * 'R how to remove every third line from a data.frame'  
+    
+## R Data science resources  
+
+- Overview of R packages <https://github.com/rstudio/RStartHere>
+
+- R for Data Science (by Hadley Wickham) <http://r4ds.had.co.nz/>
+
+- The basics and a lot more <http://ohi-science.org/news/Resources-for-R-and-Data-Science>
+
+- Guide for reproducible code <https://www.britishecologicalsociety.org/wp-content/uploads/2017/12/guide-to-reproducible-code.pdf> 
+
+
+## R & You
+
+- Tools you need to acquire and strengthen as a graduate student:    
+    * Think critically (identify /& assess problems)    
+    * Solve problems    
+    * Communicate problems and possible solutions  
+    * R is one of many tools, but it's also becoming increasingly marketable (outside of science too!)  
