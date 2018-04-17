@@ -66,6 +66,9 @@ Other options besides RStudio: Jupyter notebooks, Rodeo
 - or do an online search (Google, DuckDuckGo) : 
     * 'R package/function name error message'
     * 'R how to remove every third line from a data.frame'  
+- Look for local or university user groups (via Slack,Twitter, etc.)  
+
+
     
 ## R Data science resources  
 
@@ -81,7 +84,7 @@ Other options besides RStudio: Jupyter notebooks, Rodeo
 ## R & You
 
 - Tools you need to acquire and strengthen as a graduate student:    
-    * Think critically (identify /& assess problems)    
+    * Think critically (identify & assess problems)    
     * Solve problems    
     * Communicate problems and possible solutions  
     * R is one of many tools, but it's also becoming increasingly marketable (outside of science too!)  
