@@ -1,5 +1,5 @@
 ---
-title: "Why R?"
+title: "Why R? and other questions"
 author: "Dylan Craven"
 date: "April 18, 2018"
 output: 
@@ -37,10 +37,10 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## What is R? (part II)  
 
-- Graphic design 
+- Graphic design    
 - GIS 
 - Version control (via Github, etc.)  
-- Publisher (basic word processing, scientific articles, theses, books...)
+- Publisher (basic word processing, web pages, scientific articles, theses, books...)
 
 ## Basics of R & RStudio
 
@@ -56,7 +56,7 @@ Other options besides RStudio: Jupyter notebooks, Rodeo
 - Integrated environment between scripts, output, figures, etc. 
 - Easy to configure
 - Large online user community for help
-- Lots of free-online courses (e.g. Datacamp, Coursera...)
+- Lots of online courses (e.g. Datacamp, Coursera...)
 
 ## Where to get help with R  
 
