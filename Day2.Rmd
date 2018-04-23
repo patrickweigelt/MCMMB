@@ -207,11 +207,15 @@ grid@data[which(grid@data$grid_id %in% c(5328:5332)),1:5]
 
 **Make distribution maps for the four species**  
 ```{r}
-par(mfrow=c(2,2), mar=c(1,0,1,0))
+par(mfrow=c(2,2), mar=c(1,0,2,0))
 plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"darkgreen","grey"), border=FALSE, main = "Geonoma pauciflora")
+plot(americas, add=TRUE)
 plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"darkgreen","grey"), border=FALSE, main = "Geonoma undata")
+plot(americas, add=TRUE)
 plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"darkgreen","grey"), border=FALSE, main = "Phytelephas tenuicaulis")
+plot(americas, add=TRUE)
 plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"darkgreen","grey"), border=FALSE, main = "Mauritia flexuosa")
+plot(americas, add=TRUE)
 ```
 &nbsp;
 
