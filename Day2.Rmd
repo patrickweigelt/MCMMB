@@ -192,16 +192,16 @@ _Convert long table to species by grid-cell table_
 species <- species[,c("grid_id","species")]
 species_grid <- as.data.frame.matrix(table(species)) # Count species by gridcell combinations
 species_grid <- data.frame(grid_id = as.integer(row.names(species_grid)), species_grid) # Add column with grid_id
-names(grid@data)[1] <- "grid_id"
-species_grid[1:5,1:4]
+species_grid[which(species_grid$grid_id %in% c(5328:5332)),1:4]
 ```
 &nbsp;
 
 _Join palm occurrences and spatial shapefile_
 ```{r}
+names(grid@data)[1] <- "grid_id" #rename ID column to correspond to species_grid$grid_id
 grid@data <- join(grid@data, species_grid, by="grid_id", type="left") # Perform a "SQL" left join
 grid@data[is.na(grid@data)] <- 0
-grid@data[1:5,1:4]
+grid@data[which(grid@data$grid_id %in% c(5328:5332)),1:5]
 ```
 &nbsp;
 

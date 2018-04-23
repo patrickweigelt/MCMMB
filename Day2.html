@@ -353,25 +353,25 @@ plot(americas, add=TRUE)</code></pre>
 <pre class="r"><code>species &lt;- species[,c(&quot;grid_id&quot;,&quot;species&quot;)]
 species_grid &lt;- as.data.frame.matrix(table(species)) # Count species by gridcell combinations
 species_grid &lt;- data.frame(grid_id = as.integer(row.names(species_grid)), species_grid) # Add column with grid_id
-names(grid@data)[1] &lt;- &quot;grid_id&quot;
-species_grid[1:5,1:4]</code></pre>
-<pre><code>##     grid_id Acoelorraphe.wrightii Acrocomia.aculeata Acrocomia.hassleri
-## 538     538                     0                  0                  0
-## 539     539                     0                  0                  0
-## 540     540                     0                  0                  0
-## 712     712                     0                  0                  0
-## 713     713                     0                  0                  0</code></pre>
+species_grid[which(species_grid$grid_id %in% c(5328:5332)),1:4]</code></pre>
+<pre><code>##      grid_id Acoelorraphe.wrightii Acrocomia.aculeata Acrocomia.hassleri
+## 5328    5328                     1                  1                  0
+## 5329    5329                     1                  1                  0
+## 5330    5330                     1                  1                  0
+## 5331    5331                     1                  1                  0
+## 5332    5332                     1                  1                  0</code></pre>
 <p> </p>
 <p><em>Join palm occurrences and spatial shapefile</em></p>
-<pre class="r"><code>grid@data &lt;- join(grid@data, species_grid, by=&quot;grid_id&quot;, type=&quot;left&quot;) # Perform a &quot;SQL&quot; left join
+<pre class="r"><code>names(grid@data)[1] &lt;- &quot;grid_id&quot; #rename ID column to correspond to species_grid$grid_id
+grid@data &lt;- join(grid@data, species_grid, by=&quot;grid_id&quot;, type=&quot;left&quot;) # Perform a &quot;SQL&quot; left join
 grid@data[is.na(grid@data)] &lt;- 0
-grid@data[1:5,1:4]</code></pre>
-<pre><code>##   grid_id AREA PORTION Acoelorraphe.wrightii
-## 1     538 0.25     100                     0
-## 2     539 0.25     100                     0
-## 3     540 0.25     100                     0
-## 4     712 0.25     100                     0
-## 5     713 0.25     100                     0</code></pre>
+grid@data[which(grid@data$grid_id %in% c(5328:5332)),1:5]</code></pre>
+<pre><code>##     grid_id    AREA PORTION Acoelorraphe.wrightii Acrocomia.aculeata
+## 558    5328 0.19638  78.552                     1                  1
+## 559    5329 0.25000 100.000                     1                  1
+## 560    5330 0.24921  99.684                     1                  1
+## 561    5331 0.22011  88.044                     1                  1
+## 562    5332 0.13200  52.800                     1                  1</code></pre>
 <p> </p>
 <p><strong>Make distribution maps for the four species</strong></p>
 <pre class="r"><code>par(mfrow=c(2,2), mar=c(1,0,1,0))
