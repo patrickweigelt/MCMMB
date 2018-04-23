@@ -1,0 +1,230 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
+author: "Dylan Craven & Patrick Weigelt"
+date: "April 25, 2018"
+output: 
+  html_document: 
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Loading spreadsheet data into R  
+
+**Clean up**  
+```{r}
+rm(list=ls()) # remove all vailable objects first; alternatively press CTRL+SHIFT+F10 to also unmap loaded packages
+```
+&nbsp;
+
+**Load packages**  
+```{r}
+library(plyr) 
+```
+Here, we mostly use functions from base R to organize our data. However, we load the plyr package, a toolkit for splitting, applying and combining data. For more advanced and faster functions for data manipulation have a look at the packages dplyr, tidyr, reshape2, data.table etc.  
+&nbsp;
+
+**Load data**  
+```{r, eval=FALSE}
+?read.table
+```
+We use a version of `read.table()` to import data into R as a data.frame. Have a look at its help page  
+
+```{r}
+species <- read.csv("data/palms_species_per_gridcell.csv")
+```
+Here, we use data from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
+&nbsp;
+
+**Inspection**
+```{r}
+dim(species)
+colnames(species) # rownames(species) for rows
+str(species)
+```
+
+```{r}
+class(species$GENUS)
+```
+```{r}
+unique(species$GENUS) # or levels(species$GENUS)
+```
+&nbsp;
+
+**Adding a column to the data.frame**  
+```{r}
+species$species <- paste(species$GENUS,species$EPITHET, sep = " ")
+```
+`paste()` combines the characterstrings of genus and epithet into a full species name  
+&nbsp;
+
+**Sorting**  
+Click on the species object in the 'Environment' tab of RStudio or run `View(species)` to have a look at the table. Sorting in RStudio's viewer does not change the order of the actual data. To sort the data.frame, use `order`.  
+```{r, eval=FALSE}
+order(species$grid_id)
+```
+Gives back the indices of grid_id in increasing order of the value of grid_id. They can be used to reorganize the data.frame accordingly
+```{r}
+species <- species[order(species$grid_id),]
+```
+&nbsp;
+
+
+## 2. Subsetting the data.frame using logical operators  
+_`which()` and operators: `==`, `>=`, `>`, `<`, `<=`, `%in%`, `is.na()`, `is.finite()`, `!`, `&`, `|`_
+
+**Select unique subset for certain columns**  
+```{r}
+species_unique <- unique(species[,c("spp_Id","GENUS","EPITHET","species")])
+nrow(species_unique)
+```
+&nbsp;
+
+**Choose entries of a given value**  
+```{r}
+which(species$GENUS=="Ammandra") # index of all entries of genus "Ammandra"
+head(species[which(species$GENUS=="Ammandra"),]) # first six rows
+unique(species$species[which(species$GENUS=="Ammandra")])
+```
+&nbsp;
+
+**OR**  
+```{r}
+unique(species$species[which(species$GENUS == "Ammandra" | species$GENUS == "Washingtonia")]) # all species names in the genera "Ammandra" and "Washingtonia"
+unique(species$species[which(species$GENUS %in% c("Ammandra","Washingtonia"))])
+```
+&nbsp;
+
+**AND**  
+```{r}
+head(species[which(species$GENUS=="Ammandra" & species$EPITHET =="decasperma"),]) # all entries of Ammandra decasperma
+head(species[which(species$species=="Ammandra decasperma"),])
+```
+&nbsp;
+
+## 3. data.frame exercise  
+1) Make a subset the data.frame that only includes entries for the 4 species _Geonoma pauciflora_, _Geonoma weberbaueri_, _Phytelephas tenuicaulis_ & _Mauritia flexuosa_.  
+2) According to [The Plant List]http://www.theplantlist.org/tpl1.1/record/kew-89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
+3) In how many gridcells does each of the species occur?
+
+
+## 4. GIS shapefiles in R  
+&nbsp;
+
+**Exercise: Have a look at the two shapefiles 30min_grid_select50%.shp and americas.shp in QGIS**  
+&nbsp;
+
+**Loading spatial packages**
+```{r}
+library(rgdal)
+library(rgeos)
+library(maptools)
+```
+
+**Load spatial poylgons into R
+```{r}
+grid <- readOGR("data/30min_grid_select50%.shp", integer64="allow.loss")
+americas <- readOGR("data/americas.shp")
+par(mfrow=c(1,1))
+plot(grid, border="darkgrey")
+plot(americas, add=TRUE)
+```
+
+
+
+
+<!-- # access the attribute table -->
+<!-- head(grid@data) -->
+
+<!-- # grid@proj4string -->
+
+
+
+
+
+
+<!-- ################################################### -->
+<!-- # 4. Joining and aggregating information -->
+
+<!-- ### join species distributions to shapefile -->
+
+<!-- # convert long table to species by grid-cell table -->
+<!-- species <- species[,c("grid_id","species")] -->
+
+<!-- ?table -->
+<!-- species_grid <- as.data.frame.matrix(table(species)) -->
+<!-- species_grid <- data.frame(grid_id = as.integer(row.names(species_grid)), species_grid) -->
+<!-- str(species_grid) -->
+
+<!-- names(grid@data)[1] <- "grid_id" -->
+<!-- library(plyr) -->
+<!-- grid@data <- join(grid@data, species_grid, by="grid_id", type="left") -->
+<!-- grid@data[is.na(grid@data)] <- 0 -->
+
+
+<!-- ## Make distribution maps for the four species -->
+<!-- par(mfrow=c(2,2)) -->
+<!-- plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"darkgreen","grey"), border=FALSE, main = "Geonoma pauciflora") -->
+<!-- plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"darkgreen","grey"), border=FALSE, main = "Geonoma undata") -->
+<!-- plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"darkgreen","grey"), border=FALSE, main = "Phytelephas tenuicaulis") -->
+<!-- plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"darkgreen","grey"), border=FALSE, main = "Mauritia flexuosa") -->
+
+
+
+
+<!-- ########################################################## -->
+<!-- ## species numbers -->
+
+
+<!-- # count species per gridcell -->
+<!-- species_num <- data.frame(table(species$grid_id)) -->
+<!-- head(species_num) -->
+<!-- names(species_num) <- c("grid_id","spec_num") -->
+<!-- head(species_num) -->
+
+<!-- str(species_num) -->
+<!-- species_num$grid_id <- as.numeric(as.character(species_num$grid_id)) -->
+<!-- head(species_num) -->
+
+<!-- str(species_num) -->
+<!-- summary(species_num) -->
+
+
+<!-- ## join species numbers to shapefile -->
+<!-- names(grid@data)[1] <- "grid_id" -->
+<!-- grid@data <- join(grid@data, species_num, by="grid_id", type="left") -->
+<!-- head(grid@data) -->
+
+<!-- ## Make a species richness map -->
+
+<!-- #Create color scheme       -->
+<!-- library(classInt) -->
+<!-- library(colorRamps) -->
+
+<!-- my.class.fr<-classIntervals(grid@data$spec_num,n=10,style="equal") # bin data into n quantiles -->
+<!-- my.pal<-matlab.like(10) -->
+<!-- my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts -->
+
+<!-- plot(grid, col=my.col.fr, border=NA) -->
+
+
+
+
+<!-- # histogram -->
+<!-- hist(species_num$spec_num) -->
+
+<!-- # number of grid cells with less or more than ten species -->
+<!-- length(species_num$spec_num[which(species_num$spec_num > 10)]) -->
+<!-- length(species_num$spec_num[which(!species_num$spec_num > 10)]) -->
+<!-- length(species_num$spec_num[which(species_num$spec_num <= 10)]) -->
+
+
+
+<!-- save(species_num, file="Day2/data/species_num.RData") -->
+
+
+
