@@ -302,7 +302,7 @@ getwd()
 library(raster, quietly = TRUE)
 ```
 ```{r, echo=FALSE}
-rasterOptions(tmpdir="D:/rastertemp/") # raster saves large temporary files in your user operating systems` user folder. You might want to change this if you're running out of disk space
+if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # raster saves large temporary files in your user operating systems` user folder. You might want to change this if you're running out of disk space
 ```
 &nbsp;
 
