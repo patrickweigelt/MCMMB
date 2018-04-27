@@ -1,0 +1,16 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 3: "
+author: "Dylan Craven & Patrick Weigelt"
+date: "May 2, 2018"
+output: 
+  html_document: 
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
