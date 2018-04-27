@@ -117,7 +117,7 @@ head(species[which(species$species=="Ammandra decasperma"),])
 &nbsp;
 
 ## 3. data.frame exercise  
-1) Make a subset the data.frame that only includes entries for the 4 species _Geonoma pauciflora_, _Geonoma weberbaueri_, _Phytelephas tenuicaulis_ & _Mauritia flexuosa_.  
+1) Make a subset of the data.frame that only includes entries for the 4 species _Geonoma pauciflora_, _Geonoma weberbaueri_, _Phytelephas tenuicaulis_ & _Mauritia flexuosa_.  
 2) According to [The Plant List](http://www.theplantlist.org/tpl1.1/record/kew-89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
 3) In how many gridcells does each of the species occur?
 &nbsp;
