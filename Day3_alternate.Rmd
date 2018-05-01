@@ -1,0 +1,379 @@
+---
+title: 'Day 3 (alternate version): dplyr & ggplot2'
+author: "Dylan Craven"
+date: "May 2nd, 2018"
+output: 
+  html_document: 
+    fig_height: 8
+    fig_width: 8
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is an alternate version of the Day 3 practical that shows how to use other data manipulation and visualisation packages to achieve similar results.
+
+### 1. Load packages  
+
+```{r, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(reshape2)
+library(ggplot2)
+library(ggsci)
+require(cowplot)
+library(rgdal)
+library(rgeos)
+library(maptools)
+library(raster)
+library(BIEN)
+library(ROCR)
+```
+
+**Load data and subset it**
+
+```{r}
+species <- read.csv("Data/palms_species_per_gridcell.csv")
+
+species<- species %>%
+          unite("species",c("GENUS","EPITHET"),sep=" ",remove=FALSE)
+
+species$species<-as.character(species$species)
+
+spp<-c("Phytelephas tenuicaulis","Mauritia flexuosa")
+
+species<- filter(species,species %in% spp)
+  
+unique(species$species)
+
+#species<- species%>% mutate(species = replace(species, species=="Geonoma weberbaueri", "Geonoma undata"))
+
+```
+&nbsp;
+
+**Load GIS shapefile \& join it to species distribution data**  
+
+```{r, echo=TRUE}
+# read a polygon shapefile
+grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
+
+grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system
+
+# make grid cell x species table
+species$present<-1
+
+species_grid<-dcast(species, grid_id~species,value.var="present",sum)
+
+species_grid<-dplyr::select(species_grid, grid_id, Mauritia.flexuosa="Mauritia flexuosa",   
+                     Phytelephas.tenuicaulis="Phytelephas tenuicaulis") # change column names
+
+#
+colnames(grid@data)[1] <- "grid_id"
+
+grid@data <- left_join(grid@data, species_grid, by="grid_id")
+
+grid@data<-grid@data %>% mutate_all(.funs = funs(ifelse(is.na(.), 0, .)))
+
+grid@data[1:5,1:5]
+```
+&nbsp;
+
+### 2. Download point occurences and load environmental layers and Americas shapefile
+
+
+```{r, echo=TRUE}
+
+spec_occ <- BIEN_occurrence_species(c("Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE)
+
+spec_occ <- filter(spec_occ, is.na(latitude)==FALSE & is.na(longitude)==FALSE)
+```
+&nbsp;
+
+
+```{r, echo=TRUE}
+elev <- raster("Data/mn30_grd")
+bio1 <- raster("Data/CHELSA_bio10_1.tif") # temperature*10
+bio12 <- raster("Data/CHELSA_bio10_12.tif")
+
+```
+&nbsp;
+
+
+### 3. Pseudo-absences
+
+
+**Make spatial points dataframe from grid**  
+
+```{r, echo=TRUE}
+
+grid_centroids <- gCentroid(grid, byid=TRUE)
+grid_centroids <- SpatialPointsDataFrame(grid_centroids, data = data.frame(grid_centroids@coords, present = 0))
+colnames(grid_centroids@data) <- c("longitude","latitude","present")
+
+```
+&nbsp;
+
+**Make separate data frames with presences and pseudo-absences for each species**  
+
+
+```{r, echo=TRUE}
+
+# Mauritia flexuosa
+
+mff<-filter(spec_occ, scrubbed_species_binomial=="Mauritia flexuosa")
+mff$present<-1
+mff<-dplyr::select(mff, longitude,latitude, present)
+xy_1 <- mff[,c(1,2)] # coordinates
+
+mau_fle_abs<- SpatialPointsDataFrame(coords =xy_1, data = mff,
+                               proj4string = CRS("+proj=longlat +ellps=WGS84 +no_defs"))
+
+# add pseudo-absences
+set.seed(100)
+mau_fle_abs <- rbind(grid_centroids[round(runif(nrow(mau_fle_abs), min = 1, max = nrow(grid_centroids))),],mau_fle_abs)
+
+
+# Phytelephas tenuicaulis
+
+ptt<-filter(spec_occ, scrubbed_species_binomial=="Phytelephas tenuicaulis")
+ptt$present<-1
+ptt<-dplyr::select(ptt, longitude,latitude, present)
+
+xy_2 <- ptt[,c(1,2)] # coordinates
+
+phy_ten_abs<- SpatialPointsDataFrame(coords =xy_2, data = ptt,
+                               proj4string = CRS("+proj=longlat +ellps=WGS84 +no_defs"))
+
+# add pseudo-absences
+set.seed(100)
+phy_ten_abs <- rbind(grid_centroids[round(runif(nrow(phy_ten_abs), min = 1, max = nrow(grid_centroids))),],phy_ten_abs)
+
+```
+&nbsp;
+
+### 4. Fit species distribution models  
+
+
+**Extract environmental data for presences/absences**
+
+```{r, echo=TRUE}
+# extract environmental data for presences and absences
+
+phy_ten_abs@data$elev <- extract(elev,phy_ten_abs)
+phy_ten_abs@data$bio1 <- extract(bio1,phy_ten_abs)
+phy_ten_abs@data$bio12 <- extract(bio12,phy_ten_abs)
+
+mau_fle_abs@data$elev <- extract(elev,mau_fle_abs)
+mau_fle_abs@data$bio1 <- extract(bio1,mau_fle_abs)
+mau_fle_abs@data$bio12 <- extract(bio12,mau_fle_abs)
+
+```
+&nbsp;
+
+
+
+```{r, echo=TRUE}
+logreg_phy_ten <- glm(present ~ elev + bio1 + bio12, data = phy_ten_abs@data, family = "binomial")
+summary(logreg_phy_ten)
+
+logreg_mau_fle <- glm(present ~ elev + bio1 + bio12, data = mau_fle_abs@data, family = "binomial")
+summary(logreg_mau_fle)
+```
+
+### 5. Predict species distributions and compare to actual distributions
+
+**Create new data for predictions**  
+
+
+```{r, echo=TRUE}
+new_extent <- extent(-97, -35, -30, 17) # crop the raster layers to smaller extent
+
+elev <- crop(elev, new_extent) # crop raster layers to smaller extent
+elev <- aggregate(elev, fact=4, fun=mean) # aggregate data
+
+bio1 <- crop(bio1, new_extent)
+bio1 <- aggregate(bio1, fact=4, fun=mean)
+
+bio12 <- crop(bio12, new_extent)
+bio12 <- aggregate(bio12, fact=4, fun=mean)
+
+```
+&nbsp;
+
+**Predict presences of each species using species distribution models**  
+
+We are using logistical regressions to fit species distribution models  
+
+
+```{r, echo=TRUE}
+
+new_data <- data.frame(elev = getValues(elev), bio1 = getValues(bio1), bio12 = getValues(bio12))
+
+# predict presences
+phy_ten_predict <- predict(logreg_phy_ten, newdata = new_data, type = "response")
+mau_fle_predict <- predict(logreg_mau_fle, newdata = new_data, type = "response")
+
+
+# create raster layers with SDM predictions
+phy_ten_predict_rst <- raster(new_extent, nrows=nrow(elev), ncols=ncol(elev), vals = phy_ten_predict)
+mau_fle_predict_rst <- raster(new_extent, nrows=nrow(elev), ncols=ncol(elev), vals = mau_fle_predict)
+
+```
+&nbsp;
+
+**Make separate data frames for true species occurrences**    
+```{r, echo=TRUE}
+
+M_occ<-dplyr::filter(spec_occ, scrubbed_species_binomial=="Mauritia flexuosa")
+M_occ$group<-1
+P_occ<-dplyr::filter(spec_occ, scrubbed_species_binomial=="Phytelephas tenuicaulis")
+P_occ$group<-1
+```
+&nbsp;
+
+**Plot species ranges and occurrences using ggplot2 **  
+```{r, echo=TRUE}
+
+americas <- readOGR("Data/americas.shp") # add shape file showing the borders of the Neotropics  
+americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
+
+americas_df <- ggplot2::fortify(americas) # so we can use it in ggplot2
+
+data <- data.frame(id=rownames(grid@data), Mauritia.flexuosa=grid@data$Mauritia.flexuosa, Phytelephas.tenuicaulis=grid@data$Phytelephas.tenuicaulis,stringsAsFactors=F)
+grid.df <- ggplot2::fortify(grid)
+grid.df <- left_join(grid.df,data, by="id")
+
+grid.df<-grid.df %>% mutate_all(.funs = funs(ifelse(is.na(.), 0, .)))
+
+grid.df$Mauritia.flexuosa<-as.factor(grid.df$Mauritia.flexuosa)
+grid.df$Phytelephas.tenuicaulis<-as.factor(grid.df$Phytelephas.tenuicaulis)
+
+
+palm_Mauritia<-    ggplot(grid.df,aes(x=long,y=lat, group=group)) +  
+                   geom_polygon(aes(fill=Mauritia.flexuosa))+ # polygon of species range
+                   scale_fill_lancet()+
+  
+                  geom_polygon(data=americas_df, aes(x=long, y=lat,group=group), 
+                  fill=NA, color="black", size=0.25) + # polygon of Americas
+  
+                  geom_point(data=M_occ,aes(x=longitude, y=latitude,group=group),shape=21, 
+                             colour="white", fill="black",stroke=.2,size=2)+ #  occurrences from BIEN
+  
+                    coord_equal() + # same as coord_fixed(ratio = 1)
+                   labs(x="Longitude",y="Latitude")+
+                  ggtitle("Mauritia flexuosa")+
+                  theme_bw() + theme(legend.position="none", 
+                  plot.title = element_text(size=7,vjust=0.5),
+                  axis.title=element_text(size=7, face="bold"),
+                  axis.text.x=element_text(size=6), axis.text.y=element_text(size=6),
+                  plot.margin =margin(t=0.02, r=0.1, b=0.01, l=0.1, unit="cm"))
+
+
+palm_Phytelephas<-    ggplot(grid.df,aes(x=long,y=lat, group=group)) +  
+                   geom_polygon(aes(fill=Phytelephas.tenuicaulis))+ # polygon of species range
+                   scale_fill_lancet()+ 
+  
+                  geom_polygon(data=americas_df, aes(x=long, y=lat,group=group), 
+                  fill=NA, color="black", size=0.25) + # polygon of Americas
+  
+                   geom_point(data=P_occ,aes(x=longitude, y=latitude,group=group),shape=21, 
+                             colour="white", fill="black",stroke=.2,size=2)+ # occurrences from BIEN
+  
+                    coord_equal() + # same as coord_fixed(ratio = 1)
+                   labs(x="Longitude",y="Latitude")+
+                   ggtitle("Phytelephas tenuicaulis")+
+                  theme_bw() + theme(legend.position="none", 
+                  plot.title = element_text(size=7,vjust=0.5),
+                  axis.title=element_text(size=7, face="bold"),
+                  axis.text.x=element_text(size=6), axis.text.y=element_text(size=6),
+                  plot.margin =margin(t=0.02, r=0.1, b=0.01, l=0.1, unit="cm"))
+
+
+tog<-plot_grid(palm_Mauritia,palm_Phytelephas, ncol=2)
+
+tog
+
+```
+&nbsp;
+
+***Plot predicted ranges and occurrences**
+
+```{r, echo=TRUE}
+
+
+# make rasters using SDM predictions
+
+phy_ten_predict_rst<- crop(x = phy_ten_predict_rst, y = new_extent,snap='in')
+mau_fle_predict_rst<- crop(x = mau_fle_predict_rst, y = new_extent,snap='in')
+
+# convert forest cover to Spatial data frame for ggplot2
+phy_spdf <- as(phy_ten_predict_rst, "SpatialPixelsDataFrame")
+phy_spdf <- as.data.frame(phy_spdf)
+colnames(phy_spdf) <- c("value", "x", "y")
+
+mau_spdf <- as(mau_fle_predict_rst, "SpatialPixelsDataFrame")
+mau_spdf <- as.data.frame(mau_spdf)
+colnames(mau_spdf) <- c("value", "x", "y")
+
+
+# plot this
+
+pred_Phytelephas<- ggplot(phy_spdf,aes(x=x,y=y, fill=value)) +
+
+  geom_tile(alpha=0.8) +  # plot model predictions
+
+  scale_fill_gradient(name="",low = "#00468BFF", high = "#ED0000FF")+
+  
+  geom_polygon(data=americas_df, aes(x=long, y=lat,group=group), 
+                  fill=NA, color="black", size=0.25) + # polygon of Americas
+
+ geom_point(data=P_occ,aes(x=longitude, y=latitude,group=group),shape=21, 
+                             colour="white", fill="black",stroke=.2,size=2)+ # occurrences from BIEN
+  
+   coord_equal() + # same as coord_fixed(ratio = 1)
+                   labs(x="Longitude",y="Latitude")+
+                  theme_bw() + theme(legend.position="none", 
+                  axis.title=element_text(size=7, face="bold"),
+                  axis.text.x=element_text(size=6), axis.text.y=element_text(size=6),
+                  plot.margin =margin(t=0.01, r=0.1, b=0.01, l=0.1, unit="cm"))
+
+pred_Mauritia<-ggplot(mau_spdf,aes(x=x,y=y, fill=value)) +
+
+  geom_tile(alpha=0.8) +  # plot model predictions
+
+  scale_fill_gradient(name="",low = "#00468BFF", high = "#ED0000FF")+
+  
+  geom_polygon(data=americas_df, aes(x=long, y=lat,group=group), 
+                  fill=NA, color="black", size=0.25) + # polygon of Americas
+
+ geom_point(data=M_occ,aes(x=longitude, y=latitude,group=group),shape=21, 
+                             colour="white", fill="black",stroke=.2,size=2)+ # occurrences from BIEN
+  
+   coord_equal() + # same as coord_fixed(ratio = 1)
+                   labs(x="Longitude",y="Latitude")+
+                  theme_bw() + theme(legend.position="none", 
+                  axis.title=element_text(size=7, face="bold"),
+                  axis.text.x=element_text(size=6), axis.text.y=element_text(size=6),
+                  plot.margin =margin(t=0.01, r=0.1, b=0.01, l=0.1, unit="cm"))
+
+tog2<-plot_grid(pred_Mauritia,pred_Phytelephas, ncol=2)
+
+tog2
+```
+&nbsp;
+
+**Combine figures**
+
+```{r, echo=TRUE}
+
+tog<-plot_grid(palm_Mauritia,palm_Phytelephas, ncol=2)
+tog2<-plot_grid(pred_Mauritia,pred_Phytelephas, ncol=2)
+
+togg3<-plot_grid(tog, tog2, ncol=1,align="hv")
+togg3
+```
+&nbsp;
+
