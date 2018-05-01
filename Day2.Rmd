@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Preperation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/download/force_download/0/7cdab329853c1a57943e8406355d719e/Data_Day2.zip) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/download/force_download/0/7cdab329853c1a57943e8406355d719e/Data_Day2.zip) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * rgdal  
 * rgeos  
@@ -173,7 +173,7 @@ grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 ```{r}
 grid@proj4string
 ```
-Check <http://proj4.org/> for spatial projections!  
+Check out <http://proj4.org/> for spatial projections!  
 &nbsp;
 
 **Access the attribute table**  
