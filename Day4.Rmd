@@ -1,0 +1,311 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 4: The latitudinal diversity gradient"
+author: "Dylan Craven & Patrick Weigelt"
+date: "May 9th, 2018"
+output: 
+  html_document: 
+    fig_height: 7
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Preparation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/92ab64a62dc2b1d5e9f1562965ced950?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+
+* rgdal  
+* rgeos  
+* maptools  
+* plyr  
+* classInt
+* colorRamps
+
+&nbsp;
+
+### 1. Loading palm data set and shapefiles
+
+**Clean up workspace**  
+```{r}
+rm(list=ls()) # You might want to remove all loaded objects first
+```
+&nbsp;
+
+**Load R packages & palm data set**  
+
+
+```{r, include=FALSE}
+library(plyr)
+library(rgdal)
+library(rgeos)
+library(maptools)
+library(classInt)
+library(colorRamps)
+```
+
+```{r, eval=FALSE}
+library(plyr)
+library(rgdal)
+library(rgeos)
+library(maptools)
+library(classInt)
+library(colorRamps)
+```
+&nbsp;
+
+```{r}
+species <- read.csv("data/palms_species_per_gridcell.csv")
+```
+For today's exercise, we will continue to use the Neotropical palm data set from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
+&nbsp;
+
+
+**Data inspection**
+```{r, echo=TRUE}
+head(species) 
+str(species)
+```
+&nbsp;
+
+Let's make a new column combining 'Genus' and 'Epithet'  
+```{r, echo=TRUE}
+species$species <- paste(species$GENUS,species$EPITHET, sep = " ") 
+length(species$species) # number of species
+```
+&nbsp;
+
+
+
+**Load GIS shapefiles**  
+```{r, echo=TRUE}
+# gridcells corresponding to palm distribution data and americas coastline
+grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
+americas <- readOGR("Data/americas.shp")
+
+# remember to include coordinate system
+grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+# have a look at the grid's attribute table
+head(grid@data) 
+
+# change clomumn name of first column ('ID')
+names(grid@data)[1] <- "grid_id"
+head(grid@data) 
+
+# plot it
+plot(grid, border= "darkgrey")
+plot(americas, add=TRUE)
+```
+&nbsp;
+
+
+**Calculate latitude and longitude from the grids polygons**
+```{r, echo=TRUE}
+# convert the polygons to points (mass centroids)
+grid_centroids <- gCentroid(grid, byid=TRUE)
+
+# extract the coordinates of the points
+coordinates <- data.frame(grid_centroids@coords)
+head(coordinates)
+
+# add grid_id to coordinates data.frame
+coordinates <- data.frame(grid_id = grid@data$grid_id, Long = coordinates$x, Lat = coordinates$y)
+
+# join coordinates to grid shapefile
+grid@data <- join(grid@data, coordinates, by="grid_id", type="left")
+```
+&nbsp;
+
+
+# 2. Data aggregation (Species richness per gridcell)  
+
+**Count species per gridcell**
+```{r, echo=TRUE}
+?table
+species_num <- data.frame(table(species$grid_id))
+head(species_num)
+names(species_num) <- c("grid_id","spec_num")
+head(species_num)
+str(species_num)
+
+# change mode of grid_ID to numeric
+species_num$grid_id <- as.numeric(as.character(species_num$grid_id))
+str(species_num)
+summary(species_num)
+```
+&nbsp;
+
+**join species numbers to shapefile**  
+```{r, echo=TRUE}
+grid@data <- join(grid@data, species_num, by="grid_id", type="left")
+head(grid@data)
+```
+&nbsp;
+
+**Make a species richness map** 
+```{r, echo=TRUE}
+#Create color scheme
+my.class.fr<-classIntervals(grid@data$spec_num, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.class.fr
+my.pal<-matlab.like(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
+
+plot(grid, col=my.col.fr, border=NA, main="Palm species richness")
+plot(americas, add=TRUE)
+
+legend("bottomleft", # position
+  legend = names(attr(my.col.fr, "table")), 
+  title = "Species number",
+  fill = attr(my.col.fr, "palette"),
+  cex = 1,
+  bty = "n") # no box around it
+```
+
+
+## 3. Exercise  
+
+1) How many of the grid cells are located within the Tropics (within +/- 23.433333?)  
+```{r, echo=FALSE}
+#length(grid@data$spec_num[which(grid@data$Lat > -23.433333 & grid@data$Lat < 23.433333)])
+length(which(abs(grid@data$Lat) < 23.433333))
+```
+&nbsp;
+
+2) Compare mean species richness per gridcell within and outside the Tropics  
+```{r, echo=FALSE}
+data.frame(Tropics=mean(grid@data$spec_num[which(abs(grid@data$Lat) < 23.433333)]),
+           nonTropics=mean(grid@data$spec_num[which(abs(grid@data$Lat) >= 23.433333)]))
+```
+&nbsp;
+
+3) How many gridcells have more than 20 species and are located South of 17°S? Can you plot them?
+```{r, echo=FALSE}
+length(grid@data$spec_num[which(grid@data$spec_num > 20 &  grid@data$Lat < -17)])
+
+plot(grid, border= "darkgrey")
+plot(grid[which(grid@data$spec_num > 20 & grid@data$Lat < -17),], col="red",
+     border=NA, add=TRUE)
+plot(americas, add=TRUE)
+
+```
+
+
+# 2. Data aggregation (Species richness per latitudinal belt)  
+
+**Average species richness per latitudinal belt**
+
+```{r, echo=TRUE}
+c(min(species_num$Lat),max(species_num$Lat))
+min(species_num$Lat);max(species_num$Lat)
+```
+
+<!-- belts <- seq(-34.75, 36.25, by = 0.5) -->
+<!-- belts -->
+
+
+<!-- species_num$spec_num[which(species_num$Lat>-25 & species_num$Lat< -24.5)] -->
+
+<!-- species_num$spec_num[which(species_num$Lat>belts[10]-0.25 & -->
+<!--                                             species_num$Lat<belts[10]+0.25)] -->
+
+<!-- mean(species_num$spec_num[which(species_num$Lat>belts[10]-0.25 & -->
+<!--                                   species_num$Lat<belts[10]+0.25)]) -->
+
+
+<!-- ### loop approach -->
+<!-- for (i in 1:10){ -->
+<!--   print(i) -->
+<!-- } -->
+
+
+<!-- # create an empty vector for the mean species counts -->
+<!-- species_per_belt_loop <- NA -->
+
+<!-- # loop trough the latitudinal belts and calculate the mean species richness -->
+<!-- for (i in 1:length(belts)){ -->
+<!--   belt_subset <- species_num$spec_num[which(species_num$Lat>belts[i]-0.25 & species_num$Lat<belts[i]+0.25)] -->
+<!--   species_per_belt_loop[i] <- mean(belt_subset) -->
+<!-- } -->
+
+
+<!-- ### function approach -->
+
+<!-- myFunction <- function(x){ -->
+<!--   if (x > 5) message("Hello") -->
+<!-- } -->
+
+<!-- myFunction(6) -->
+
+<!-- # define the function -->
+<!-- species_per_belt_function <- function(x) { -->
+<!--   mean(species_num$spec_num[which(species_num$Lat>x-0.25 & species_num$Lat<x+0.25)]) -->
+<!-- } -->
+
+<!-- species_per_belt_function(-33.75) -->
+<!-- species_per_belt_function(-15.75) -->
+<!-- species_per_belt_function(13.25) -->
+
+<!-- # apply the function -->
+<!-- species_per_belt_apply <- sapply(belts, function(x) -->
+<!--   mean(species_num$spec_num[which(species_num$Lat>x-0.25 & species_num$Lat<x+0.25)])) -->
+
+<!-- species_per_belt_apply <- sapply(belts, species_per_belt_function) -->
+
+
+<!-- # compare loop and apply approach -->
+<!-- all(species_per_belt_apply == species_per_belt_loop) -->
+<!-- species_per_belt <- species_per_belt_apply -->
+
+<!-- save(species_num, file="Day2/data/species_num.RData") -->
+<!-- save(belts, species_per_belt, file="Day2/data/species_num_belts.RData") -->
+<!-- write.csv(species_num, "Day2/data/species_num.csv",row.names = FALSE) -->
+
+
+<!-- ###################################################### -->
+<!-- # 5. the latitudinal gradient model -->
+
+<!-- ### using raw data -->
+<!-- par(mfrow=c(1,1)) -->
+<!-- plot(species_num$Lat,species_num$spec_num) -->
+<!-- plot(abs(species_num$Lat),species_num$spec_num) -->
+
+<!-- # What could be the reason for the triangular relationship? -->
+
+<!-- # run a linear model for palm species richness in dependence on Latitude -->
+<!-- model1 <- lm(species_num$spec_num ~ species_num$Lat) -->
+<!-- summary(model1) -->
+
+<!-- # with abs(Lat) -->
+<!-- model2 <- lm(species_num$spec_num ~ abs(species_num$Lat)) -->
+<!-- summary(model2) -->
+
+<!-- plot(abs(species_num$Lat),species_num$spec_num) -->
+<!-- abline(model2, col="red", lwd=2) -->
+
+<!-- ### using richness per belt -->
+<!-- par(mfrow=c(1,2)) -->
+
+<!-- plot(belts,species_per_belt_loop) -->
+
+<!-- plot(abs(belts),species_per_belt_loop) -->
+
+
+<!-- model3 <- lm(species_per_belt_loop ~ abs(belts)) -->
+<!-- summary(model3) -->
+
+<!-- abline(model3, col="red", lwd=2) -->
+
+
+<!-- ### Excercise -->
+<!-- # 1. Compare the slope of the latitude - richness relationship for the northern and southern hemisphere -->
+<!-- # 2. Add a variable for Northern/Southern hemisphere to the species_num dataset and add this variable to the model -->
+<!-- # 3. Add an interaction term for latitude * hemisphere -->
+
+
+
+
+
+
