@@ -71,7 +71,7 @@ str(species)
 Let's make a new column combining 'Genus' and 'Epithet'  
 ```{r, echo=TRUE}
 species$species <- paste(species$GENUS,species$EPITHET, sep = " ") 
-length(species$species) # number of species
+length(unique(species$species)) # number of species
 ```
 &nbsp;
 
@@ -101,7 +101,7 @@ plot(americas, add=TRUE)
 &nbsp;
 
 
-**Calculate latitude and longitude from the grids polygons**
+**Calculate latitude and longitude from the grid's polygons**
 ```{r, echo=TRUE}
 # convert the polygons to points (mass centroids)
 grid_centroids <- gCentroid(grid, byid=TRUE)
