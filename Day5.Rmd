@@ -1,0 +1,131 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 5: Environmental drivers of palm diversity"
+author: "Dylan Craven & Patrick Weigelt"
+date: "May 16th, 2018"
+output: 
+  html_document: 
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Preparation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/b64b68db7a05f02fa854a63a01064f67?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+
+* rgdal  
+* rgeos  
+* maptools  
+* plyr  
+* classInt
+* colorRamps
+
+&nbsp;
+
+# load raster library
+library(raster)
+
+**Load and extract environmental data from spatial layers**
+For today's exercise, we again use the elevation, temperature ('bio1'), and precipitation ('bio12') raster layers we downloaded the first day.  
+
+```{R, echo=TRUE}
+# Import global digital elevation model at 30 arc seconds resolution
+elev <- raster("Data/mn30_grd")
+
+par(mfrow=c(1,1))
+plot(elev) 
+```
+&nbsp;
+
+```{R, echo=TRUE}
+# Import climate data from Chelsa at 30 arc seconds resolution -->
+bio1 <- raster("Data/CHELSA_bio10_1.tif") # temperature*10
+bio12 <- raster("Data/CHELSA_bio10_12.tif") # precipitation
+plot(bio1)
+```
+&nbsp;
+
+# To avoid broken numbers temperature has been multiplied by 10 in the 'bio1' raster layer. 
+# bio1 <- bio1/10 Careful! this is computer intense and takes a long time
+
+
+#####################################################
+### extract environmental information for the palm
+### grid polygons
+library(rgdal)
+grid <- readOGR("Day1/data/30min_grid_select50%.shp", integer64="allow.loss")
+plot(grid, add=TRUE)
+
+### Temperature
+bio1_values <- extract(bio1,grid[c(1:10),])
+bio1_values
+bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean)
+bio1_mean
+
+head(grid@data)
+
+
+# How long would it take for all gridcells?
+nrow(grid)
+6038/10*system.time(bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean))/60
+# 30 min?
+
+### faster work-around
+
+# aggregate raster layer to the resolution of the palm grid
+bio1_30min <- aggregate(bio1, fact=60, fun=mean, na.rm=TRUE)
+dim(bio1)
+extent(bio1)
+dim(bio1_30min)
+extent(bio1_30min)
+
+
+# look at it
+plot(bio1, xlim=c(-85,-65),ylim=c(-10,10))
+plot(grid, add=TRUE)
+
+
+
+plot(bio1_30min, xlim=c(-85,-65),ylim=c(-10,10))
+plot(grid, add=TRUE)
+
+plot(bio1_30min, xlim=c(-80,-75),ylim=c(5,10))
+plot(grid, add=TRUE)
+
+library(rgeos)
+grid_centroids <- gCentroid(grid, byid=TRUE)
+plot(grid_centroids, add=TRUE)
+
+# extract values based on spatial points shapefile
+temp_mean <- extract(bio1_30min,grid_centroids)
+temp_mean <- temp_mean/10
+temp_mean[1:10]
+
+### Precipitation
+bio12_30min <- aggregate(bio12, fact=60, fun=mean, na.rm=TRUE)
+prec_mean <- extract(bio12_30min,grid_centroids)
+prec_mean[1:10]
+
+### Elevation range
+elev_30min_min <- aggregate(elev, fact=60, fun=min, na.rm=TRUE)
+elev_30min_max <- aggregate(elev, fact=60, fun=max, na.rm=TRUE)
+elev_min <- extract(elev_30min_min,grid_centroids)
+elev_max <- extract(elev_30min_max,grid_centroids)
+elev_range <- elev_max - elev_min
+elev_range[1:10]
+hist(elev_range)
+
+
+
+elev_range[1:10]
+prec_mean[1:10]
+temp_mean[1:10]
+
+#head(grid@data)
+grid@data$ID[1:10]
+
+
+
+
