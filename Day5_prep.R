@@ -1,31 +1,15 @@
-################################################################
-# Modern concepts and methods inMacroecology and Biogeography #
-#                                                              #
-# Day 3: Raster layers, data extraction and predictors of      #
-#        species richness                                      #
-#                                                              #
-
-
-###### Content
-
-# 1. the latitudinal gradient model
-# 2. environmental (raster) layers 
-
-
-
-######################################################
-# 1. the latitudinal gradient model
 rm(list=ls()) # remove everything 
 
 library(plyr)
 library(raster)
 library(rgdal)
 library(rgeos)
+library(classInt)
+library(colorRamps)
+library(car)
 
 if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # raster saves large temporary files; You can define where 
 
-# read in RData files from hard drive
-load("data/species_num.RData")
 
 grid <- readOGR("data/30min_grid_select50%.shp", integer64="allow.loss")
 
@@ -51,7 +35,7 @@ bio1 <- crop(bio1, extent(grid)) # crop raster layers to smaller extent
 bio12 <- raster("data/CHELSA_bio10_12.tif")
 bio12 <- crop(bio12, extent(grid)) # crop raster layers to smaller extent
 
-# you can do calculations with the raster layers
+# To avoid broken numbers temperature has been multiplied by 10 in the 'bio1' raster layer. 
 bio1 <- bio1/10 # Careful! this is computer intense and takes a long time
 
 par(mfrow=c(1,2))
@@ -123,21 +107,145 @@ hist(elev_range)
 
 
 
-elev_range[1:10]
-prec_mean[1:10]
-temp_mean[1:10]
 
-#head(grid@data)
-grid@data$ID[1:10]
+
+# Write extracted values into attribute table of gridcell shapefile
+grid@data$temp <- temp_mean
+grid@data$prec <- prec_mean
+grid@data$elev <- elev_range
+
+head(grid@data)
+
+hist(grid@data$temp)
+hist(grid@data$prec)
+hist(grid@data$elev)
+
+cor(grid@data[,c("temp","prec","elev")])
 
 
 # join environmental data and species numbers
+names(grid@data)[1] <- "grid_id"
 
+
+# read in RData files from hard drive
+load("data/species_num.RData")
+
+hist(species_num$spec_num)
+
+#Exercise
+
+#1) Combine the species numbers ('species_num') and the newly extracted environmental data in one table
+species_num <- join(species_num, grid@data)
+
+#2) Calculate 3 linear models of species richness with each environmental variable as predictor and compare their output and AIC values
 
 #model
+model_temp <- lm(species_num$spec_num ~ species_num$temp)
+summary(model_temp)
 
-#predictions plotting
+model_prec <- lm(species_num$spec_num ~ species_num$prec)
+summary(model_prec)
 
+model_elev <- lm(species_num$spec_num ~ species_num$elev)
+summary(model_elev)
+
+AIC(model_temp,model_prec,model_elev)
+
+#2) Make scatterplots for all three models and plot their regressions lines 
+par(mfrow=c(1,3))
+plot(species_num$spec_num ~ species_num$temp)
+abline(model_temp, col="red")
+plot(species_num$spec_num ~ species_num$prec)
+abline(model_prec, col="red")
+plot(species_num$spec_num ~ species_num$elev)
+abline(model_elev, col="red")
+
+
+
+# multipredictor model
+model_full <- lm(species_num$spec_num ~ species_num$temp + species_num$prec + species_num$elev)
+summary(model_full)
+
+model_temp_prec <- lm(species_num$spec_num ~ species_num$temp + species_num$prec)
+model_temp_elev <- lm(species_num$spec_num ~ species_num$temp + species_num$elev)
+model_elev_prec <- lm(species_num$spec_num ~ species_num$prec + species_num$elev)
+
+AIC(model_full,model_temp_prec,model_temp_elev,model_elev_prec)
+
+library(car)
+crPlots(model_full)
+
+
+
+
+#plot richness, richness predictions and residuals
+species_num$pred <- predict(model_full)
+species_num$resi <- residuals(model_full)
+
+
+head(grid@data)
+head(species_num)
+
+grid@data <- join(grid@data, species_num[,c("grid_id","spec_num","pred","resi")], type="left", by="grid_id")
+
+par(mfrow=c(1,3), mar=c(1,1,1.5,1))
+#Create color scheme
+americas <- readOGR("data/americas.shp")
+
+my.class.fr<-classIntervals(grid@data$spec_num, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.pal<-matlab.like(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
+
+plot(grid, col=my.col.fr, border=NA, main="Palm species richness")
+plot(americas, add=TRUE)
+
+legend("bottomleft", # position
+       legend = names(attr(my.col.fr, "table")), 
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 0.6,
+       bty = "n") # no box around it
+
+
+my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.pal<-matlab.like(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
+
+plot(grid, col=my.col.fr, border=NA, main="Model predictions")
+plot(americas, add=TRUE)
+
+legend("bottomleft", # position
+       legend = names(attr(my.col.fr, "table")), 
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 0.6,
+       bty = "n") # no box around it
+
+
+
+my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.pal<-green2red(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
+
+plot(grid, col=my.col.fr, border=NA, main="Model residuals")
+plot(americas, add=TRUE)
+
+legend("bottomleft", # position
+       legend = names(attr(my.col.fr, "table")), 
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 0.6,
+       bty = "n") # no box around it
+
+
+
+#Excercise
+
+#run a model of species richness in dependence on latititude + latitude² and compare the AIC to our best model with all environmental precitors
+
+model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$spec_num)^2))
+summary(model_lat)
+AIC(model_lat, model_full)
 
 
 
