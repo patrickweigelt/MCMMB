@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Preparation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/b64b68db7a05f02fa854a63a01064f67?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Today we will only use data already distributed during the last couple iof weeks. If you don't have them all, please dowload from [Stud-IP](https://www.studip.uni-goettingen.de/) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * rgdal  
 * rgeos
@@ -26,7 +26,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 &nbsp;
 
-### 1. Loading raster layers
+### 1. Loading and preparing environmental data from spatial raster layers
 
 **Clean up workspace**  
 ```{r}
@@ -62,273 +62,276 @@ if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # rast
 
 &nbsp;
 
-**Load and extract environmental data from spatial layers**
+**Load environmental raster layers**  
 For today's exercise, we again use the elevation, temperature ('bio1'), and precipitation ('bio12') raster layers we downloaded the first day.  
 
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
-elev <- raster("Data/mn30_grd")
+elev <- raster("data/mn30_grd")
 
 par(mfrow=c(1,1))
-plot(elev) 
+plot(elev, main="Elevation a.s.l. (m)") 
 ```
 &nbsp;
 
 ```{R, echo=TRUE}
 # Import climate data from Chelsa at 30 arc seconds resolution -->
-bio1 <- raster("Data/CHELSA_bio10_1.tif") # temperature*10
-bio12 <- raster("Data/CHELSA_bio10_12.tif") # precipitation
-plot(bio1)
+bio1 <- raster("data/CHELSA_bio10_1.tif") # temperature*10
+bio12 <- raster("data/CHELSA_bio10_12.tif") # precipitation
+plot(bio1, main="Annual mean temperature (10 x C°)")
 ```
 &nbsp;
 
-<!-- rm(list=ls()) # remove everything  -->
 
-<!-- library(plyr) -->
-<!-- library(raster) -->
-<!-- library(rgdal) -->
-<!-- library(rgeos) -->
-<!-- library(classInt) -->
-<!-- library(colorRamps) -->
-<!-- library(car) -->
+**Load gridcell shapefile** 
+```{r, echo=TRUE}
+grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss") # read in polygon shapefile
+grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system
+americas <- readOGR("data/americas.shp")
+americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+plot(grid, border="darkgrey")
+plot(americas, add=TRUE)
+```
+
+The raster layers have larger extents than  they need to have for our Neotropical palm data. We can crop them based on the palm gridcell shapefile
+```{r, echo=TRUE, fig.height=3, fig.width=12}
+extent(grid)
+elev <- crop(elev, extent(grid)) # crop raster layers to smaller extent
+bio1 <- crop(bio1, extent(grid))
+bio12 <- crop(bio12, extent(grid))
+par(mfrow=c(1,3))
+plot(elev, main="Elevation a.s.l. (m)")
+plot(bio1, main="Annual mean temperature (10 x C°)")
+plot(bio12, main="Mean annual precipitation (mm)")
+```
+&nbsp;
+
+To avoid broken numbers temperature has been multiplied by 10 in the 'bio1' raster layer. We can undo this by dividing by 10
+```{r, echo=TRUE}
+bio1 <- bio1/10 # Careful, This can take a while!
+```
+&nbsp;
+
+
+### 2. Extracting environmental data for palm gridcells from raster layers
+```{r, echo=TRUE, fig.height=3, fig.width=4.3}
+par(mfrow=c(1,1))
+plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76), main="Elevation a.s.l. (m)")
+plot(grid, add=TRUE)
+```
+
+**Extract values** 
+```{r, echo=TRUE}
+bio1_values <- extract(bio1,grid[c(1:10),])
+str(bio1_values) #bio1_values is a list
+bio1_values[[1]][1:10] #Use [[]] to index a list
+mean(bio1_values[[1]])
+bio1_mean <- sapply(bio1_values, mean) # apply a function to all elements of a list
+bio1_mean
+bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean) # define the function for aggregation already in extract()
+bio1_mean
+```
+
+
+How long would it take to extract mean values for all gridcells?
+```{r, echo=TRUE}
+nrow(grid) # number of gridcells
+nrow(grid)/10*system.time(bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean))/60
+# 20 min?
+```
+&nbsp;
+
+
+**Faster work-around: aggregating the raster layers**  
+Aggregate raster layer to the resolution of the palm grid and convert grid to spatial points  
+```{r, echo=TRUE}
+bio1_30min <- aggregate(bio1, fact=60, fun=mean, na.rm=TRUE)
+dim(bio1)
+extent(bio1)
+dim(bio1_30min)
+extent(bio1_30min)
+
+grid_centroids <- gCentroid(grid, byid=TRUE)
+```
+```{r, echo=TRUE, fig.height=3, fig.width=7.5}
+par(mfrow=c(1,2))
+
+plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76), main="30 seconds resolution")
+plot(grid, add=TRUE)
+
+plot(bio1_30min, ylim=c(-6,-2), xlim=c(-82,-76), main="30 minutes resolution")
+plot(grid, add=TRUE)
+plot(grid_centroids, add=TRUE)
+```
+
+
+**Extract values based on spatial points and aggregated raster** 
+```{r, echo=TRUE}
+# Temperature
+temp_mean <- extract(bio1_30min,grid_centroids) # extract values
+temp_mean[1:10]
+
+# Precipitation
+bio12_30min <- aggregate(bio12, fact=60, fun=mean, na.rm=TRUE)
+prec_mean <- extract(bio12_30min,grid_centroids)
+prec_mean[1:10]
+
+# Elevation range as a measure of topographic heterogeneity
+elev_30min_min <- aggregate(elev, fact=60, fun=min, na.rm=TRUE) # minimum elevation
+elev_30min_max <- aggregate(elev, fact=60, fun=max, na.rm=TRUE) # maximum elevation
+elev_min <- extract(elev_30min_min,grid_centroids)
+elev_max <- extract(elev_30min_max,grid_centroids)
+elev_range <- elev_max - elev_min
+elev_range[1:10]
+```
+&nbsp;
 
-<!-- if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # raster saves large temporary files; You can define where  -->
+**Write extracted values into attribute table of gridcell shapefile**  
+```{r, echo=TRUE, fig.height=4, fig.width=12}
+grid@data$temp <- temp_mean
+grid@data$prec <- prec_mean
+grid@data$elev <- elev_range
 
+head(grid@data)
 
-<!-- grid <- readOGR("data/30min_grid_select50%.shp", integer64="allow.loss") -->
+cor(grid@data[,c("temp","prec","elev")])
+par(mfrow=c(1,3))
+hist(grid@data$temp, main="", xlab="Elevation a.s.l. (m)")
+hist(grid@data$prec, main="", xlab="Annual mean temperature (C°)")
+hist(grid@data$elev, main="", xlab="Mean annual precipitation (mm)")
+```
+&nbsp;
 
-<!-- grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system -->
+### 3. Modelling palm species richness  
 
-<!-- # load raster library -->
+**Join environmental data and species numbers**  
+```{r, echo=TRUE, fig.height=4, fig.width=4}
+load("data/species_num.RData") # read in RData files of palm species richness from last week
+hist(species_num$spec_num, main="", xlab="Palm species number")
+```
 
-<!-- # Import global digital elevation model at 30 arc seconds resolution -->
-<!-- elev <- raster("data/mn30_grd") -->
-<!-- par(mfrow=c(1,1)) -->
-<!-- plot(elev) -->
 
-<!-- # The raster layer is larger than it needs to be for Neotropical palm data. We can crop it based on the palm gridcell shapefile  -->
-<!-- extent(grid) -->
-<!-- elev <- crop(elev, extent(grid)) # crop raster layers to smaller extent -->
-<!-- plot(elev) -->
+#### Exercise  
 
+1) Combine the species numbers ('species_num') and the newly extracted environmental data in one table.   
+```{r, echo=FALSE}
+names(grid@data)[1] <- "grid_id" # rename ID column in gridcell shapefile
+species_num <- join(species_num, grid@data, by="grid_id")
+```
+&nbsp;
 
+2) Calculate 3 linear models of species richness with each environmental variable as predictor and compare their output and AIC values.  
+```{r, echo=FALSE}
+model_elev <- lm(species_num$spec_num ~ species_num$elev)
+summary(model_elev)
 
-<!-- # Import climate data from Chelsa at 30 arc seconds resolution -->
-<!-- bio1 <- raster("data/CHELSA_bio10_1.tif") -->
-<!-- bio1 <- crop(bio1, extent(grid)) # crop raster layers to smaller extent -->
-<!-- bio12 <- raster("data/CHELSA_bio10_12.tif") -->
-<!-- bio12 <- crop(bio12, extent(grid)) # crop raster layers to smaller extent -->
+model_temp <- lm(species_num$spec_num ~ species_num$temp)
+summary(model_temp)
 
-<!-- # To avoid broken numbers temperature has been multiplied by 10 in the 'bio1' raster layer.  -->
-<!-- bio1 <- bio1/10 # Careful! this is computer intense and takes a long time -->
+model_prec <- lm(species_num$spec_num ~ species_num$prec)
+summary(model_prec)
 
-<!-- par(mfrow=c(1,2)) -->
-<!-- plot(bio1) -->
-<!-- plot(bio12) -->
 
+AIC(model_temp,model_prec,model_elev)
+```
+&nbsp;
 
-<!-- ##################################################### -->
-<!-- ### extract environmental information for the palm -->
-<!-- ### grid polygons -->
-<!-- par(mfrow=c(1,1)) -->
-<!-- plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76)) -->
-<!-- plot(grid, add=TRUE) -->
+3) Make scatterplots for all three models and plot their regression lines
+```{r, echo=FALSE, fig.height=4, fig.width=12}
+par(mfrow=c(1,3))
+plot(species_num$spec_num ~ species_num$elev, xlab="Elevation a.s.l. (m)",  ylab="Species number")
+abline(model_elev, col="red")
+plot(species_num$spec_num ~ species_num$temp, xlab="Annual mean temperature (C°)",  ylab="Species number")
+abline(model_temp, col="red")
+plot(species_num$spec_num ~ species_num$prec, xlab="Mean annual precipitation (mm)",  ylab="Species number")
+abline(model_prec, col="red")
+```
 
-<!-- ### Temperature -->
-<!-- bio1_values <- extract(bio1,grid[c(1:10),]) -->
-<!-- bio1_values -->
-<!-- bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean) -->
-<!-- bio1_mean -->
 
-<!-- head(grid@data) -->
+**Multipredictor model**
+```{r, echo=TRUE, fig.height=4, fig.width=12}
+model_full <- lm(species_num$spec_num ~ species_num$temp + species_num$prec + species_num$elev)
+summary(model_full)
 
+model_temp_prec <- lm(species_num$spec_num ~ species_num$temp + species_num$prec)
+model_temp_elev <- lm(species_num$spec_num ~ species_num$temp + species_num$elev)
+model_elev_prec <- lm(species_num$spec_num ~ species_num$prec + species_num$elev)
 
-<!-- # How long would it take for all gridcells? -->
-<!-- nrow(grid) -->
-<!-- nrow(grid)/10*system.time(bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean))/60 -->
-<!-- # 20 min? -->
+AIC(model_full,model_temp_prec,model_temp_elev,model_elev_prec)
 
-<!-- ### faster work-around -->
+crPlots(model_full, layout=c(1, 3), ask=FALSE, main="Partial residual plots", smoother=FALSE, grid=FALSE, ylab="Partial residuals (species richness)")
+```
 
-<!-- # aggregate raster layer to the resolution of the palm grid -->
-<!-- bio1_30min <- aggregate(bio1, fact=60, fun=mean, na.rm=TRUE) -->
-<!-- dim(bio1) -->
-<!-- extent(bio1) -->
-<!-- dim(bio1_30min) -->
-<!-- extent(bio1_30min) -->
 
 
-<!-- # look at it -->
-<!-- par(mfrow=c(1,2)) -->
+**Plot species richness, model predictions and residuals**
 
-<!-- plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76)) -->
-<!-- plot(grid, add=TRUE) -->
+Get predictions and get residuals and join them to gridcell shapefile
+```{r, echo=TRUE, fig.height=4, fig.width=12}
+species_num$pred <- predict(model_full)
+species_num$resi <- residuals(model_full)
+head(species_num)
+head(grid@data)
+grid@data <- join(grid@data, species_num[,c("grid_id","spec_num","pred","resi")], type="left", by="grid_id")
 
-<!-- plot(bio1_30min, ylim=c(-6,-2), xlim=c(-82,-76)) -->
-<!-- plot(grid, add=TRUE) -->
+par(mfrow=c(1,3), mar=c(1,1,2,1))
+#Create color scheme
 
-<!-- grid_centroids <- gCentroid(grid, byid=TRUE) -->
-<!-- plot(grid_centroids, add=TRUE) -->
+my.class.fr<-classIntervals(grid@data$spec_num, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.pal<-matlab.like(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
-<!-- # extract values based on spatial points shapefile -->
-<!-- temp_mean <- extract(bio1_30min,grid_centroids) -->
-<!-- #temp_mean <- temp_mean/10 -->
-<!-- temp_mean[1:10] -->
+plot(grid, col=my.col.fr, border=NA, main="Palm species richness")
+plot(americas, add=TRUE)
 
-<!-- ### Precipitation -->
-<!-- bio12_30min <- aggregate(bio12, fact=60, fun=mean, na.rm=TRUE) -->
-<!-- prec_mean <- extract(bio12_30min,grid_centroids) -->
-<!-- prec_mean[1:10] -->
+legend("bottomleft", # position
+       legend = names(attr(my.col.fr, "table")),
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 1,
+       bty = "n") # no box around it
 
-<!-- ### Elevation range -->
-<!-- elev_30min_min <- aggregate(elev, fact=60, fun=min, na.rm=TRUE) -->
-<!-- elev_30min_max <- aggregate(elev, fact=60, fun=max, na.rm=TRUE) -->
-<!-- elev_min <- extract(elev_30min_min,grid_centroids) -->
-<!-- elev_max <- extract(elev_30min_max,grid_centroids) -->
-<!-- elev_range <- elev_max - elev_min -->
-<!-- elev_range[1:10] -->
-<!-- hist(elev_range) -->
 
+my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.pal<-matlab.like(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
+plot(grid, col=my.col.fr, border=NA, main="Model predictions")
+plot(americas, add=TRUE)
 
+legend("bottomleft", # position
+       legend = names(attr(my.col.fr, "table")),
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 1,
+       bty = "n") # no box around it
 
 
-<!-- # Write extracted values into attribute table of gridcell shapefile -->
-<!-- grid@data$temp <- temp_mean -->
-<!-- grid@data$prec <- prec_mean -->
-<!-- grid@data$elev <- elev_range -->
 
-<!-- head(grid@data) -->
+my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.pal<-green2red(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
-<!-- hist(grid@data$temp) -->
-<!-- hist(grid@data$prec) -->
-<!-- hist(grid@data$elev) -->
+plot(grid, col=my.col.fr, border=NA, main="Model residuals")
+plot(americas, add=TRUE)
 
-<!-- cor(grid@data[,c("temp","prec","elev")]) -->
+legend("bottomleft", # position
+       legend = names(attr(my.col.fr, "table")),
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 1,
+       bty = "n") # no box around it
+```
 
+#### Exercise  
 
-<!-- # join environmental data and species numbers -->
-<!-- names(grid@data)[1] <- "grid_id" -->
+1) Run a model of species richness in dependence on latititude + latitude² and compare the AIC to our best model with all environmental precitors  
+```{r, echo=FALSE}
+model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$spec_num)^2))
+summary(model_lat)
+AIC(model_lat, model_full)
+```
 
 
-<!-- # read in RData files from hard drive -->
-<!-- load("data/species_num.RData") -->
-
-<!-- hist(species_num$spec_num) -->
-
-<!-- #Exercise -->
-
-<!-- #1) Combine the species numbers ('species_num') and the newly extracted environmental data in one table -->
-<!-- species_num <- join(species_num, grid@data) -->
-
-<!-- #2) Calculate 3 linear models of species richness with each environmental variable as predictor and compare their output and AIC values -->
-
-<!-- #model -->
-<!-- model_temp <- lm(species_num$spec_num ~ species_num$temp) -->
-<!-- summary(model_temp) -->
-
-<!-- model_prec <- lm(species_num$spec_num ~ species_num$prec) -->
-<!-- summary(model_prec) -->
-
-<!-- model_elev <- lm(species_num$spec_num ~ species_num$elev) -->
-<!-- summary(model_elev) -->
-
-<!-- AIC(model_temp,model_prec,model_elev) -->
-
-<!-- #2) Make scatterplots for all three models and plot their regressions lines  -->
-<!-- par(mfrow=c(1,3)) -->
-<!-- plot(species_num$spec_num ~ species_num$temp) -->
-<!-- abline(model_temp, col="red") -->
-<!-- plot(species_num$spec_num ~ species_num$prec) -->
-<!-- abline(model_prec, col="red") -->
-<!-- plot(species_num$spec_num ~ species_num$elev) -->
-<!-- abline(model_elev, col="red") -->
-
-
-
-<!-- # multipredictor model -->
-<!-- model_full <- lm(species_num$spec_num ~ species_num$temp + species_num$prec + species_num$elev) -->
-<!-- summary(model_full) -->
-
-<!-- model_temp_prec <- lm(species_num$spec_num ~ species_num$temp + species_num$prec) -->
-<!-- model_temp_elev <- lm(species_num$spec_num ~ species_num$temp + species_num$elev) -->
-<!-- model_elev_prec <- lm(species_num$spec_num ~ species_num$prec + species_num$elev) -->
-
-<!-- AIC(model_full,model_temp_prec,model_temp_elev,model_elev_prec) -->
-
-<!-- library(car) -->
-<!-- crPlots(model_full) -->
-
-
-
-
-<!-- #plot richness, richness predictions and residuals -->
-<!-- species_num$pred <- predict(model_full) -->
-<!-- species_num$resi <- residuals(model_full) -->
-
-
-<!-- head(grid@data) -->
-<!-- head(species_num) -->
-
-<!-- grid@data <- join(grid@data, species_num[,c("grid_id","spec_num","pred","resi")], type="left", by="grid_id") -->
-
-<!-- par(mfrow=c(1,3), mar=c(1,1,1.5,1)) -->
-<!-- #Create color scheme -->
-<!-- americas <- readOGR("data/americas.shp") -->
-
-<!-- my.class.fr<-classIntervals(grid@data$spec_num, n=10, style="equal", dataPrecision=0) # bin data into n quantiles -->
-<!-- my.pal<-matlab.like(10) -->
-<!-- my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts -->
-
-<!-- plot(grid, col=my.col.fr, border=NA, main="Palm species richness") -->
-<!-- plot(americas, add=TRUE) -->
-
-<!-- legend("bottomleft", # position -->
-<!--        legend = names(attr(my.col.fr, "table")),  -->
-<!--        title = "Species number", -->
-<!--        fill = attr(my.col.fr, "palette"), -->
-<!--        cex = 0.6, -->
-<!--        bty = "n") # no box around it -->
-
-
-<!-- my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles -->
-<!-- my.pal<-matlab.like(10) -->
-<!-- my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts -->
-
-<!-- plot(grid, col=my.col.fr, border=NA, main="Model predictions") -->
-<!-- plot(americas, add=TRUE) -->
-
-<!-- legend("bottomleft", # position -->
-<!--        legend = names(attr(my.col.fr, "table")),  -->
-<!--        title = "Species number", -->
-<!--        fill = attr(my.col.fr, "palette"), -->
-<!--        cex = 0.6, -->
-<!--        bty = "n") # no box around it -->
-
-
-
-<!-- my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles -->
-<!-- my.pal<-green2red(10) -->
-<!-- my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts -->
-
-<!-- plot(grid, col=my.col.fr, border=NA, main="Model residuals") -->
-<!-- plot(americas, add=TRUE) -->
-
-<!-- legend("bottomleft", # position -->
-<!--        legend = names(attr(my.col.fr, "table")),  -->
-<!--        title = "Species number", -->
-<!--        fill = attr(my.col.fr, "palette"), -->
-<!--        cex = 0.6, -->
-<!--        bty = "n") # no box around it -->
-
-
-
-<!-- #Excercise -->
-
-<!-- #run a model of species richness in dependence on latititude + latitude² and compare the AIC to our best model with all environmental precitors -->
-
-<!-- model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$spec_num)^2)) -->
-<!-- summary(model_lat) -->
-<!-- AIC(model_lat, model_full) -->
 
 
