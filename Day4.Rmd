@@ -166,7 +166,7 @@ legend("bottomleft", # position
 
 # 3. Exercise  
 
-1) How many of the grid cells are located within the Tropics (within +/- 23.433333?)  
+1) How many of the grid cells are located within the Tropics (within +/- 23.433333)?  
 ```{r, echo=FALSE}
 #length(grid@data$spec_num[which(grid@data$Lat > -23.433333 & grid@data$Lat < 23.433333)])
 length(which(abs(grid@data$Lat) < 23.433333))
