@@ -119,7 +119,7 @@ grid@data <- join(grid@data, coordinates, by="grid_id", type="left")
 &nbsp;
 
 
-# 2. Data aggregation (species richness per gridcell)  
+### 2. Data aggregation (species richness per gridcell)  
 
 **Count species per gridcell**
 ```{r, echo=TRUE}
@@ -164,7 +164,7 @@ legend("bottomleft", # position
 ```
 
 
-# 3. Exercise  
+### 3. Exercise  
 
 1) How many of the grid cells are located within the Tropics (within +/- 23.433333)?  
 ```{r, echo=FALSE}
@@ -192,7 +192,7 @@ plot(americas, add=TRUE)
 ```
 
 
-# 4. Data aggregation (species richness per latitudinal belt)  
+### 4. Data aggregation (species richness per latitudinal belt)  
 
 ```{r, echo=TRUE}
 species_num <- join(species_num, coordinates, by="grid_id", type="inner")
@@ -293,7 +293,7 @@ write.csv(species_num, "data/species_num.csv", row.names = FALSE)
 &nbsp;
 
 
-# 5. The latitudinal gradient model  
+### 5. The latitudinal gradient model  
 
 In case you had problems creating the `species_num` and `species_per_belt` data.frames you can now load our provided *.Rdata files
 ```{r, echo=TRUE}
