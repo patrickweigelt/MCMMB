@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Preparation:** Today we will only use data already distributed during the last couple iof weeks. If you don't have them all, please dowload from [Stud-IP](https://www.studip.uni-goettingen.de/) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Today we will only use data already distributed during the last couple of weeks. If you don't have them all, please dowload from [Stud-IP](https://www.studip.uni-goettingen.de/) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * rgdal  
 * rgeos
@@ -199,6 +199,8 @@ par(mfrow=c(1,3))
 hist(grid@data$temp, main="", xlab="Elevation a.s.l. (m)")
 hist(grid@data$prec, main="", xlab="Annual mean temperature (C°)")
 hist(grid@data$elev, main="", xlab="Mean annual precipitation (mm)")
+
+save(grid, file="data/grid_env.RData")
 ```
 &nbsp;
 
@@ -206,6 +208,7 @@ hist(grid@data$elev, main="", xlab="Mean annual precipitation (mm)")
 
 **Join environmental data and species numbers**  
 ```{r, echo=TRUE, fig.height=4, fig.width=4}
+load("data/grid_env.RData")
 load("data/species_num.RData") # read in RData files of palm species richness from last week
 hist(species_num$spec_num, main="", xlab="Palm species number")
 ```
@@ -327,7 +330,7 @@ legend("bottomleft", # position
 
 1) Run a model of species richness in dependence on latititude + latitude² and compare the AIC to our best model with all environmental precitors  
 ```{r, echo=FALSE}
-model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$spec_num)^2))
+model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$Lat)^2))
 summary(model_lat)
 AIC(model_lat, model_full)
 ```
