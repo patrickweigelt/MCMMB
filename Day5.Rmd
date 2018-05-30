@@ -220,6 +220,7 @@ hist(species_num$spec_num, main="", xlab="Palm species number")
 ```{r, echo=FALSE}
 names(grid@data)[1] <- "grid_id" # rename ID column in gridcell shapefile
 species_num <- join(species_num, grid@data, by="grid_id")
+head(species_num)
 ```
 &nbsp;
 

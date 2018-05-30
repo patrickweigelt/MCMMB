@@ -1,0 +1,360 @@
+---
+title: 'Day 6: Island Biogeography'
+author: "Dylan Craven & Patrick Weigelt"
+date: "May 30th, 2018"
+output: 
+  html_document: 
+    fig_height: 7
+    theme: flatly
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+**Preparation:** Please open your RStudio project and download the data ('islands.csv') for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/92ab64a62dc2b1d5e9f1562965ced950?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and copy it into your project folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+
+* maptools  
+* maps  
+* maptools  
+* classInt  
+* psych
+* car
+
+
+&nbsp;
+
+**Load R packages & island data set**  
+
+
+```{r, include=FALSE}
+library(maptools)
+library(maps)
+library(maptools)
+library(classInt)
+data(worldMapEnv)
+library(psych)
+library(car)
+```
+
+```{r, eval=FALSE}
+library(maptools)
+library(maps)
+library(maptools)
+library(classInt)
+data(worldMapEnv)
+library(psych)
+library(car
+```
+&nbsp;
+
+```{r}
+islands <- read.csv("Data/islands.csv")
+```
+
+### 1. Data exploration: spatial patterns of species diversity \& co-variation among biogeographic and environmental variables   
+
+
+**Create a colour gradient for species richness**  
+```{r, echo=TRUE}
+
+islands <- islands[order(islands$spec_num),] # arrange islands by species richness (low to high)
+
+my.class.fr.S<-classIntervals(islands$spec_num,n=9, style="fixed", fixedBreaks=c(0,25,50,100,200,400,800,1600,3200,6400)) # bin data into n quantiles
+my.pal<-c("midnightblue","dodgerblue4","dodgerblue2","chartreuse4","gold","orangered1","darkred")
+my.col.fr.S<-findColours(my.class.fr.S,my.pal) # ramp colors based on classInts
+my.col.fr.S[islands$spec_num < 1] <- "#666666" # assign grey for zero species
+
+# specify dimensions of plot for saving
+if(.Platform$OS.type == "windows"){ 
+  windows(width=20*0.3937008, height=12*0.3937008)
+}else{
+  X11(width=20*0.3937008, height=12*0.3937008,type="cairo")
+  }
+# quartz(width=20*0.3937008, height=12*0.3937008) # for Mac 
+
+map('world', fill = FALSE)
+title(main = "Angiosperm species richness")
+points(islands$longitude, islands$latitude, pch=ifelse(islands$spec_num >= 1,1,4), cex = (log10(islands$spec_num+1)/2.6)^2+1, col = my.col.fr.S, lwd=2)
+
+if(.Platform$OS.type == "windows"){ 
+  savePlot("Data/islands.pdf", type = "pdf")
+}else{
+  dev.copy2pdf(file = "Data/islands.pdf")
+}
+
+#quartz.save("Data/islands.pdf", type = "pdf") # for Mac 
+dev.off()
+```
+&nbsp;
+
+
+**Correlations among biogeographic \& environmental variables**
+
+_Meta-data_    
+1. **latitude**: Latitude (in decimal degrees)  
+2. **area**: Island area (in km^2)    
+3. **dist**: Distance to the nearest continent (in km)   
+4. **age_Ma**: Island age (in millions of years)    
+5. **max_elev**: Maximum elevation (m)     
+6. **mean_temp**: Mean annual temperature (degrees Celsius)    
+7. **mean_prec**: Mean annual precipitation (mm yr^-1)  
+8. **mean_homogeneity**: Habitat heterogeneity (similarity of vegetation index with surrounding pixels)   
+
+
+```{r,echo=TRUE}
+pairs.panels(islands[,c(4:7,11:14)], density=F,ellipses=F, hist.col = "white")
+```
+&nbsp;
+
+### 2. The species area relationship (SAR)  
+
+_Species Richness ~ Area_  
+
+
+**Linear model**  
+```{r, echo=TRUE}
+
+SAR0 <- lm(spec_num ~ area, data=islands)
+summary(SAR0)
+
+plot(spec_num~area,data=islands)
+regLine(SAR0, col="darkgreen")
+```
+&nbsp;
+
+**Non-linear model**
+
+_Species richness ~ c + Area^z^_  
+
+```{r, echo=TRUE}
+SAR1 <- nls(spec_num ~ c + area^z, data = islands, start = list(c = 0, z = 1))
+summary(SAR1)
+
+newdata <- data.frame(area=seq(min(islands$area),max(islands$area),length.out = 100))
+predicted_richness_SAR1 <- predict(SAR1, newdata = newdata)
+
+plot(islands$area, islands$spec_num, xlab = "Island area (km)", ylab="Species number", main="Species-area relationship")
+points(newdata$area,predicted_richness_SAR1, type="l", col="darkred", lwd=2)
+
+```
+&nbsp;
+
+
+### Exercise I  
+1. Make histograms of species richness and area  
+2. Apply a log10 transformation to species richness and area, make new columns of the transformed variables, and plot histograms of them  
+3. Fit a linear model to predict species richness using area. 
+4. Make a plot of the results  
+
+&nbsp;
+
+
+**Exercise I solutions: **  
+
+_Make histograms of species richness and area_    
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+# 1. look at the histograms of species richness and area
+hist(islands$area)
+hist(islands$spec_num)
+```
+&nbsp;
+
+_Apply a log10 transformation to species richness and area, make new columns of the transformed variables, and plot histograms of them_
+_&_
+_Fit a linear model to predict species richness using area_
+
+```{r, echo=FALSE}
+islands$log_area <- log10(islands$area + 1)
+islands$log_spec_num <- log10(islands$spec_num + 1)
+
+par(mfrow=c(1,2))
+hist(islands$log_area)
+hist(islands$log_spec_num)
+
+SAR2 <- lm(log_spec_num ~ log_area, data = islands)
+summary(SAR2)
+
+par(mfrow=c(1,1))
+plot(log_spec_num~log_area, data=islands)
+regLine(SAR2,col="darkgreen")
+```
+
+
+**Check model assumptions**  
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+hist(residuals(SAR0))
+hist(residuals(SAR2))
+```
+
+&nbsp;
+
+**Poisson generalised linear model (GLM)** 
+
+```{r, echo=TRUE}
+SAR3 <- glm(spec_num ~ log_area, data=islands, family="poisson")
+
+# Plot Poisson GLM with log-log model
+plot(islands$log_area, islands$log_spec_num, xlab = "log10 island area (log10 km)", ylab="log10 species number", main="log-log Species-area relationship")
+regLine(SAR2)
+
+newdata_SAR3 <- data.frame(log_area=seq(min(islands$log_area),max(islands$log_area),length.out = 100))
+predicted_richness_SAR3 <- predict(SAR3, newdata = newdata_SAR3, type="response")
+points(newdata_SAR3$log_area,log10(predicted_richness_SAR3+1), type="l", col="purple", lwd=2)
+
+#Now plot all models together 
+plot(islands$area, islands$spec_num, xlab = "Island area (km?)", ylab="Species number", main="Species-area relationship")
+
+# plot the simple linear model
+regLine(SAR0, col="darkgreen")
+
+# plot the non-linear power law model
+points(newdata$area,predicted_richness_SAR1, type="l", col="darkred", lwd=2)
+
+# plot the log-log space model in untransformed space
+newdata_SAR2 <- data.frame(log_area=log10(seq(min(islands$area),max(islands$area),length.out = 100)+1))
+predicted_richness_SAR2 <- predict(SAR2, newdata = newdata_SAR2)
+points((10^newdata_SAR2$log_area)-1,(10^predicted_richness_SAR2)-1, type="l", col="purple", lwd=2)
+points(newdata$area,(10^predicted_richness_SAR2)-1, type="l", col="darkgreen", lwd=2, lty=2)
+
+# plot the Poisson model in untransformed space
+predicted_richness_SAR3 <- predict(SAR3, newdata = newdata_SAR3, type="response")
+points((10^newdata_SAR3$log_area)-1,predicted_richness_SAR3, type="l", col="darkblue", lwd=2)
+```
+&nbsp;
+
+**How do these models compare?**  
+  
+```{r}
+
+AIC(SAR0, SAR1, SAR2, SAR3)
+```
+&nbsp;
+
+_Note_: You cannot compare AIC values among models with different response variables. But if models have the same response variable and *different* distribution families,
+they can be compared used AIC (or equivalents).  
+
+&nbsp;
+
+
+### 3. Multi-predictor model of island biodiversity
+
+
+### Exercise II    
+
+1.  Apply a log10 transformation to area, elevation, precipitation, and temperature following:  
+_Kreft, H. et al. 2008. Global diversity of island floras from a macroecological perspective. Ecology Letters 11:116-127._  
+ 
+2. Simplify the geology column; change all values that are **floor** or **volcanic** to **oceanic**  
+
+3. Fit a multiple linear regression to predcrPlots(Multi.mod)ict biodiversity patterns on islands using the following biogeographic and environmental
+variables: island area, distance, temperature, precipitation, and island geology.  
+
+4. Use manual backward selection to specify the best model  
+
+**Hints**    
+1. Remove missing observations from your data  
+2. Use 'drop1(mod, test="F")'    
+3. Use 'drop1(update(Multi.mod,~ . -log_max_elev), test = "F")'    
+
+&nbsp;
+
+**Solutions to Exercise II**
+
+_Transform your data_
+```{r, echo=FALSE}
+islands$log_area<-log10(islands$area)
+islands$log_spec_num<-log10(islands$spec_num+1)
+
+islands$log_max_elev <- log10(islands$max_elev + 1)
+islands$log_mean_prec <- log10(islands$mean_prec)
+islands$log_mean_temp <- log10(islands$mean_temp+5)
+
+```
+
+&nbsp;
+
+_Simplify the geology column_
+```{r,echo=FALSE}
+islands$geology<-as.character(islands$geology)
+islands$geology[which(islands$geology == "floor" | islands$geology == "volcanic")] <- "oceanic"
+islands$geology[which(islands$geology %in% c("floor" , "volcanic"))] <- "oceanic"
+
+islands$geology[which(islands$geology == "floor")] <- "oceanic"
+islands$geology[which(islands$geology == "volcanic")] <- "oceanic"
+
+summary(as.factor(islands$geology))
+```
+&nbsp;
+
+_Fit multiple regression model_  
+
+```{r,echo=FALSE}
+
+new_islands<-islands[,c(6,8,15:19)]
+new_islands<-na.omit(new_islands) # remove observations with NAs
+
+Multi.mod <- lm(log_spec_num ~ log_area + dist + log_max_elev+ log_mean_temp + log_mean_prec + geology, data= new_islands)
+summary(Multi.mod)
+
+crPlots(Multi.mod)
+```
+&nbsp;
+
+_Can we improve predictions of species richness by removing individual model terms?_  
+
+```{r,echo=FALSE}
+
+Multi.mod1<-update(Multi.mod,~ . -log_max_elev) 
+AIC(Multi.mod,Multi.mod1)
+```
+&nbsp;
+
+
+### 4. The General dynamic model of island biogeography (GDM)  
+
+```{r, echo=TRUE}
+
+# Assign archipelago names for 4 major archipelagos
+islands$archipelago <- NA
+islands$archipelago[which(islands$entity_ID %in% c(169:188))] <- "Hawaii"
+islands$archipelago[which(islands$entity_ID %in% c(145:151))] <- "Canaries"
+islands$archipelago[which(islands$entity_ID %in% c(154:168))] <- "Galapagos"
+islands$archipelago[which(islands$entity_ID %in% c(131:139))] <- "Azores"
+islands_gdm <- islands[!is.na(islands$archipelago),]
+```
+&nbsp;
+
+**The General dynamic model of island biogeography (GDM) applied: just Hawaii (part I)**
+
+_Species = Area x Time x Time^2^_    
+
+
+```{r, echo=TRUE}
+Hawaii <- islands_gdm[which(islands_gdm$archipelago == "Hawaii"),] # subset data
+
+# The ATT^2 model
+gdm1 <- lm(spec_num ~ log_area + age_Ma + I(age_Ma^2), data=Hawaii)
+summary(gdm1)
+crPlots(gdm1)
+```
+&nbsp;
+
+**The General dynamic model of island biogeography (GDM) applied: just Hawaii (part II)**
+
+_Species = log(Area) x log(Time) x log(Time)^2^_    
+
+```{r, echo=TRUE}
+Hawaii$log_age_Ma <- log10(Hawaii$age_Ma)
+gdm2 <- lm(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2), data=Hawaii)
+summary(gdm2)
+AIC(gdm1,gdm2)
+
+crPlots(gdm1)
+```
+&nbsp;
