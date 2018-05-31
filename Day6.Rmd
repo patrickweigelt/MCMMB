@@ -45,7 +45,7 @@ library(maptools)
 library(classInt)
 data(worldMapEnv)
 library(psych)
-library(car
+library(car)
 ```
 &nbsp;
 
