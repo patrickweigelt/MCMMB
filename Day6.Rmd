@@ -252,7 +252,7 @@ _Kreft, H. et al. 2008. Global diversity of island floras from a macroecological
  
 2. Simplify the geology column; change all values that are **floor** or **volcanic** to **oceanic**  
 
-3. Fit a multiple linear regression to predcrPlots(Multi.mod)ict biodiversity patterns on islands using the following biogeographic and environmental
+3. Fit a multiple linear regression to predict biodiversity patterns on islands using the following biogeographic and environmental
 variables: island area, distance, temperature, precipitation, and island geology.  
 
 4. Use manual backward selection to specify the best model  
