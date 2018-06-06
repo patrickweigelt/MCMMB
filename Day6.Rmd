@@ -145,7 +145,7 @@ points(newdata$area,predicted_richness_SAR1, type="l", col="darkred", lwd=2)
 ### Exercise I  
 1. Make histograms of species richness and area  
 2. Apply a log10 transformation to species richness and area, make new columns of the transformed variables, and plot histograms of them  
-3. Fit a linear model to predict species richness using area. 
+3. Fit a linear model to predict species richness using area 
 4. Make a plot of the results  
 
 &nbsp;
@@ -300,6 +300,7 @@ new_islands<-islands[,c(6,8,15:19)]
 new_islands<-na.omit(new_islands) # remove observations with NAs
 
 Multi.mod <- lm(log_spec_num ~ log_area + dist + log_max_elev+ log_mean_temp + log_mean_prec + geology, data= new_islands)
+
 summary(Multi.mod)
 
 crPlots(Multi.mod)
