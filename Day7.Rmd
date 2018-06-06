@@ -369,12 +369,12 @@ _Plot maps with different colours for each diversity metric_
 ```{r echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
 par(mfrow=c(1,3),mar=c(1,1,1,1), oma=c(0,0,0,0))
 
-my.class.fr<-classIntervals(grid_2degrees@data$richness,n=10,style="equal") # bin data into n quantiles
+my.class.fr<-classIntervals(grid_2degrees@data$Faith_PD.observed,n=10,style="equal") # bin data into n quantiles
 my.pal<-matlab.like(10)
 my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.fr,border=NA, axes=FALSE)
-title(main="Richness",line=-3)
+title(main="Faith's PD",line=-3)
 
 my.class.mpd<-classIntervals(grid_2degrees@data$MPD.observed,n=10,style="equal") # bin data into n quantiles
 my.pal2<-matlab.like(10)
@@ -387,7 +387,7 @@ my.class.mntd<-classIntervals(grid_2degrees@data$MNTD.observed,n=10,style="equal
 my.pal3<-matlab.like(10)
 my.col.mntd<-findColours(my.class.mntd,my.pal3) # ramp colors based on classInts
 
-plot(grid_2degrees, col=my.col.fr, border=NA, axes=FALSE)
+plot(grid_2degrees, col=my.col.mntd, border=NA, axes=FALSE)
 title(main="MNTD", line = -3)
 ```
 &nbsp;
