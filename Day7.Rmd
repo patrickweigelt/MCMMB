@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 * plyr  
 * psych
 * picante  
-* PhyloMeasures  
+* pez  
 
 &nbsp;
 
