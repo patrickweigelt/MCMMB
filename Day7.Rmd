@@ -54,7 +54,7 @@ library(maptools)# Geospatial fun
 library(Taxonstand) # Taxonomic standardisation of plant species names
 library(ape) # Analyses of phylogenetics and evolution
 library(picante) # Phylogenies and ecology
-library(PhyloMeasures) # Phylogenies and ecology
+library(pez) # Phylogenies and ecology
 
 library(psych) # basic stats stuff
 library(classInt) # for plotting nice colors
