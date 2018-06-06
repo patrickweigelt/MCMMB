@@ -132,7 +132,7 @@ length(unique(species$grid_id)) # number of grid cells
 **Tasks**:    
 1. Add a column for the full species name with "_" as separator: "species".      
 2. How many palm species occur in the Americas?  
-3. How many and Which species in the palm distribution dataset are missing from the phylogeny?  
+3. How many and which species in the palm distribution dataset are missing from the phylogeny?  
 &nbsp;
 
 **Exercise I solutions:**  
