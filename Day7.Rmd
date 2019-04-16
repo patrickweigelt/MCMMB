@@ -1,5 +1,6 @@
 ---
-title: 'Day 7: Phylogenetic diversity'
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 7: Phylogenetic diversity"
 author: "Dylan Craven & Patrick Weigelt"
 date: "June 6th, 2018"
 output: 

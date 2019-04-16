@@ -9,14 +9,28 @@ output:
 
 ## 1. Overview
 
-Here we provide links to the tutorials of the "Modern concepts and methods in Macroecology and Biogeography" class. Please download the html files from the links below the day before the class to have the latest version available or make sure you are connected to the internet during the class via [eduroam](https://www.gwdg.de/network-services/setting-up-eduroam). The tutorials are written as R markdown scripts which can be downloaded at our [github site](https://www.gwdg.de/network-services/setting-up-eduroam) if interested. They contain chunks of code that can be run in R, as well as t. Instructions on how to set up R and RStudio, to start a new project and install R packages will be given on the first day. For preparation please already install the latest versions of the following programs before the class starts.
+Here we provide links to the tutorials of the "Modern concepts and methods in Macroecology and Biogeography" class. Please download the html files from the links below the day before the class to have the latest version available or make sure you are connected to the internet during the class via [eduroam](https://www.gwdg.de/network-services/setting-up-eduroam). The tutorials are written as R markdown scripts which can be downloaded at our [github site](https://github.com/patrickweigelt/MCMMB) if interested. The tutorials contain chunks of code that can be run in R, as well as results and figures produced by R, annotations and excercises. Instructions on how to set up R and RStudio, to start a new project and install R packages will be given on the first day. If you wonder why using R, have a look [here](Day1_WhyR.html)! For preparation please already install the latest versions of the following programs before the class starts. 
 
 
-Get QGIS from <https://www.qgis.org/>
 
-Get R from <http://www.r-project.org/>
+QGIS from <https://www.qgis.org/>
 
-Get RStudio from <https://www.rstudio.com/>
+R from <http://www.r-project.org/>
+
+RStudio from <https://www.rstudio.com/>
 
 
 ## 2. Links to tutorials
+
+* Day 1: [Basics and spatial data in R](Day1.html)
+* Day 2: [data.frames and GIS shapefiles in R; subsetting, joining & aggregating](Day2.html)
+* Day 3: [Download point occurrences & fit species distribution models](Day3.html)
+* Day 4: [The latitudinal diversity gradient](Day4.html)
+* Day 5: [Environmental drivers of neotropical palm diversity](Day5.html)
+* Day 6: [Island Biogeography](Day6.html)
+* Day 7: [Phylogenetic diversity](Day7.html)
+
+
+
+
+

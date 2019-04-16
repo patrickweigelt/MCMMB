@@ -1,7 +1,8 @@
 ---
-title: 'Day 6: Island Biogeography'
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 6: Island Biogeography"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 30th, 2018"
+date: "May 30th, 2019"
 output: 
   html_document: 
     fig_height: 7
@@ -13,6 +14,13 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+&nbsp;
+_[back to overview](index.html)_
+&nbsp;
+&nbsp;
+
+
 **Preparation:** Please open your RStudio project and download the data ('islands.csv') for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/92ab64a62dc2b1d5e9f1562965ced950?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and copy it into your project folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * maptools  

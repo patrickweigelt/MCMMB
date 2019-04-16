@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 3: Download point occurrences & fit species distribution models"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 2nd, 2018"
+date: "May 2nd, 2019"
 output: 
   html_document: 
     fig_height: 7
@@ -13,6 +13,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+&nbsp;
+_[back to overview](index.html)_
+&nbsp;
+&nbsp;
+
 
 **Preparation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/92ab64a62dc2b1d5e9f1562965ced950?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 

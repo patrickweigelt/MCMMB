@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
-subtitle: "Day 5: Environmental drivers of palm diversity"
+subtitle: "Day 5: Environmental drivers of neotropical palm diversity"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 16th, 2018"
+date: "May 16th, 2019"
 output: 
   html_document: 
     theme: flatly
@@ -12,6 +12,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+&nbsp;
+_[back to overview](index.html)_
+&nbsp;
+&nbsp;
+
 
 **Preparation:** Today we will only use data already distributed during the last couple of weeks. If you don't have them all, please dowload from [Stud-IP](https://www.studip.uni-goettingen.de/) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 

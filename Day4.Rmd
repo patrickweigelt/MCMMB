@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 4: The latitudinal diversity gradient"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 9th, 2018"
+date: "May 9th, 2019"
 output: 
   html_document: 
     theme: flatly
@@ -12,6 +12,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+&nbsp;
+_[back to overview](index.html)_
+&nbsp;
+&nbsp;
+
 
 **Preparation:** Please open your RStudio project and download the data for today from [Stud-IP](https://www.studip.uni-goettingen.de/dispatch.php/file/details/b64b68db7a05f02fa854a63a01064f67?cid=95a0e5be352a34697791cddd2f4ddbf4) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
