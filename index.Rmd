@@ -1,0 +1,22 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+author: "Patrick Weigelt, Dylan Craven, Amanda Taylor & Holger Kreft"
+output: 
+  html_document: 
+    theme: flatly
+    toc: yes
+---
+
+## 1. Overview
+
+Here we provide links to the tutorials of the "Modern concepts and methods in Macroecology and Biogeography" class. Please download the html files from the links below the day before the class to have the latest version available or make sure you are connected to the internet during the class via [eduroam](https://www.gwdg.de/network-services/setting-up-eduroam). The tutorials are written as R markdown scripts which can be downloaded at our [github site](https://www.gwdg.de/network-services/setting-up-eduroam) if interested. They contain chunks of code that can be run in R, as well as t. Instructions on how to set up R and RStudio, to start a new project and install R packages will be given on the first day. For preparation please already install the latest versions of the following programs before the class starts.
+
+
+Get QGIS from <https://www.qgis.org/>
+
+Get R from <http://www.r-project.org/>
+
+Get RStudio from <https://www.rstudio.com/>
+
+
+## 2. Links to tutorials

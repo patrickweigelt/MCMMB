@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 1: Basics and spatial data in R"
 author: "Dylan Craven & Patrick Weigelt"
-date: "April 18, 2018"
+date: "April 16, 2019"
 output: 
   html_document: 
     theme: flatly
@@ -14,12 +14,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## 1. Preperation
+## 1. Preparation
 
 Set the format your comupter uses to display numbers to 
 English format for exchanging data with others:
 
-* decimal symbol: " . "  
+* Decimal symbol: " . "  
 * Digit grouping symbol: " , "  
 * List seperator: " , "  
 &nbsp;
