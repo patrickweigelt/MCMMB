@@ -1,26 +1,36 @@
 ---
 title: "Why R? and other questions"
 author: "Dylan Craven"
-date: "April 18, 2018"
+date: "April 17th, 2019"
 output: 
   ioslides_presentation: 
-    highlight: espresso
+    css: styles.css
     incremental: yes
-    logo: ~/Downloads/lablogo_2017.png
+    logo: lablogo_2017.png
+    widescreen: yes
 ---
-
+  
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ## Overview
 
+- R & You
 - Why R?
 - What is R?
 - Basics of R & RStudio 
-- Where to get help with R  
 - R Data science resources
-- R & You
+- Where to get help with R
+- Create a R project
+
+## R & YRodeoou
+
+- Tools you need to acquire and strengthen as a graduate student:    
+    * Think critically (identify & assess problems)    
+    * Solve problems    
+    * Communicate problems and possible solutions  
+    * R is one of many tools, but it's also becoming a marketable skill (outside of science too!)  
 
 ## Why R?
 
@@ -48,8 +58,7 @@ Download R :<http://www.r-cran.org>
 
 Download RStudio: <http://www.rstudio.com>
 
-Other options besides RStudio: Jupyter notebooks, Rodeo  
-
+Other options besides RStudio: Emacs, Jupyter notebooks, Rodeo  
 
 ## Basics of R & RStudio  
 
@@ -57,6 +66,16 @@ Other options besides RStudio: Jupyter notebooks, Rodeo
 - Easy to configure
 - Large online user community for help
 - Lots of online courses (e.g. Datacamp, Coursera...)
+
+## R Data science resources  
+
+- R for Data Science (by Hadley Wickham) <http://r4ds.had.co.nz/>
+
+- Coding Club <https://ourcodingclub.github.io/tutorials/> 
+
+- Basics and a lot more <http://ohi-science.org/news/Resources-for-R-and-Data-Science>
+
+- Guide for reproducible code <https://www.britishecologicalsociety.org/wp-content/uploads/2017/12/guide-to-reproducible-code.pdf> 
 
 ## Where to get help with R  
 
@@ -68,23 +87,25 @@ Other options besides RStudio: Jupyter notebooks, Rodeo
     * 'R how to remove every third line from a data.frame'  
 - Look for local or university user groups (via Slack,Twitter, etc.)  
 
+## Starting with R & RStudio: create a project (part I)
 
-    
-## R Data science resources  
+- Open RStudio  
+- File | New Project
+- Select *either* 'New Directory' or 'Existing Directory'   
+  this will be the working folder for our course (on your computer)
+- Locate the project on your computer in a place (e.g. '~Desktop/Courses/Macroecology)  
+- Name your project  
+- Within your project's folder, create three sub-folders: 
+    + data
+    + code
+    + figures
+  
+## Starting with R & RStudio: create a project (part II)
 
-- Overview of R packages <https://github.com/rstudio/RStartHere>
+- Open a new file: File | New File | R script
 
-- R for Data Science (by Hadley Wickham) <http://r4ds.had.co.nz/>
+- Type: # Day 1: getting started
 
-- The basics and a lot more <http://ohi-science.org/news/Resources-for-R-and-Data-Science>
+- Save file (in ~/code): "0_Code_Day1.R" 
 
-- Guide for reproducible code <https://www.britishecologicalsociety.org/wp-content/uploads/2017/12/guide-to-reproducible-code.pdf> 
-
-
-## R & You
-
-- Tools you need to acquire and strengthen as a graduate student:    
-    * Think critically (identify & assess problems)    
-    * Solve problems    
-    * Communicate problems and possible solutions  
-    * R is one of many tools, but it's also becoming increasingly marketable (outside of science too!)  
+- Start coding!
