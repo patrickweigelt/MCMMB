@@ -199,7 +199,11 @@ $(document).ready(function () {
 
 <div id="TOC">
 <ul>
-<li><a href="#preparation">1. Preparation</a></li>
+<li><a href="#preparation">1. Preparation</a><ul>
+<li><a href="#a-prepare-your-system-for-exchanging-data">a) Prepare your system for exchanging data</a></li>
+<li><a href="#b-install-software">b) Install software</a></li>
+<li><a href="#c-create-a-new-project-in-rstudio">c) Create a new project in RStudio</a></li>
+</ul></li>
 <li><a href="#getting-started">2. Getting started</a></li>
 <li><a href="#getting-help-in-r">3. Getting help in R</a></li>
 <li><a href="#data-structures-and-indexing">4. Data structures and indexing</a><ul>
@@ -216,7 +220,9 @@ $(document).ready(function () {
 <p>  <em><a href="index.html">back to overview</a></em>    </p>
 <div id="preparation" class="section level2">
 <h2>1. Preparation</h2>
-<p>Set the format your comupter uses to display numbers to English format for exchanging data with others:</p>
+<div id="a-prepare-your-system-for-exchanging-data" class="section level3">
+<h3>a) Prepare your system for exchanging data</h3>
+<p>Set the format your computer uses to display numbers to English format for exchanging data with others:</p>
 <ul>
 <li>Decimal symbol: &quot; . &quot;<br />
 </li>
@@ -225,13 +231,40 @@ $(document).ready(function () {
 <li>List seperator: &quot; , &quot;<br />
  </li>
 </ul>
-<p>Get QGIS from <a href="https://www.qgis.org/" class="uri">https://www.qgis.org/</a></p>
-<p>Get R from <a href="http://www.r-project.org/" class="uri">http://www.r-project.org/</a></p>
-<p>Get RStudio from <a href="https://www.rstudio.com/" class="uri">https://www.rstudio.com/</a></p>
+</div>
+<div id="b-install-software" class="section level3">
+<h3>b) Install software</h3>
 <ul>
-<li><p>Create a project for the class in RStudio and remember the project folder</p></li>
-<li><p>Create a new R script for Day 1 and save it</p></li>
+<li>Get QGIS from <a href="https://www.qgis.org/" class="uri">https://www.qgis.org/</a></li>
+<li>Get R from <a href="http://www.r-project.org/" class="uri">http://www.r-project.org/</a></li>
+<li>Get RStudio from <a href="https://www.rstudio.com/" class="uri">https://www.rstudio.com/</a></li>
 </ul>
+</div>
+<div id="c-create-a-new-project-in-rstudio" class="section level3">
+<h3>c) Create a new project in RStudio</h3>
+<p><em>Do this only once for the entire practical part of the class and once again for your project in the end but not for each session separately</em>  </p>
+<ul>
+<li>Open RStudio<br />
+</li>
+<li>File | New Project</li>
+<li>Select <em>either</em> ‘New Directory’ or ‘Existing Directory’<br />
+this will be the working folder for our course (on your computer)</li>
+<li>Locate the project on your computer in a place (e.g. ’~Desktop/Courses/Macroecology)<br />
+</li>
+<li>Name your project<br />
+</li>
+<li>Within your project’s folder, create three sub-folders:
+<ul>
+<li>data</li>
+<li>code</li>
+<li>figures</li>
+</ul></li>
+<li>Create a new empty R script: File | New File | R script</li>
+<li>Type: # Day 1: getting started</li>
+<li>Save file (in ~/code): “0_Code_Day1.R”  </li>
+<li>Start coding!</li>
+</ul>
+</div>
 </div>
 <div id="getting-started" class="section level2">
 <h2>2. Getting started</h2>
@@ -624,7 +657,7 @@ bio12 &lt;- raster(&quot;data/CHELSA_bio10_12.tif&quot;)</code></pre>
 ## resolution  : 0.008333333, 0.008333333  (x, y)
 ## extent      : -180.0001, 179.9999, -90.00014, 83.99986  (xmin, xmax, ymin, ymax)
 ## coord. ref. : +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 
-## data source : C:/Users/Patrick/AppData/Local/Temp/RtmpopZtFR/raster/r_tmp_2019-04-16_113554_9076_36790.grd 
+## data source : C:/Users/Patrick/AppData/Local/Temp/RtmpeA11eY/raster/r_tmp_2019-04-17_113008_11068_62054.grd 
 ## names       : layer 
 ## values      : 6.029263e-05, 0.8547967  (min, max)</code></pre>
 <p>30 arc seconds resolution = ~1km² at the equator  </p>

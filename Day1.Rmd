@@ -20,7 +20,8 @@ _[back to overview](index.html)_
 
 ## 1. Preparation
 
-Set the format your comupter uses to display numbers to 
+### a) Prepare your system for exchanging data
+Set the format your computer uses to display numbers to 
 English format for exchanging data with others:
 
 * Decimal symbol: " . "  
@@ -28,16 +29,33 @@ English format for exchanging data with others:
 * List seperator: " , "  
 &nbsp;
 
-Get QGIS from <https://www.qgis.org/>
+### b) Install software
 
-Get R from <http://www.r-project.org/>
+* Get QGIS from <https://www.qgis.org/>
+* Get R from <http://www.r-project.org/>
+* Get RStudio from <https://www.rstudio.com/>
 
-Get RStudio from <https://www.rstudio.com/>
+### c) Create a new project in RStudio
 
-* Create a project for the class in RStudio and remember the project folder
+_Do this only once for the entire practical part of the class and once again for your project in the end but not for each session separately_
+&nbsp;
 
-* Create a new R script for Day 1 and save it
-
+* Open RStudio  
+* File | New Project
+* Select *either* 'New Directory' or 'Existing Directory'   
+  this will be the working folder for our course (on your computer)
+* Locate the project on your computer in a place 
+  (e.g. '~Desktop/Courses/Macroecology)  
+* Name your project  
+* Within your project's folder, create three sub-folders: 
+    + data
+    + code
+    + figures
+* Create a new empty R script: File | New File | R script
+* Type: # Day 1: getting started
+* Save file (in ~/code): "0_Code_Day1.R" 
+&nbsp;
+* Start coding!
 
 
 ## 2. Getting started
