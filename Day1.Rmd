@@ -310,7 +310,7 @@ _Chelsa - Climate data <http://chelsa-climate.org/>_
 [Mean annual precipitation (CHELSA_bio10_12.tif)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_12.tif)  
 &nbsp;
 
-**Extract tand copy the rsaters into your R-project folder ../data/**  
+**Extract and copy the rasters into your R-project folder ../data/**  
 ```{r, echo=FALSE}
 getwd()
 ```
