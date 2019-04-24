@@ -269,7 +269,7 @@ model_elev_prec <- lm(species_num$spec_num ~ species_num$prec + species_num$elev
 
 AIC(model_full,model_temp_prec,model_temp_elev,model_elev_prec)
 
-crPlots(model_full, layout=c(1, 3), ask=FALSE, main="Partial residual plots", smoother=FALSE, grid=FALSE, ylab="Partial residuals (species richness)")
+crPlots(model_full, layout=c(1, 3), ask=FALSE, main="Partial residual plots", grid=FALSE, ylab="Partial residuals (species richness)")
 ```
 
 
