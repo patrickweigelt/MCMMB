@@ -82,7 +82,7 @@ plot(elev, main="Elevation a.s.l. (m)")
 
 ```{R, echo=TRUE}
 # Import climate data from Chelsa at 30 arc seconds resolution -->
-bio1 <- raster("data/CHELSA_bio10_1.tif") # temperature*10
+bio1 <- raster("data/CHELSA_bio10_01.tif") # temperature*10
 bio12 <- raster("data/CHELSA_bio10_12.tif") # precipitation
 plot(bio1, main="Annual mean temperature (10 x C°)")
 ```

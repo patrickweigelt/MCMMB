@@ -210,7 +210,7 @@ plot(elev)
 
 ```{R, echo=TRUE}
 # Import climate data from Chelsa at 30 arc seconds resolution -->
-bio1 <- raster("Data/CHELSA_bio10_1.tif") # temperature*10
+bio1 <- raster("Data/CHELSA_bio10_01.tif") # temperature*10
 bio12 <- raster("Data/CHELSA_bio10_12.tif") # precipitation
 plot(bio1)
 ```
