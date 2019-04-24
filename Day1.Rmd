@@ -302,7 +302,7 @@ knitr::kable(plots, caption="Table 1: Dataframe exercise")
 ## 6. Loading and visualising environmental raster layers  
 
 **Download the following raster layers**  
-_GMTED - Digital elevation data <https://lta.cr.usgs.gov/GMTED2010>_  
+_GMTED - Digital elevation data <https://topotools.cr.usgs.gov/gmted_viewer/viewer.htm>_  
 [Elevation above sea level (mn30_grd.zip)](http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Grid_ZipFiles/mn30_grd.zip)
 
 _Chelsa - Climate data <http://chelsa-climate.org/>_  
