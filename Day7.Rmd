@@ -20,7 +20,7 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download the data for today ('Data_Day7.zip') from [Stud-IP](https://www.studip.uni-goettingen.de/) and copy it into your .Rproj folder '/Data/' (or '/data/). You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+**Preparation:** Please open your RStudio project and download the new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) and copy it into your .Rproj folder '/Data/' (or '/data/). You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * ape  
 * Taxonstand  
