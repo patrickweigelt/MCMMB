@@ -13,10 +13,15 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+&nbsp;
+_[back to overview](index.html)_
+&nbsp;
+&nbsp;
 
 ## 1. Preparation
 
-Set the format your comupter uses to display numbers to 
+### a) Prepare your system for exchanging data
+Set the format your computer uses to display numbers to 
 English format for exchanging data with others:
 
 * Decimal symbol: " . "  
@@ -24,16 +29,33 @@ English format for exchanging data with others:
 * List seperator: " , "  
 &nbsp;
 
-Get QGIS from <https://www.qgis.org/>
+### b) Install software
 
-Get R from <http://www.r-project.org/>
+* Get QGIS from <https://www.qgis.org/>
+* Get R from <http://www.r-project.org/>
+* Get RStudio from <https://www.rstudio.com/>
 
-Get RStudio from <https://www.rstudio.com/>
+### c) Create a new project in RStudio
 
-* Create a project for the class in RStudio and remember the project folder
+_Do this only once for the entire practical part of the class and once again for your project in the end but not for each session separately_
+&nbsp;
 
-* Create a new R script for Day 1 and save it
-
+* Open RStudio  
+* File | New Project
+* Select *either* 'New Directory' or 'Existing Directory'   
+  this will be the working folder for our course (on your computer)
+* Locate the project on your computer in a place 
+  (e.g. '~Desktop/Courses/Macroecology)  
+* Name your project  
+* Within your project's folder, create three sub-folders: 
+    + data
+    + code
+    + figures
+* Create a new empty R script: File | New File | R script
+* Type: # Day 1: getting started
+* Save file (in ~/code): "0_Code_Day1.R" 
+&nbsp;
+* Start coding!
 
 
 ## 2. Getting started
@@ -280,15 +302,15 @@ knitr::kable(plots, caption="Table 1: Dataframe exercise")
 ## 6. Loading and visualising environmental raster layers  
 
 **Download the following raster layers**  
-_GMTED - Digital elevation data <https://lta.cr.usgs.gov/GMTED2010>_  
+_GMTED - Digital elevation data <https://topotools.cr.usgs.gov/gmted_viewer/viewer.htm>_  
 [Elevation above sea level (mn30_grd.zip)](http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Grid_ZipFiles/mn30_grd.zip)
 
 _Chelsa - Climate data <http://chelsa-climate.org/>_  
-[Annual mean temperature (CHELSA_bio10_01_land.7z)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_01_land.7z)  
-[Mean annual precipitation (CHELSA_bio10_12_land.7z)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_12_land.7z)  
+[Annual mean temperature (CHELSA_bio10_01.tif)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_01.tif)  
+[Mean annual precipitation (CHELSA_bio10_12.tif)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_12.tif)  
 &nbsp;
 
-**Extract tand copy the rsaters into your R-project folder ../data/**  
+**Extract and copy the rasters into your R-project folder ../data/**  
 ```{r, echo=FALSE}
 getwd()
 ```
@@ -316,7 +338,7 @@ plot(elev)
 
 **Import climate data from Chelsa and plot it**  
 ```{r}
-bio1 <- raster("data/CHELSA_bio10_1.tif")
+bio1 <- raster("data/CHELSA_bio10_01.tif")
 bio12 <- raster("data/CHELSA_bio10_12.tif")
 ```
 ```{r}
