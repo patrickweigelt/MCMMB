@@ -426,6 +426,8 @@ $(document).ready(function () {
 <li>BIEN<br />
 </li>
 <li>ROCR</li>
+<li>devtools</li>
+<li>performance</li>
 </ul>
 <p> </p>
 <div id="loading-palm-data-set-and-setting-up-for-later-analyses" class="section level3">
@@ -434,13 +436,17 @@ $(document).ready(function () {
 <pre class="r"><code>rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to also unmap loaded packages</code></pre>
 <p> </p>
 <p><strong>Load R packages &amp; palm data set</strong></p>
+<p>For downloading ‘performance’, first install ‘devtools’ and then run</p>
+<pre><code>install.packages(&quot;devtools&quot;)
+devtools::install_github(&quot;easystats/performance&quot;)</code></pre>
 <pre class="r"><code>library(plyr)
 library(rgdal)
 library(rgeos)
 library(maptools)
 library(raster)
 library(BIEN)
-library(ROCR)</code></pre>
+library(ROCR)
+library(performance)</code></pre>
 <p> </p>
 <pre class="r"><code>species &lt;- read.csv(&quot;Data/palms_species_per_gridcell.csv&quot;)</code></pre>
 <p>For today’s exercise, we will continue to use the Neotropical palm data set from <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x">Kreft, H., Sommer, J.H. &amp; Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. <em>Ecography</em>, 29, 21-30</a>.<br />
@@ -840,6 +846,21 @@ auc &lt;- auc@y.values[[1]]
 auc</code></pre>
 <pre><code>## [1] 0.7983345</code></pre>
 <p> </p>
+<p>We can also assess model performance using commonly used indices, such as R<sup>2</sup>, AIC, RMSE, LOGLOSS, and PCP.<br />
+LOGLOSS evaluates how good or bad predicted probabilities are (high is bad, low is good).<br />
+PCP is percentage of correct predictions for models with binary outcomes.</p>
+<pre class="r"><code>model_performance(logreg_geo_und)</code></pre>
+<pre><code>##       AIC      BIC   R2_Tjur      RMSE   LOGLOSS       PCP
+## 1 7086.82 7116.251 0.6713317 0.7816524 0.3054903 0.8356659</code></pre>
+<pre class="r"><code>model_performance(logreg_geo_pau)</code></pre>
+<pre><code>##        AIC      BIC    R2_Tjur     RMSE   LOGLOSS       PCP
+## 1 358.0934 372.4723 0.07696848 1.140817 0.6507313 0.5384906</code></pre>
+<pre class="r"><code>model_performance(logreg_phy_ten)</code></pre>
+<pre><code>##        AIC      BIC   R2_Tjur     RMSE   LOGLOSS       PCP
+## 1 15335.05 15365.64 0.3524244 0.994919 0.4949319 0.6762123</code></pre>
+<pre class="r"><code>model_performance(logreg_mau_fle)</code></pre>
+<pre><code>##        AIC      BIC   R2_Tjur     RMSE   LOGLOSS       PCP
+## 1 11289.99 11318.97 0.2733764 1.042996 0.5439199 0.6366883</code></pre>
 </div>
 <div id="predict-species-distributions-and-compare-to-actual-distributions" class="section level3">
 <h3>5. Predict species distributions and compare to actual distributions</h3>

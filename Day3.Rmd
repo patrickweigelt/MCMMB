@@ -29,6 +29,8 @@ _[back to overview](index.html)_
 * plyr  
 * BIEN  
 * ROCR
+* devtools
+* performance  
 
 &nbsp;
 
@@ -42,6 +44,11 @@ rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to 
 
 **Load R packages & palm data set**  
 
+For downloading 'performance', first install 'devtools' and then run 
+```
+install.packages("devtools")
+devtools::install_github("easystats/performance")
+```
 
 ```{r, include=FALSE}
 library(plyr)
@@ -51,6 +58,7 @@ library(maptools)
 library(raster)
 library(BIEN)
 library(ROCR)
+library(performance)
 ```
 
 ```{r, eval=FALSE}
@@ -61,6 +69,7 @@ library(maptools)
 library(raster)
 library(BIEN)
 library(ROCR)
+library(performance)
 ```
 &nbsp;
 
@@ -355,7 +364,6 @@ We will assess classification precision of the logistic models using ROC ( Recei
 For the ROC, the curve should be located in the upper left of the figure.  
 For the AUC, the value should be greater than 0.50 (i.e. a good model should be correct more than 50% of the time).  
 
-
 ```{r, echo=TRUE}
 
 p <- predict(logreg_mau_fle, newdata=mau_fle_abs@data, type="response")
@@ -369,6 +377,16 @@ auc
 ```
 &nbsp;
 
+We can also assess model performance using commonly used indices, such as R^2^, AIC, RMSE, LOGLOSS, and PCP.  
+LOGLOSS evaluates how good or bad predicted probabilities are (high is bad, low is good).  
+PCP is percentage of correct predictions for models with binary outcomes.   
+
+```{r, echo=TRUE}
+model_performance(logreg_geo_und)
+model_performance(logreg_geo_pau)
+model_performance(logreg_phy_ten)
+model_performance(logreg_mau_fle)
+```
 
 ### 5. Predict species distributions and compare to actual distributions
 
