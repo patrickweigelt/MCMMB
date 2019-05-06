@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 3: Download point occurrences & fit species distribution models"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 2nd, 2019"
+date: "May 8th, 2019"
 output: 
   html_document: 
     fig_height: 7
@@ -20,7 +20,7 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download all new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Please open your RStudio project and download all new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to find your current working directory, which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * rgdal  
 * rgeos  
@@ -80,11 +80,11 @@ species$species <- paste(species$GENUS,species$EPITHET, sep = " ") # make new co
 ```
 &nbsp;
 
-**Subset the data.frame (4 palm species)**
+**Create a subset of the palm data set (4 palm species)**
 
 ```{r, echo=TRUE}
 species <- species[which(species$species %in% c("Geonoma pauciflora","Geonoma weberbaueri","Phytelephas tenuicaulis","Mauritia flexuosa")),]
-unique(species$species)
+unique(species$species) # list species in data set
 
 species$species[which(species$species == "Geonoma weberbaueri")] <- "Geonoma undata" # Rename to accepted name in The Plant List  
 ```
@@ -92,6 +92,8 @@ species$species[which(species$species == "Geonoma weberbaueri")] <- "Geonoma und
 
 
 **Load GIS shapefile \& join it to species distribution data**  
+Other options to convert 'long' data frames to 'wide' ones include 'dcast' via the _reshape2_ package or 'pivot_wider' via the 
+_tidyr_ package.  
 
 ```{r, echo=TRUE}
 # read a polygon shapefile
@@ -100,7 +102,7 @@ grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
 grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system
 #plot(grid)
 
-# convert long table to species by grid-cell table
+# convert long table to a wide table
 species <- species[,c("grid_id","species")]
 
 species_grid <- as.data.frame.matrix(table(species))
@@ -110,30 +112,31 @@ names(grid@data)[1] <- "grid_id"
 
 grid@data <- join(grid@data, species_grid, by="grid_id", type="left")
 
-grid@data[is.na(grid@data)] <- 0
-grid@data[1:5,1:5]
+grid@data[is.na(grid@data)] <- 0 # convert NAs to zeroes 
+grid@data[1:5,1:5] # inspect data frame
 ```
 &nbsp;
 
 ### 2. Download point occurences  
 
-For today's practical, we will download data from [BIEN](http://bien.nceas.ucsb.edu/bien/tools/)   
-
+For today's practical, we will use occurrence data downloaded from [BIEN](http://bien.nceas.ucsb.edu/bien/tools/). This file 
+is also available via StudIP ('Data/Data/BIEN_data.RData).
 
 ```{r, echo=TRUE}
 
-spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE)
+load("Data/BIEN_data.RData") # Load species occurrence data 
 
-# load("Data/BIEN_data.RData") # Load species occurrence data if you don't have internet access  
+# spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # or download via the internet (this can take quite some time!)
 
 head(spec_occ)
+dim(spec_occ) # how many observations?
 
 ```
 &nbsp;
 
 **Exercise**
 
-1) Subset data set (spec_occ) to only include records with coordinates  
+1) Subset data set (spec_occ) to only include records with spatial coordinates  
 2) Count how many records there are for each species  
 
 &nbsp;
@@ -152,34 +155,39 @@ table(spec_occ$scrubbed_species_binomial)
 &nbsp;
 
 **Map plot occurrence records and species ranges**      
+Here we use colorblind friendly colors, which can be found via [Colorbrewer2](http://colorbrewer2.org).  
 
 ```{r,echo=TRUE}
 
 par(mfrow=c(2,2))
-
-plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"darkgreen","grey"), border=FALSE, main = "Geonoma pauciflora")
-#species 1
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")], pch=3)
+  
+  plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Geonoma pauciflora")
+  #species 1
+  points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")], pch=19,
+         col="lightgrey")
 
 #species 2
-plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"darkgreen","grey"), border=FALSE, main = "Geonoma undata")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")], pch=3)
+plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Geonoma undata")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],  pch=19,
+         col="lightgrey")
 
 #species 3
-plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"darkgreen","grey"), border=FALSE, main = "Phytelephas tenuicaulis")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")], pch=3)
+plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Phytelephas tenuicaulis")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],  pch=19,
+         col="lightgrey")
 
 #species 4
-plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"darkgreen","grey"), border=FALSE, main = "Mauritia flexuosa")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")], pch=3)
+plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Mauritia flexuosa")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],  pch=19,
+         col="lightgrey")
 ```
 &nbsp;
 
 ### 3.  Building species distribution models: step 1  
 
-**Create pseudo‐absences**
+**Create pseudo‐absences (or background data)**
 
-Pseudo-absences are necessary because occurrence data sets (like BIEN) only records presences and not true absences. Thefore, we must generate pseudo-absences, i.e. possible locations where a species could occur but doesn't.  
+Pseudo-absences are necessary because occurrence data sets (like BIEN) only record presences and not true absences. Thefore, we must generate pseudo-absences, i.e. possible locations where a species could occur but doesn't.  
 
 ```{R, echo=TRUE}
 # Make spatial points dataframe from grid
@@ -216,7 +224,7 @@ plot(bio1)
 ```
 &nbsp;
 
-**Make spatialPoints objects for occurrences of each species**
+**Make spatialPoint objects for occurrences of each species**
 
 
 ```{r, echo=TRUE}
@@ -227,7 +235,7 @@ americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 # Geonoma pauciflora
 geo_pau <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], present = 1))
 
-geo_pau@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
+geo_pau@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # assign projection
 
 # add pseudo-absences
 set.seed(100)
@@ -235,7 +243,7 @@ geo_pau_abs <- rbind(grid_centroids[round(runif(nrow(geo_pau), min = 1, max = nr
 
 par(mfrow=c(2,2))
 
-plot(geo_pau_abs, col=ifelse(geo_pau_abs@data$present==1,"darkgreen","grey"))
+plot(geo_pau_abs, col=ifelse(geo_pau_abs@data$present==1,"#ef8a62","#7fbf7b"))
 plot(americas,add=TRUE)
 
 # Geonoma undata
@@ -246,7 +254,7 @@ geo_und@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 # add pseudo-absences
 set.seed(100)
 geo_und_abs <- rbind(grid_centroids[round(runif(nrow(geo_und), min = 1, max = nrow(grid_centroids))),],geo_und)
-plot(geo_und_abs, col=ifelse(geo_und_abs@data$present==1,"darkgreen","grey"))
+plot(geo_und_abs, col=ifelse(geo_und_abs@data$present==1,"#ef8a62","#7fbf7b"))
 plot(americas,add=TRUE)
 
 # Phytelephas tenuicaulis
@@ -257,7 +265,7 @@ phy_ten@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 # add pseudo-absences
 set.seed(100)
 phy_ten_abs <- rbind(grid_centroids[round(runif(nrow(phy_ten), min = 1, max = nrow(grid_centroids))),],phy_ten)
-plot(phy_ten_abs, col=ifelse(phy_ten_abs@data$present==1,"darkgreen","grey"))
+plot(phy_ten_abs, col=ifelse(phy_ten_abs@data$present==1,"#ef8a62","#7fbf7b"))
 plot(americas,add=TRUE)
 
 
@@ -269,7 +277,7 @@ mau_fle@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 # add pseudo-absences
 set.seed(100)
 mau_fle_abs <- rbind(grid_centroids[round(runif(nrow(mau_fle), min = 1, max = nrow(grid_centroids))),],mau_fle)
-plot(mau_fle_abs, col=ifelse(mau_fle_abs@data$present==1,"darkgreen","grey"))
+plot(mau_fle_abs, col=ifelse(mau_fle_abs@data$present==1,"#ef8a62","#7fbf7b"))
 plot(americas,add=TRUE)
 
 ```
@@ -342,7 +350,7 @@ summary(logreg_mau_fle)
 
 **Check model performance**
 
-We will assess classification precision of the logistic models using ROC ( Receiver Operating Characteristic Curve) and AUC (Area Under Curve) for one species (  Mauritia flexuosa).  
+We will assess classification precision of the logistic models using ROC ( Receiver Operating Characteristic Curve) and AUC (Area Under Curve) for one species (_Mauritia flexuosa_).  
 
 For the ROC, the curve should be located in the upper left of the figure.  
 For the AUC, the value should be greater than 0.50 (i.e. a good model should be correct more than 50% of the time).  
@@ -417,7 +425,7 @@ mau_fle_predict_rst <- raster(new_extent, nrows=nrow(elev), ncols=ncol(elev), va
 
 par(mfrow=c(4,2), mar=c(3,1,1,1))
 
-plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"darkgreen","white"), border=FALSE, main = "Geonoma pauciflora")
+plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"#7fbf7b","white"), border=FALSE, main = "Geonoma pauciflora")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")], pch=3,cex=0.3)
 plot(americas,add=TRUE)
 
@@ -425,7 +433,7 @@ plot(americas,add=TRUE)
 plot(geo_pau_predict_rst, main="SDM predictions")
 plot(americas,add=TRUE)
 
-plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"darkgreen","white"),border=FALSE, main = "Geonoma undata")
+plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"#7fbf7b","white"),border=FALSE, main = "Geonoma undata")
 plot(americas,add=TRUE)
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")], pch=3,cex=0.3)
 
@@ -433,14 +441,14 @@ plot(geo_und_predict_rst,main="SDM predictions")
 plot(americas,add=TRUE)
 
 
-plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"darkgreen","white"), border=FALSE, main = "Phytelephas tenuicaulis")
+plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"#7fbf7b","white"), border=FALSE, main = "Phytelephas tenuicaulis")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")], pch=3,cex=0.3)
 plot(americas,add=TRUE)
 
 plot(phy_ten_predict_rst,main="SDM predictions")
 plot(americas,add=TRUE)
 
-plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"darkgreen","white"), border=FALSE, main = "Mauritia flexuosa")
+plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"#7fbf7b","white"), border=FALSE, main = "Mauritia flexuosa")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")], pch=3,cex=0.3)
 plot(americas,add=TRUE)
 
@@ -449,4 +457,4 @@ plot(americas,add=TRUE)
 ```
 &nbsp;
 
-We have also provided similar code but using a different set of packages in R, which is available on our course's Github site.  
+For further information about geo-spatial analysis, consult tutorials available via [the Coding Club](https://ourcodingclub.github.io/2019/03/26/spatial.html) or [Geocomputation with R](https://geocompr.robinlovelace.net/read-write.html)
