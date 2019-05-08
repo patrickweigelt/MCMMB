@@ -152,11 +152,12 @@ dim(spec_occ) # how many observations?
 
 
 **Exercise solution**
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 # Part 1 
 
 spec_occ <- spec_occ[which(!(is.na(spec_occ$latitude)|is.na(spec_occ$longitude))),]
 spec_occ <- spec_occ[which(!is.na(spec_occ$latitude) & !is.na(spec_occ$longitude)),]
+head(spec_occ)
 
 # Part 2
 table(spec_occ$scrubbed_species_binomial)

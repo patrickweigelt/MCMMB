@@ -561,13 +561,41 @@ head(spec_occ)</code></pre>
 </ol>
 <p> </p>
 <p><strong>Exercise solution</strong></p>
-<pre class="r"><code># Part 1 
-
-spec_occ &lt;- spec_occ[which(!(is.na(spec_occ$latitude)|is.na(spec_occ$longitude))),]
-spec_occ &lt;- spec_occ[which(!is.na(spec_occ$latitude) &amp; !is.na(spec_occ$longitude)),]
-
-# Part 2
-table(spec_occ$scrubbed_species_binomial)</code></pre>
+<pre><code>##   scrubbed_species_binomial   latitude longitude date_collected
+## 1        Geonoma pauciflora -18.086670 -39.55056     1968-07-16
+## 2        Geonoma pauciflora -20.097222 -40.38778     2006-09-12
+## 3        Geonoma pauciflora -13.673056 -39.79333     2012-10-12
+## 4        Geonoma pauciflora -20.097500 -40.43694     2007-05-31
+## 5        Geonoma pauciflora -14.781944 -39.06917           &lt;NA&gt;
+## 6        Geonoma pauciflora  -9.248056 -35.79139     2002-11-02
+##    datasource                                                   dataset
+## 1          NY                                                        NY
+## 2        GBIF                                                      MBML
+## 3        GBIF                                                      UFRB
+## 4 SpeciesLink                                                      MBML
+## 5        GBIF Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6        GBIF                                                       IMA
+##                                                   dataowner
+## 1                                                        NY
+## 2                                                      MBML
+## 3                                                      UFRB
+## 4                                                      MBML
+## 5 Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6                                                       IMA
+##                                 custodial_institution_codes
+## 1                                                        NY
+## 2                                                      MBML
+## 3                                                      UFRB
+## 4                                                      MBML
+## 5 Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6                                                       IMA
+##   collection_code datasource_id
+## 1       Herbarium           104
+## 2   MBML-HERBARIO          3510
+## 3            HURB          3083
+## 4   MBML-Herbario           125
+## 5           CEPEC          2724
+## 6             MAC          2458</code></pre>
 <pre><code>## 
 ##      Geonoma pauciflora          Geonoma undata       Mauritia flexuosa 
 ##                     135                    5796                    5188 
