@@ -134,7 +134,7 @@ is also available via StudIP ('Data/Data/BIEN_data.RData).
 ```{r, echo=TRUE}
 
 #load("Data/BIEN_data.RData") # Load species occurrence data 
-spec_occ <- read.csv("spec_occ",file="Data/BIEN_data.csv")
+spec_occ <- read.csv("Data/BIEN_data.csv")
 
 # spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # or download via the internet (this can take quite some time!)
 
