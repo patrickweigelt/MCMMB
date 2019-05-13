@@ -19,7 +19,8 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+
 
 * rgdal  
 * rgeos  
@@ -27,7 +28,13 @@ _[back to overview](index.html)_
 * plyr  
 * classInt
 * colorRamps
+* performance
 
+For downloading 'performance', first install 'devtools' and then run 
+```
+install.packages("devtools")
+devtools::install_github("easystats/performance")
+```
 &nbsp;
 
 ### 1. Loading palm data set and shapefiles
@@ -48,6 +55,7 @@ library(rgeos)
 library(maptools)
 library(classInt)
 library(colorRamps)
+library(performance)
 ```
 
 ```{r, eval=FALSE}
@@ -57,6 +65,7 @@ library(rgeos)
 library(maptools)
 library(classInt)
 library(colorRamps)
+library(performance)
 ```
 &nbsp;
 
@@ -346,5 +355,11 @@ points(abs(belts), predict(model3), type="l", col="blue", lwd=2)
 AIC(model2,model3)
 ```
 
+&nbsp;
+
+Let's also assess model performance using the performance package to calculate commonly used indices, such as R^2^, AIC, RMSE, etc.  
 
 
+```{r, echo=TRUE}
+compare_performance(model3,model2)
+```
