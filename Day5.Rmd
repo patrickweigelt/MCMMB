@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 5: Environmental drivers of neotropical palm diversity"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 22th, 2019"
+date: "May 22nd, 2019"
 output: 
   html_document: 
     theme: flatly
