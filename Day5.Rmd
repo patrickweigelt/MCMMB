@@ -320,7 +320,7 @@ legend("bottomleft", # position
 
 
 
-my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
+my.class.fr<-classIntervals(grid@data$resi, n=10, style="equal", dataPrecision=0) # bin data into n quantiles
 my.pal<-green2red(10)
 my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
