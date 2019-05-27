@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 6: Island Biogeography"
 author: "Dylan Craven & Patrick Weigelt"
-date: "May 30th, 2019"
+date: "May 27th, 2019"
 output: 
   html_document: 
     fig_height: 7
