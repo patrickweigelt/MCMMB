@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 7: Phylogenetic diversity"
 author: "Dylan Craven & Patrick Weigelt"
-date: "June 6th, 2019"
+date: "June 5th, 2019"
 output: 
   html_document: 
     fig_height: 7
