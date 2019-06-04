@@ -242,10 +242,8 @@ points((10^newdata_SAR3$log_area)-1,predicted_richness_SAR3, type="l", col="dark
 
 AIC(SAR0, SAR1, SAR2, SAR3)
 ```
-&nbsp;
 
-_Note_: You cannot compare AIC values among models with different response variables. But if models have the same response variable and *different* distribution families,
-they can be compared used AIC (or equivalents).  
+**_Warning_**: You cannot compare AIC values among models with different response variables or different distribution families. This means we can here only compare the AIC values of the first two models!
 
 &nbsp;
 

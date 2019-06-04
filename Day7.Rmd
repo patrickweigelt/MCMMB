@@ -20,7 +20,7 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download the new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) and copy it into your .Rproj folder '/Data/' (or '/data/). You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * ape  
 * Taxonstand  
@@ -51,7 +51,7 @@ library(classInt)
 library(colorRamps)
 ```
 
-```{r, eval=FALSE}
+```{r eval=FALSE}
 library(plyr) # basic data manipulation
 
 library(rgdal) #  Geospatial fun
@@ -80,7 +80,7 @@ Data from Faurby, S., Eiserhardt, W.L., Baker, W.J. & Svenning, J.-C. (2016).
     An all-evidence species-level supertree for the palms (Arecaceae).  
     _Molecular Phylogenetics and Evolution_, 100, 57-69.  
 
-```{r, echo=TRUE}
+```{r echo=TRUE}
 palmtrees <- read.nexus("Data/Phylogeny_ConservativeCon_Checklist.nex")
 
 palmtrees
@@ -126,7 +126,7 @@ Data from  Kreft, H., Sommer, J.H. & Barthlott, W. (2006).
     patterns in Neotropical palms. _Ecography_, 29, 21-30.  
 
 
-```{r, echo=TRUE}
+```{r echo=TRUE}
 species <- read.csv("Data/palms_species_per_gridcell.csv",sep=",", stringsAsFactors = FALSE)
 head(species)
 length(unique(species$grid_id)) # number of grid cells
@@ -144,7 +144,7 @@ length(unique(species$grid_id)) # number of grid cells
 
 **Exercise I solutions:**  
 _Add a column for the full species name with a hyphen as separator: "species"_  
-```{r,echo=FALSE}
+```{r echo=FALSE}
 species$species <- paste(species$GENUS,species$EPITHET, sep="_")
 species$species <- paste(species$GENUS,"_",species$EPITHET, sep="")
 unique(species$species)[1:5]
@@ -153,14 +153,14 @@ unique(species$species)[1:5]
 
 _How many palm species occur in the Americas?_
 
-```{r, echo=FALSE}
+```{r echo=FALSE}
 length(unique(species$species))
 ```
 &nbsp;
 
 _How many and which species in the palm distribution dataset are missing from the phylogeny?_
 
-```{r,echo=FALSE}
+```{r echo=FALSE}
 length(unique(species$species[which(!species$species %in% palmtree$tip.label)]))
 
 # first five palm species
@@ -173,7 +173,7 @@ unique(species$species[which(!species$species %in% palmtree$tip.label)])[1:5]
 ## 2. Taxonomic standardization  
 
 **Write species missing from phylogeny into a vector**
-```{r, echo=TRUE}
+```{r echo=TRUE}
 
 specmissing <- unique(species$species[which(!species$species %in% palmtree$tip.label)])
 
@@ -191,7 +191,7 @@ head(taxstand)[,11:16]
 &nbsp;
 
 **Replace old names by new names \& overwrite the combined species name**
-```{r, echo=TRUE}
+```{r echo=TRUE}
 for (i in 1:nrow(taxstand)){
   species$GENUS[which(species$GENUS == taxstand$Genus[i] & species$EPITHET == taxstand$Species[i])] <- taxstand$New.Genus[i]
   species$EPITHET[which(species$GENUS == taxstand$Genus[i] & species$EPITHET == taxstand$Species[i])] <- taxstand$New.Species[i]
@@ -202,7 +202,7 @@ species$species <- paste(species$GENUS,species$EPITHET, sep="_") # overwrite the
 &nbsp;
 
 **Check names that are not in the phylogeny**  
-```{r, echo=TRUE}
+```{r echo=TRUE}
 specmissing <- unique(species$species[which(!species$species %in% palmtree$tip.label)])
 specmissing
 length(specmissing)
@@ -219,6 +219,7 @@ _If missing species cannot be added reliably, one can remove them from the datas
 
 **Read in polygon shapefile**  
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+americas <- readOGR("data/americas.shp")
 grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
 names(grid@data)[1] <- "grid_id"
 ```
@@ -226,25 +227,26 @@ names(grid@data)[1] <- "grid_id"
 
 **Convert the grid shapefile to a coarser resolution to have fewer grid cells**  
 
-```{r,echo=TRUE}
+```{r echo=TRUE}
 grid_centroids <- gCentroid(grid, byid=TRUE) # make spatial points dataframe from grid
 grid_centroids <- SpatialPointsDataFrame(grid_centroids, data = data.frame(grid_centroids@coords))
 names(grid_centroids@data) <- c("longitude","latitude")
 par(mfrow=c(1,1))
 plot(grid_centroids)
+plot(americas, add=TRUE)
 ```
 &nbsp; 
 
-**Add coordinates to spatialPolygonsDataframe**  
+**Add coordinates to SpatialPolygonsDataframe**  
 
-```{r, echo=TRUE}
+```{r echo=TRUE}
 grid@data <- cbind(grid@data,grid_centroids@data)
 head(grid@data)
 ```
 &nbsp; 
 
 **Make new IDs for neighbouring cells**  
-```{r,echo=TRUE}
+```{r echo=TRUE}
 range(grid@data$longitude)
 range(grid@data$latitude)
 
@@ -258,17 +260,22 @@ grid@data$new_ID <- NA
 for(i in 1:nrow(grid@data)){
   grid@data$new_ID[i] <-   new_ID_matrix[which(longitude < grid@data$longitude[i] & (longitude + 2) > grid@data$longitude[i]), which(latitude < grid@data$latitude[i] & (latitude + 2) > grid@data$latitude[i])]
 }
+
+head(grid@data)
 ```
 &nbsp; 
 
 **Join neighbouring cells based on new IDs \& aggregate species distribution data using the new grid**  
-```{r,echo=TRUE}
+```{r echo=TRUE}
 grid_2degrees <- unionSpatialPolygons(grid, grid@data$new_ID)
 uniqueIDs <- unique(grid@data$new_ID)
 grid_2degrees <- SpatialPolygonsDataFrame(grid_2degrees, data=data.frame(new_ID=uniqueIDs, row.names = uniqueIDs))
 head(grid_2degrees@data)
+plot(grid_2degrees)
+plot(americas, add=TRUE)
 
 species <- join(species, grid@data, by="grid_id", type="inner")
+head(species)
 ```
 &nbsp;
 
@@ -278,48 +285,68 @@ species <- join(species, grid@data, by="grid_id", type="inner")
 **Prune phylogeny to exclude species not in palm distribution data**  
 _Make sure that the same number of species in your data set are in your phylogeny_
 
-```{r, echo=TRUE}
+```{r echo=TRUE}
 palmtree_pruned <- drop.tip(palmtree,palmtree$tip.label[which(!palmtree$tip.label %in% unique(species$species))])
 length(palmtree_pruned$tip.label) # 
 length(unique(species$species))
 
-write.nexus(palmtree_pruned, file = "Data/palmtree_pruned.nex")
+write.nexus(palmtree_pruned, file="Data/palmtree_pruned.nex")
 ```
 &nbsp;
 
 **Convert long table to species by grid-cell table (a community matrix)**
-```{r, echo=TRUE}
+```{r echo=TRUE}
 species <- unique(species[,c("new_ID","species")])
 species_grid <- as.data.frame.matrix(table(species))
 species_grid<-as.matrix(species_grid)
+
+write.csv(species_grid, file = "Data/palms_specsxsites_phylo.csv")
 ```
 &nbsp;
 
-**Calculate generic phylogenetic metrics (absolute and standardized)**  
-
-Phylogenetic diversity metrics are standardized by first using a null model to generate expected values.  
-Then, the observed value is compared to the null, usually using standardized effect sizes:  
-$SES = (observed - mean.null)/sd.null$,  
-
-where mean.null is the mean of the null values and sd.null is the standard deviation of the null values.  
+**Calculate phylogenetic diversity**  
 
 ```{r message=FALSE, warning=FALSE, r,echo=TRUE}
 palmtree_pruned<-read.nexus("Data/palmtree_pruned.nex") # if you have a hard time reading in the large palm phylogeny
+species_grid <- as.matrix(read.csv("Data/palms_specsxsites_phylo.csv", row.names = 1)) # in case you got stuck above
 
+pd_palms <- pd(species_grid, palmtree_pruned)
+head(pd_palms)
+```
+&nbsp;
+
+`pd()` calculates Faith's PD and a corrected version of it being the residuals of a regression with total abundance or species richness per plot. Lets look into this:
+
+```{r message=FALSE, warning=FALSE, echo=TRUE, fig.height=5, fig.width=8}
+pd_model <- lm(PD ~ SR, data = pd_palms)
+pd_palms$residuals <- residuals(pd_model)
+par(mfrow=c(1,2))
+plot(pd_palms$SR, pd_palms$PD, main="Species richness vs Faith's PD", xlab="Species number",  ylab="Faith's PD", cex.main=0.8,cex.axis=0.8)
+abline(pd_model)
+plot(pd_palms$SR, pd_palms$residuals, main="Species richness vs Faith's PD residuals", xlab="Species number",  ylab="Faith's PD residuals", cex.main=0.8,cex.axis=0.8)
+```
+
+
+**Calculate generic phylogenetic metrics (absolute and standardized)**  
+
+Pphylogenetic diversity metrics are standardized by first using a null model to generate expected values.  
+Then, the observed value is compared to the null, usually using standardized effect sizes:  
+$SES = (observed - mean.null)/sd.null$, where mean.null is the mean of the null values and sd.null is the standard deviation of the null values.  
+
+
+```{r message=FALSE, warning=FALSE, echo=TRUE, fig.height=5, fig.width=8}
 c.data <- comparative.comm(palmtree_pruned , species_grid)
-
 pd.null<-generic.null(c.data, c(.pd,.mpd,.mntd),null.model = "richness",comp.fun=.ses,permute=100) 
 colnames(pd.null) <- c("Faith_PD","Corrected_FaithPD","MPD", "MNTD")
 rownames(pd.null) <- sites(c.data)
 pd.null<-data.frame(pd.null)
-pd.null$new_ID<-rownames(pd.null)
+pd.null$new_ID<-as.numeric(rownames(pd.null))
 
-pd.out    <- pd.null[,c(21, 1,13,2,14,3,15,4,16)]  # select columns for final data set
+pd.out    <- pd.null[,c(21, 1,13,3,15,4,16)]  # select columns for final data set
 pd.out [is.na(pd.out )] <- 0  # change NAs to zeroes; no phylogenetic diversity if grid has only 1 spp!
 
-
-par(mfrow=c(2,1))
-plot(pd.out$Faith_PD.observed, pd.out$Corrected_FaithPD.observed, main=" Faith's PD vs Faith's corrected PD", xlab="observed Faith's PD",ylab="corrected Faith's PD", cex.main=0.8,cex.axis=0.8)
+par(mfrow=c(1,2))
+plot(pd_palms$SR, pd_palms$residuals, main="Species richness vs Faith's PD residuals", xlab="Species number",  ylab="Faith's PD residuals", cex.main=0.8,cex.axis=0.8)
 plot(pd.out$Faith_PD.observed, pd.out$Faith_PD.SES,main="Faith's PD vs standardised Faith's PD",cex.main=0.8,xlab="observed Faith's PD",ylab="standardised Faith's PD",cex.axis=0.8)
 ```
 &nbsp;
@@ -328,41 +355,31 @@ plot(pd.out$Faith_PD.observed, pd.out$Faith_PD.SES,main="Faith's PD vs standardi
 ### a. Exercise II  
 
 **Tasks**:  
-1. Calculate species richness per 'new' gridcell.    
-2. Create a data.frame called 'palmdiversity' with species richness and phyogenetic diversity metrics.    
-3. Plot correlations among the diversity metrics.   
-4. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting.  
-5. Plot maps with colours according to the diversity metrics.  
+1. Create a data.frame called 'palmdiversity' with species richness, PD and residual PD from 'pd_palms' and standardized pd metrics from 'pd.out'.    
+2. Plot correlations among the diversity metrics.   
+3. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting. 
+4. Plot maps with colours according to the diversity metrics.  
 
 **Exercise II solutions:**
 
-_Calculate species richness per "new" gridcell_
-```{r, echo=FALSE}
-richness <- rowSums(species_grid)
-richness[1:10]
-```
-&nbsp;
+_Create a data.frame called 'palmdiversity' by joining 'pd_palms' with 'pd.out'_
 
-_Create a data.frame called 'palmdiversity' by joining richness with 'pd.out'_
-
-```{r, echo=FALSE}
-palmdiversity<- data.frame(new_ID = as.numeric(rownames(species_grid)), richness) 
-pd.out$new_ID<-as.numeric(pd.out$new_ID)
-
+```{r echo=FALSE}
+palmdiversity<- data.frame(new_ID = as.numeric(rownames(species_grid)), pd_palms) 
 palmdiversity<-join(palmdiversity,pd.out, by="new_ID")
 head(palmdiversity)
 ```
 &nbsp;
 
 _Plot correlations among the diversity metrics_  
-```{r echo=FALSE, fig.height=6, fig.width=6}
-pairs.panels(palmdiversity[,c(2:10)], method="pearson",density=F,ellipses=F, hist.col = "white")
+```{r echo=FALSE, fig.height=10, fig.width=10}
+pairs.panels(palmdiversity[,c(3:10)], method="pearson",density=F,ellipses=F, hist.col = "white")
 ```
 &nbsp;
 
 _Join the palmdiversity data.frame to the shapefile with the new gridcell IDs_  
 
-```{r,echo=FALSE}
+```{r echo=FALSE}
 
 grid_2degrees@data <- join(grid_2degrees@data, palmdiversity, by = "new_ID", type="left")
 head(grid_2degrees@data)
@@ -372,9 +389,17 @@ head(grid_2degrees@data)
 
 _Plot maps with different colours for each diversity metric_  
 
-*Species richness, MPD, \& MNTD (absolute)*  
-```{r echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
-par(mfrow=c(1,3),mar=c(1,1,1,1), oma=c(0,0,0,0))
+*Species richness, PD, MPD \& MNTD (absolute)*  
+```{r echo=FALSE, fig.height=10, fig.width=6.6, message=FALSE, warning=FALSE}
+par(mfrow=c(2,2),mar=c(1,1,1,1), oma=c(0,0,0,0))
+
+my.class.fr<-classIntervals(grid_2degrees@data$SR,n=10,style="equal") # bin data into n quantiles
+my.pal<-matlab.like(10)
+my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
+
+plot(grid_2degrees, col=my.col.fr,border=NA, axes=FALSE)
+title(main="Species_richness",line=-3)
+plot(americas, add=TRUE)
 
 my.class.fr<-classIntervals(grid_2degrees@data$Faith_PD.observed,n=10,style="equal") # bin data into n quantiles
 my.pal<-matlab.like(10)
@@ -382,6 +407,7 @@ my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.fr,border=NA, axes=FALSE)
 title(main="Faith's PD",line=-3)
+plot(americas, add=TRUE)
 
 my.class.mpd<-classIntervals(grid_2degrees@data$MPD.observed,n=10,style="equal") # bin data into n quantiles
 my.pal2<-matlab.like(10)
@@ -389,6 +415,7 @@ my.col.mpd<-findColours(my.class.mpd,my.pal2) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.mpd, border=NA, axes=FALSE)
 title(main="MPD", line = -3)
+plot(americas, add=TRUE)
 
 my.class.mntd<-classIntervals(grid_2degrees@data$MNTD.observed,n=10,style="equal") # bin data into n quantiles
 my.pal3<-matlab.like(10)
@@ -396,12 +423,13 @@ my.col.mntd<-findColours(my.class.mntd,my.pal3) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.mntd, border=NA, axes=FALSE)
 title(main="MNTD", line = -3)
+plot(americas, add=TRUE)
 ```
 &nbsp;
 
 
-*Species richness, MPD, \& MNTD (standardized)*  
-```{r echo=FALSE, fig.height=7, fig.width=10}
+*PD, MPD \& MNTD (standardized)*  
+```{r echo=FALSE, fig.height=5, fig.width=10}
 par(mfrow=c(1,3),mar=c(1,1,1,1), oma=c(0,0,0,0))
 
 my.class.fr2<-classIntervals(grid_2degrees@data$Faith_PD.SES,n=10,style="equal") 
@@ -410,6 +438,7 @@ my.col.fr2<-findColours(my.class.fr2,my.pal4) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.fr2, border=NA)
 title(main="standardised Faith's PD", line = -3)
+plot(americas, add=TRUE)
 
 my.class.fr3<-classIntervals(grid_2degrees@data$MPD.SES,n=10,style="equal") # bin data into n quantiles
 my.pal5<-matlab.like(10)
@@ -417,6 +446,7 @@ my.col.fr3<-findColours(my.class.fr3,my.pal5) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.fr3, border=NA)
 title(main="standardised MPD", line = -3)
+plot(americas, add=TRUE)
 
 my.class.fr4<-classIntervals(grid_2degrees@data$MNTD.SES,n=10,style="equal") # bin data into n quantiles
 my.pal6<-matlab.like(10)
@@ -424,5 +454,6 @@ my.col.fr4<-findColours(my.class.fr4,my.pal6) # ramp colors based on classInts
 
 plot(grid_2degrees, col=my.col.fr4, border=NA)
 title(main="standardised MNTD", line = -3)
+plot(americas, add=TRUE)
 ```
 &nbsp;
