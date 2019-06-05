@@ -143,7 +143,7 @@ length(unique(species$grid_id)) # number of grid cells
 &nbsp;
 
 **Exercise I solutions:**  
-_Add a column for the full species name with a hyphen as separator: "species"_  
+_Add a column for the full species name with an underscore as the separator: "species"_  
 ```{r echo=FALSE}
 species$species <- paste(species$GENUS,species$EPITHET, sep="_")
 species$species <- paste(species$GENUS,"_",species$EPITHET, sep="")
@@ -219,7 +219,7 @@ _If missing species cannot be added reliably, one can remove them from the datas
 
 **Read in polygon shapefile**  
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-americas <- readOGR("data/americas.shp")
+americas <- readOGR("Data/americas.shp")
 grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
 names(grid@data)[1] <- "grid_id"
 ```
@@ -329,7 +329,7 @@ plot(pd_palms$SR, pd_palms$residuals, main="Species richness vs Faith's PD resid
 
 **Calculate generic phylogenetic metrics (absolute and standardized)**  
 
-Pphylogenetic diversity metrics are standardized by first using a null model to generate expected values.  
+Phylogenetic diversity metrics are standardized by first using a null model to generate expected values.  
 Then, the observed value is compared to the null, usually using standardized effect sizes:  
 $SES = (observed - mean.null)/sd.null$, where mean.null is the mean of the null values and sd.null is the standard deviation of the null values.  
 
@@ -357,7 +357,7 @@ plot(pd.out$Faith_PD.observed, pd.out$Faith_PD.SES,main="Faith's PD vs standardi
 **Tasks**:  
 1. Create a data.frame called 'palmdiversity' with species richness, PD and residual PD from 'pd_palms' and standardized pd metrics from 'pd.out'.    
 2. Plot correlations among the diversity metrics.   
-3. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting. 
+3. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting.   
 4. Plot maps with colours according to the diversity metrics.  
 
 **Exercise II solutions:**
