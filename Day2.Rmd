@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
-author: "Dylan Craven & Patrick Weigelt"
-date: "April 25, 2019"
+author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
+date: "April 29, 2019"
 output: 
   html_document: 
     theme: flatly

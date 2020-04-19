@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 1: Basics and spatial data in R"
-author: "Dylan Craven & Patrick Weigelt"
-date: "April 16, 2019"
+author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
+date: "April 22, 2019"
 output: 
   html_document: 
     theme: flatly
@@ -306,8 +306,8 @@ _GMTED - Digital elevation data <https://topotools.cr.usgs.gov/gmted_viewer/view
 [Elevation above sea level (mn30_grd.zip)](http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Grid_ZipFiles/mn30_grd.zip)
 
 _Chelsa - Climate data <http://chelsa-climate.org/>_  
-[Annual mean temperature (CHELSA_bio10_01.tif)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_01.tif)  
-[Mean annual precipitation (CHELSA_bio10_12.tif)](http://www.wsl.ch/lud/chelsa/data/bioclim/integer/CHELSA_bio10_12.tif)  
+[Annual mean temperature (CHELSA_bio10_01.tif)](https://envidatrepo.wsl.ch/uploads/chelsa/chelsa_V1/bioclim/integer/CHELSA_bio10_01.tif)  
+[Mean annual precipitation (CHELSA_bio10_12.tif)](https://envidatrepo.wsl.ch/uploads/chelsa/chelsa_V1/bioclim/integer/CHELSA_bio10_12.tif)  
 &nbsp;
 
 **Extract and copy the rasters into your R-project folder ../data/**  
