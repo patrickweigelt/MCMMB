@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 3: Download point occurrences & fit species distribution models"
-author: "Dylan Craven & Patrick Weigelt"
-date: "May 8th, 2019"
+author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
+date: "May 6th, 2020"
 output: 
   html_document: 
     fig_height: 7
@@ -132,11 +132,10 @@ For today's practical, we will use occurrence data downloaded from [BIEN](http:/
 is also available via StudIP ('Data/Data/BIEN_data.RData).
 
 ```{r, echo=TRUE}
+#spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # Download via the internet (this can take quite some time!)
+#write.csv(spec_occ, "Data/BIEN_data.csv", row.names = FALSE)
 
-load("Data/BIEN_data.RData") # Load species occurrence data 
-spec_occ <- read.csv("Data/BIEN_data.csv")
-
-# spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # or download via the internet (this can take quite some time!)
+spec_occ <- read.csv("Data/BIEN_data.csv") # Or load species occurrence data from disk
 
 head(spec_occ)
 dim(spec_occ) # how many observations?
@@ -332,7 +331,6 @@ c) Binomial
 
 SDM 1: _Geonoma pauciflora_
 ```{r, echo=TRUE}
-
 logreg_geo_pau <- glm(present ~ elev + bio1 + bio12, data = geo_pau_abs@data, family = "binomial")
 summary(logreg_geo_pau)
 ```

@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Dylan Craven &amp; Patrick Weigelt" />
+<meta name="author" content="Patrick Weigelt, Pierre Denelle, Amanda Taylor &amp; Holger Kreft" />
 
 
 <title>Modern concepts and methods in Macroecology and Biogeography</title>
@@ -394,8 +394,8 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Modern concepts and methods in Macroecology and Biogeography</h1>
 <h3 class="subtitle">Day 4: The latitudinal diversity gradient</h3>
-<h4 class="author">Dylan Craven &amp; Patrick Weigelt</h4>
-<h4 class="date">May 15th, 2019</h4>
+<h4 class="author">Patrick Weigelt, Pierre Denelle, Amanda Taylor &amp; Holger Kreft</h4>
+<h4 class="date">May 13th, 2020</h4>
 
 </div>
 
@@ -816,9 +816,9 @@ points(abs(belts), predict(model3), type=&quot;l&quot;, col=&quot;blue&quot;, lw
 <p> </p>
 <p>Let’s also assess model performance using the performance package to calculate commonly used indices, such as R<sup>2</sup>, AIC, RMSE, etc.</p>
 <pre class="r"><code>compare_performance(model3,model2)</code></pre>
-<pre><code>##     name class      AIC      BIC        R2 R2_adjusted     RMSE
-## 1 model3    lm 725.8151 737.6664 0.9555197   0.9548843 2.976965
-## 2 model2    lm 819.8933 828.7818 0.9129117   0.9122941 4.165524</code></pre>
+<pre><code>##    Model Type      AIC      BIC        R2 R2_adjusted     RMSE BF
+## 2 model3   lm 725.8151 737.6664 0.9555197   0.9548843 2.976965 NA
+## 1 model2   lm 819.8933 828.7818 0.9129117   0.9122941 4.165524  1</code></pre>
 </div>
 
 

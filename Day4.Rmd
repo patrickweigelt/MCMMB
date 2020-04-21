@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 4: The latitudinal diversity gradient"
-author: "Dylan Craven & Patrick Weigelt"
-date: "May 15th, 2019"
+author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
+date: "May 13th, 2020"
 output: 
   html_document: 
     theme: flatly

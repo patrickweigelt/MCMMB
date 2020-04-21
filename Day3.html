@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Dylan Craven &amp; Patrick Weigelt" />
+<meta name="author" content="Patrick Weigelt, Pierre Denelle, Amanda Taylor &amp; Holger Kreft" />
 
 
 <title>Modern concepts and methods in Macroecology and Biogeography</title>
@@ -394,8 +394,8 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Modern concepts and methods in Macroecology and Biogeography</h1>
 <h3 class="subtitle">Day 3: Download point occurrences &amp; fit species distribution models</h3>
-<h4 class="author">Dylan Craven &amp; Patrick Weigelt</h4>
-<h4 class="date">May 8th, 2019</h4>
+<h4 class="author">Patrick Weigelt, Pierre Denelle, Amanda Taylor &amp; Holger Kreft</h4>
+<h4 class="date">May 6th, 2020</h4>
 
 </div>
 
@@ -510,10 +510,10 @@ grid@data[1:5,1:5] # inspect data frame</code></pre>
 <div id="download-point-occurences" class="section level3">
 <h3>2. Download point occurences</h3>
 <p>For today’s practical, we will use occurrence data downloaded from <a href="http://bien.nceas.ucsb.edu/bien/tools/">BIEN</a>. This file is also available via StudIP (’Data/Data/BIEN_data.RData).</p>
-<pre class="r"><code>load(&quot;Data/BIEN_data.RData&quot;) # Load species occurrence data </code></pre>
-<pre><code>## Warning in load(&quot;Data/BIEN_data.RData&quot;): strings not representable in
-## native encoding will be translated to UTF-8</code></pre>
-<pre class="r"><code># spec_occ &lt;- BIEN_occurrence_species(c(&quot;Geonoma pauciflora&quot;,&quot;Geonoma undata&quot;,&quot;Phytelephas tenuicaulis&quot;,&quot;Mauritia flexuosa&quot;), cultivated = FALSE, only.new.world = TRUE) # or download via the internet (this can take quite some time!)
+<pre class="r"><code>#spec_occ &lt;- BIEN_occurrence_species(c(&quot;Geonoma pauciflora&quot;,&quot;Geonoma undata&quot;,&quot;Phytelephas tenuicaulis&quot;,&quot;Mauritia flexuosa&quot;), cultivated = FALSE, only.new.world = TRUE) # Download via the internet (this can take quite some time!)
+#write.csv(spec_occ, &quot;Data/BIEN_data.csv&quot;, row.names = FALSE)
+
+spec_occ &lt;- read.csv(&quot;Data/BIEN_data.csv&quot;) # Or load species occurrence data from disk
 
 head(spec_occ)</code></pre>
 <pre><code>##   scrubbed_species_binomial   latitude longitude date_collected
@@ -523,27 +523,27 @@ head(spec_occ)</code></pre>
 ## 4        Geonoma pauciflora -20.097500 -40.43694     2007-05-31
 ## 5        Geonoma pauciflora -14.781944 -39.06917           &lt;NA&gt;
 ## 6        Geonoma pauciflora  -9.248056 -35.79139     2002-11-02
-##    datasource                                                   dataset
-## 1          NY                                                        NY
-## 2        GBIF                                                      MBML
-## 3        GBIF                                                      UFRB
-## 4 SpeciesLink                                                      MBML
-## 5        GBIF Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
-## 6        GBIF                                                       IMA
-##                                                   dataowner
-## 1                                                        NY
-## 2                                                      MBML
-## 3                                                      UFRB
-## 4                                                      MBML
-## 5 Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
-## 6                                                       IMA
-##                                 custodial_institution_codes
-## 1                                                        NY
-## 2                                                      MBML
-## 3                                                      UFRB
-## 4                                                      MBML
-## 5 Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
-## 6                                                       IMA
+##    datasource                                                    dataset
+## 1          NY                                                         NY
+## 2        GBIF                                                       MBML
+## 3        GBIF                                                       UFRB
+## 4 SpeciesLink                                                       MBML
+## 5        GBIF ComissÃ£o Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6        GBIF                                                        IMA
+##                                                    dataowner
+## 1                                                         NY
+## 2                                                       MBML
+## 3                                                       UFRB
+## 4                                                       MBML
+## 5 ComissÃ£o Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6                                                        IMA
+##                                  custodial_institution_codes
+## 1                                                         NY
+## 2                                                       MBML
+## 3                                                       UFRB
+## 4                                                       MBML
+## 5 ComissÃ£o Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6                                                        IMA
 ##   collection_code datasource_id
 ## 1       Herbarium           104
 ## 2   MBML-HERBARIO          3510
@@ -569,27 +569,27 @@ head(spec_occ)</code></pre>
 ## 4        Geonoma pauciflora -20.097500 -40.43694     2007-05-31
 ## 5        Geonoma pauciflora -14.781944 -39.06917           &lt;NA&gt;
 ## 6        Geonoma pauciflora  -9.248056 -35.79139     2002-11-02
-##    datasource                                                   dataset
-## 1          NY                                                        NY
-## 2        GBIF                                                      MBML
-## 3        GBIF                                                      UFRB
-## 4 SpeciesLink                                                      MBML
-## 5        GBIF Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
-## 6        GBIF                                                       IMA
-##                                                   dataowner
-## 1                                                        NY
-## 2                                                      MBML
-## 3                                                      UFRB
-## 4                                                      MBML
-## 5 Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
-## 6                                                       IMA
-##                                 custodial_institution_codes
-## 1                                                        NY
-## 2                                                      MBML
-## 3                                                      UFRB
-## 4                                                      MBML
-## 5 Comissão Executiva do Plano da Lavoura Cacaueira (CEPLAC)
-## 6                                                       IMA
+##    datasource                                                    dataset
+## 1          NY                                                         NY
+## 2        GBIF                                                       MBML
+## 3        GBIF                                                       UFRB
+## 4 SpeciesLink                                                       MBML
+## 5        GBIF ComissÃ£o Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6        GBIF                                                        IMA
+##                                                    dataowner
+## 1                                                         NY
+## 2                                                       MBML
+## 3                                                       UFRB
+## 4                                                       MBML
+## 5 ComissÃ£o Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6                                                        IMA
+##                                  custodial_institution_codes
+## 1                                                         NY
+## 2                                                       MBML
+## 3                                                       UFRB
+## 4                                                       MBML
+## 5 ComissÃ£o Executiva do Plano da Lavoura Cacaueira (CEPLAC)
+## 6                                                        IMA
 ##   collection_code datasource_id
 ## 1       Herbarium           104
 ## 2   MBML-HERBARIO          3510
@@ -879,17 +879,25 @@ auc</code></pre>
 LOGLOSS evaluates how good or bad predicted probabilities are (high is bad, low is good).<br />
 PCP is percentage of correct predictions for models with binary outcomes.</p>
 <pre class="r"><code>model_performance(logreg_geo_und)</code></pre>
-<pre><code>##       AIC      BIC   R2_Tjur      RMSE   LOGLOSS       PCP
-## 1 7086.82 7116.251 0.6713317 0.7816524 0.3054903 0.8356659</code></pre>
+<pre><code>##       AIC      BIC   R2_Tjur      RMSE   LOGLOSS SCORE_LOG SCORE_SPHERICAL
+## 1 7086.82 7116.251 0.6713317 0.7816524 0.3054903      -Inf     0.000123639
+##         PCP
+## 1 0.8356659</code></pre>
 <pre class="r"><code>model_performance(logreg_geo_pau)</code></pre>
-<pre><code>##        AIC      BIC    R2_Tjur     RMSE   LOGLOSS       PCP
-## 1 358.0934 372.4723 0.07696848 1.140817 0.6507313 0.5384906</code></pre>
+<pre><code>##        AIC      BIC    R2_Tjur     RMSE   LOGLOSS SCORE_LOG
+## 1 358.0934 372.4723 0.07696848 1.140817 0.6507313 -94.76097
+##   SCORE_SPHERICAL       PCP
+## 1     0.006024592 0.5384906</code></pre>
 <pre class="r"><code>model_performance(logreg_phy_ten)</code></pre>
-<pre><code>##        AIC      BIC   R2_Tjur     RMSE   LOGLOSS       PCP
-## 1 15335.05 15365.64 0.3524244 0.994919 0.4949319 0.6762123</code></pre>
+<pre><code>##        AIC      BIC   R2_Tjur     RMSE   LOGLOSS SCORE_LOG SCORE_SPHERICAL
+## 1 15335.05 15365.64 0.3524244 0.994919 0.4949319      -Inf     0.001612024
+##         PCP
+## 1 0.6762123</code></pre>
 <pre class="r"><code>model_performance(logreg_mau_fle)</code></pre>
-<pre><code>##        AIC      BIC   R2_Tjur     RMSE   LOGLOSS       PCP
-## 1 11289.99 11318.97 0.2733764 1.042996 0.5439199 0.6366883</code></pre>
+<pre><code>##        AIC      BIC   R2_Tjur     RMSE   LOGLOSS SCORE_LOG SCORE_SPHERICAL
+## 1 11289.99 11318.97 0.2733764 1.042996 0.5439199      -Inf    0.0004308566
+##         PCP
+## 1 0.6366883</code></pre>
 </div>
 <div id="predict-species-distributions-and-compare-to-actual-distributions" class="section level3">
 <h3>5. Predict species distributions and compare to actual distributions</h3>
