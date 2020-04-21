@@ -452,7 +452,7 @@ $(document).ready(function () {
 <li>File | New Project</li>
 <li>Select <em>either</em> ‘New Directory’ or ‘Existing Directory’<br />
 this will be the working folder for our course (on your computer)</li>
-<li>Locate the project on your computer in a place (e.g. ’~Desktop/Courses/Macroecology)<br />
+<li>Navigate to the prospective project folder on your computer (e.g. ’~Documents/Courses/Macroecology)<br />
 </li>
 <li>Name your project<br />
 </li>
@@ -506,7 +506,7 @@ text_a</code></pre>
 text_a</code></pre>
 <pre><code>## [1] &quot;Good bye&quot;</code></pre>
 <p> </p>
-<p>In R Studio the objects are summed up at the top-right corner. For seeing the stored objects use:</p>
+<p>In R Studio current objects are listed at the top-right corner. For seeing the stored objects in the console use:</p>
 <pre class="r"><code>ls()</code></pre>
 <pre><code>## [1] &quot;a&quot;        &quot;b&quot;        &quot;number_3&quot; &quot;text_a&quot;</code></pre>
 <p> </p>
@@ -552,12 +552,18 @@ vector_1[3]</code></pre>
 <pre class="r"><code>vector_2 &lt;- c(1:6)
 vector_2</code></pre>
 <pre><code>## [1] 1 2 3 4 5 6</code></pre>
-<pre class="r"><code>vector_2 &lt;- seq(1,12,by=2) # overwriting
+<pre class="r"><code>vector_2 &lt;- seq(1, 12, by=2) # overwriting
+vector_2</code></pre>
+<pre><code>## [1]  1  3  5  7  9 11</code></pre>
+<pre class="r"><code>vector_2 &lt;- seq(1, 11, length.out = 6) # overwriting
 vector_2</code></pre>
 <pre><code>## [1]  1  3  5  7  9 11</code></pre>
 <pre class="r"><code>vector_3 &lt;- rep(c(1,2),3) # repeats c(1,2) three times
 vector_3</code></pre>
 <pre><code>## [1] 1 2 1 2 1 2</code></pre>
+<pre class="r"><code>vector_3 &lt;- rep(c(1,2),each=3) # repeats each element of c(1,2) three times
+vector_3</code></pre>
+<pre><code>## [1] 1 1 1 2 2 2</code></pre>
 <p> </p>
 <p><strong>Create a vector of character strings</strong></p>
 <pre class="r"><code>vector_4 &lt;- c(&quot;blue&quot;,&quot;red&quot;,&quot;green&quot;,&quot;yellow&quot;,&quot;grey&quot;,&quot;black&quot;)
@@ -573,17 +579,25 @@ vector_4</code></pre>
 <pre><code>## [1] &quot;numeric&quot;</code></pre>
 <p> </p>
 <p>You can do calculations with numeric vectors just like with values</p>
-<pre class="r"><code>mean(vector_2) # function for calculating the mean</code></pre>
-<pre><code>## [1] 6</code></pre>
-<pre class="r"><code>sd(vector_2)   # standard deviation</code></pre>
-<pre><code>## [1] 3.741657</code></pre>
 <pre class="r"><code>vector_2</code></pre>
 <pre><code>## [1]  1  3  5  7  9 11</code></pre>
-<pre class="r"><code>vector_2 ^ 2</code></pre>
+<pre class="r"><code>vector_2^2</code></pre>
 <pre><code>## [1]   1   9  25  49  81 121</code></pre>
 <pre class="r"><code>vector_5 &lt;- vector_1 + vector_2
 vector_5</code></pre>
 <pre><code>## [1]  2.0  8.0 10.0 10.4 19.0 22.0</code></pre>
+<p> </p>
+<p>You can apply functions to vectors</p>
+<pre class="r"><code>mean(vector_2) # function for calculating the mean</code></pre>
+<pre><code>## [1] 6</code></pre>
+<pre class="r"><code>sd(vector_2)   # standard deviation</code></pre>
+<pre><code>## [1] 3.741657</code></pre>
+<p><em>Most functions require a certain input structure like here a vector</em></p>
+<pre class="r"><code>mean(c(3,6))</code></pre>
+<pre><code>## [1] 4.5</code></pre>
+<pre class="r"><code>mean(3,6)</code></pre>
+<pre><code>## [1] 3</code></pre>
+<pre class="r"><code>#?mean</code></pre>
 <p> </p>
 <p><strong>Plotting vectors</strong></p>
 <pre class="r"><code>plot(vector_2,vector_1)</code></pre>
@@ -708,6 +722,16 @@ str(df_1)</code></pre>
 <p>colour is a character vector  </p>
 <pre class="r"><code>plot(df_1$ID,df_1$number_1, col=df_1$colour)</code></pre>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAAA7VBMVEUAAAAAADoAAGYAAP8AOjoAOmYAOpAAZmYAZrYA/wA6AAA6AGY6OgA6Ojo6OmY6Zjo6ZmY6ZpA6ZrY6kJA6kLY6kNtmAABmOgBmOjpmZjpmZmZmZpBmkLZmkNtmtttmtv+QOgCQZjqQZmaQkDqQkGaQkJCQkLaQtraQttuQtv+Q29uQ2/+2ZgC2Zjq2kDq2kGa2kJC2tpC2tra2ttu227a229u22/+2/9u2//++vr7bkDrbkGbbtmbbtpDbtrbb25Db27bb29vb2//b/7bb/9vb////AAD/tmb/25D/27b/29v//wD//7b//9v///9ONHB6AAAACXBIWXMAAB2HAAAdhwGP5fFlAAAfeklEQVR4nO3dfWMT18Gn4TENbOoN2ZItkDg0QHa3STem2bgLm7okD2SXGlPk7/9xdkaSZdkI1/r5aEZzfF1/BJvikU4t356XM0fNCQCRZugnADBWAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBI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" width="672" /></p>
+<p>Be careful when converting factors to numeric vectors or columns</p>
+<pre class="r"><code>numeric_factor &lt;- as.factor(df_1$number_1)
+numeric_factor</code></pre>
+<pre><code>## [1] 1   5   5   3.4 10  11 
+## Levels: 1 3.4 5 10 11</code></pre>
+<pre class="r"><code>as.numeric(numeric_factor)</code></pre>
+<pre><code>## [1] 1 3 3 2 4 5</code></pre>
+<pre class="r"><code>as.numeric(as.character(numeric_factor))</code></pre>
+<pre><code>## [1]  1.0  5.0  5.0  3.4 10.0 11.0</code></pre>
+<p> </p>
 </div>
 </div>
 <div id="data.frame-exercise" class="section level2">
@@ -859,7 +883,7 @@ bio12 &lt;- raster(&quot;data/CHELSA_bio10_12.tif&quot;)</code></pre>
 ## resolution : 0.008333333, 0.008333333  (x, y)
 ## extent     : -180.0001, 179.9999, -90.00014, 83.99986  (xmin, xmax, ymin, ymax)
 ## crs        : +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 
-## source     : C:/Users/Patrick/AppData/Local/Temp/RtmpOgHL6M/raster/r_tmp_2020-04-19_213613_6936_22391.grd 
+## source     : C:/Users/Patrick/AppData/Local/Temp/RtmpG4L9dQ/raster/r_tmp_2020-04-21_155500_4748_25390.grd 
 ## names      : layer 
 ## values     : 6.029263e-05, 0.8547967  (min, max)</code></pre>
 <p>30 arc seconds resolution = ~1km² at the equator  </p>

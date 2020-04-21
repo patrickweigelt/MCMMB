@@ -44,8 +44,8 @@ _Do this only once for the entire practical part of the class and once again for
 * File | New Project
 * Select *either* 'New Directory' or 'Existing Directory'   
   this will be the working folder for our course (on your computer)
-* Locate the project on your computer in a place 
-  (e.g. '~Desktop/Courses/Macroecology)  
+* Navigate to the prospective project folder on your computer 
+  (e.g. '~Documents/Courses/Macroecology)  
 * Name your project  
 * Within your project's folder, create three sub-folders: 
     + data
@@ -106,7 +106,7 @@ text_a
 &nbsp;
 
 
-In R Studio the objects are summed up at the top-right corner. For seeing the stored objects use:
+In R Studio current objects are listed at the top-right corner. For seeing the stored objects in the console use:
 ```{r}
 ls()
 ```
@@ -164,12 +164,16 @@ vector_1[3]
 ```{r}
 vector_2 <- c(1:6)
 vector_2
-vector_2 <- seq(1,12,by=2) # overwriting
+vector_2 <- seq(1, 12, by=2) # overwriting
+vector_2
+vector_2 <- seq(1, 11, length.out = 6) # overwriting
 vector_2
 ```
 
 ```{r}
 vector_3 <- rep(c(1,2),3) # repeats c(1,2) three times
+vector_3
+vector_3 <- rep(c(1,2),each=3) # repeats each element of c(1,2) three times
 vector_3
 ```
 &nbsp;
@@ -190,18 +194,27 @@ mode(vector_2)
 
 You can do calculations with numeric vectors just like with values
 ```{r}
-mean(vector_2) # function for calculating the mean
-sd(vector_2)   # standard deviation
-```
-
-```{r}
 vector_2
-vector_2 ^ 2
+vector_2^2
 
 vector_5 <- vector_1 + vector_2
 vector_5
 ```
 &nbsp;
+
+You can apply functions to vectors
+```{r}
+mean(vector_2) # function for calculating the mean
+sd(vector_2)   # standard deviation
+```
+_Most functions require a certain input structure like here a vector_  
+```{r}
+mean(c(3,6))
+mean(3,6)
+#?mean
+```
+&nbsp;
+
 
 **Plotting vectors**
 ```{r}
@@ -284,6 +297,18 @@ colour is a character vector
 ```{r}
 plot(df_1$ID,df_1$number_1, col=df_1$colour)
 ```
+
+
+Be careful when converting factors to numeric vectors or columns
+```{r}
+numeric_factor <- as.factor(df_1$number_1)
+numeric_factor
+as.numeric(numeric_factor)
+as.numeric(as.character(numeric_factor))
+```
+&nbsp;
+
+
 
 ## 5. data.frame exercise  
 
