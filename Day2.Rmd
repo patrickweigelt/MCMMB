@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
 author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "April 29, 2019"
+date: "April 29, 2020"
 output: 
   html_document: 
     theme: flatly
@@ -18,13 +18,11 @@ _[back to overview](index.html)_
 &nbsp;
 &nbsp;
 
-**Preparation:** Please open your RStudio project and download the data from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Please open the RStudio project we established last week and download all data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
-* rgdal  
-* rgeos  
-* maptools  
-* raster  
-* plyr  
+* rgdal
+* raster
+* dplyr
 
 &nbsp;
 
@@ -37,10 +35,13 @@ rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to 
 &nbsp;
 
 **Load packages**  
-```{r}
-library(plyr) 
+```{r, include=FALSE}
+library(dplyr)
 ```
-Here, we mostly use functions from base R to organize our data. However, we load the plyr package, a toolkit for splitting, applying and combining data. For more advanced and faster functions for data manipulation have a look at the packages dplyr, tidyr, reshape2, data.table etc.  
+```{r, eval=FALSE}
+library(dplyr)
+```
+Here, we mostly use functions from base R to organize our data. However, we load the dplyr package, a toolkit for splitting, applying and combining data. For more advanced and faster functions for data manipulation have a look at the documentation of the packages packages dplyr, reshape2, data.table etc.  
 &nbsp;
 
 **Load data**  
@@ -68,6 +69,8 @@ class(species$GENUS)
 ```{r}
 unique(species$GENUS) # or levels(species$GENUS)
 ```
+
+
 &nbsp;
 
 **Adding a column to the data.frame**  
@@ -96,6 +99,15 @@ _`which()` and operators: `==`, `>=`, `>`, `<`, `<=`, `%in%`, `is.na()`, `is.fin
 ```{r}
 species_unique <- unique(species[,c("spp_Id","GENUS","EPITHET","species")])
 nrow(species_unique) # Number of species
+length(unique(species$species))
+```
+&nbsp;
+
+See how many species there are per genus
+```{r}
+spec_genera <- table(species_unique$GENUS) # contingency table of the counts of factor levels.
+spec_genera
+hist(spec_genera, main = "Histgram of spcies per genus", xlab="Spcies per genus")
 ```
 &nbsp;
 
@@ -133,17 +145,13 @@ head(species[which(species$species=="Ammandra decasperma"),])
 **Exercise: Have a look at the two shapefiles 30min_grid_select50%.shp and americas.shp in QGIS**  
 &nbsp;
 
-**Loading spatial packages**
+**Loading Geospatial R packages**
 ```{r, include=FALSE}
 library(rgdal)
-library(rgeos)
-library(maptools)
 library(raster)
 ```
 ```{r, eval=FALSE}
 library(rgdal)
-library(rgeos)
-library(maptools)
 library(raster)
 ```
 
@@ -178,7 +186,7 @@ grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 ```{r}
 grid@proj4string
 ```
-Check out <http://proj4.org/> for spatial projections!  
+Check out <http://proj4.org/> or <http://epsg.io/> for spatial projections!  
 &nbsp;
 
 **Access the attribute table**  
@@ -204,7 +212,7 @@ species_grid[which(species_grid$grid_id %in% c(5328:5332)),1:4]
 _Join palm occurrences and spatial shapefile_
 ```{r}
 names(grid@data)[1] <- "grid_id" #rename ID column to correspond to species_grid$grid_id
-grid@data <- join(grid@data, species_grid, by="grid_id", type="left") # Perform a "SQL" left join
+grid@data <- left_join(grid@data, species_grid, by="grid_id") # Perform a "SQL" left join
 grid@data[is.na(grid@data)] <- 0
 grid@data[which(grid@data$grid_id %in% c(5328:5332)),1:5]
 ```

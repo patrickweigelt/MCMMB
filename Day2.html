@@ -11,7 +11,7 @@
 
 <meta name="author" content="Patrick Weigelt, Pierre Denelle, Amanda Taylor &amp; Holger Kreft" />
 
-<meta name="date" content="2019-04-29" />
+<meta name="date" content="2020-04-29" />
 
 <title>Modern concepts and methods in Macroecology and Biogeography</title>
 
@@ -396,7 +396,7 @@ $(document).ready(function () {
 <h1 class="title toc-ignore">Modern concepts and methods in Macroecology and Biogeography</h1>
 <h3 class="subtitle">Day 2: data.frames and GIS shapefiles in R; subsetting, joining &amp; aggregating</h3>
 <h4 class="author">Patrick Weigelt, Pierre Denelle, Amanda Taylor &amp; Holger Kreft</h4>
-<h4 class="date">April 29, 2019</h4>
+<h4 class="date">April 29, 2020</h4>
 
 </div>
 
@@ -411,17 +411,11 @@ $(document).ready(function () {
 </div>
 
 <p>  <em><a href="index.html">back to overview</a></em>    </p>
-<p><strong>Preparation:</strong> Please open your RStudio project and download the data from <a href="https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012">Stud-IP</a> (log in first) and unzip them into your project folder /data/. You can use <code>getwd()</code> to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using <code>install.packages()</code> if not done yet:</p>
+<p><strong>Preparation:</strong> Please open the RStudio project we established last week and download all data for the class from <a href="https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1">Stud-IP</a> (log in first) and unzip them into your project folder /data/. You can use <code>getwd()</code> to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using <code>install.packages()</code> if not done yet:</p>
 <ul>
-<li>rgdal<br />
-</li>
-<li>rgeos<br />
-</li>
-<li>maptools<br />
-</li>
-<li>raster<br />
-</li>
-<li>plyr</li>
+<li>rgdal</li>
+<li>raster</li>
+<li>dplyr</li>
 </ul>
 <p> </p>
 <div id="loading-spreadsheet-data-into-r" class="section level2">
@@ -430,8 +424,8 @@ $(document).ready(function () {
 <pre class="r"><code>rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to also unmap loaded packages</code></pre>
 <p> </p>
 <p><strong>Load packages</strong></p>
-<pre class="r"><code>library(plyr) </code></pre>
-<p>Here, we mostly use functions from base R to organize our data. However, we load the plyr package, a toolkit for splitting, applying and combining data. For more advanced and faster functions for data manipulation have a look at the packages dplyr, tidyr, reshape2, data.table etc.<br />
+<pre class="r"><code>library(dplyr)</code></pre>
+<p>Here, we mostly use functions from base R to organize our data. However, we load the dplyr package, a toolkit for splitting, applying and combining data. For more advanced and faster functions for data manipulation have a look at the documentation of the packages packages dplyr, reshape2, data.table etc.<br />
  </p>
 <p><strong>Load data</strong><br />
 We use a version of <code>read.table()</code> to import data into R as a data.frame. Have a look at its help page</p>
@@ -490,7 +484,49 @@ Click on the species object in the ‘Environment’ tab of RStudio or run <code
 <pre class="r"><code>species_unique &lt;- unique(species[,c(&quot;spp_Id&quot;,&quot;GENUS&quot;,&quot;EPITHET&quot;,&quot;species&quot;)])
 nrow(species_unique) # Number of species</code></pre>
 <pre><code>## [1] 550</code></pre>
+<pre class="r"><code>length(unique(species$species))</code></pre>
+<pre><code>## [1] 550</code></pre>
 <p> </p>
+<p>See how many species there are per genus</p>
+<pre class="r"><code>spec_genera &lt;- table(species_unique$GENUS) # contingency table of the counts of factor levels.
+spec_genera</code></pre>
+<pre><code>## 
+##    Acoelorraphe       Acrocomia        Aiphanes     Allagoptera 
+##               1               2              22               4 
+##        Ammandra      Asterogyne     Astrocaryum         Attalea 
+##               3               5              18              29 
+##         Bactris        Barcella          Brahea           Butia 
+##              64               1               9               8 
+##    Calyptrogyne    Calyptronoma       Ceroxylon     Chamaedorea 
+##               8               3              11              77 
+##    Chelyocarpus    Coccothrinax           Cocos      Copernicia 
+##               4              14               1              13 
+##    Coplothrinax      Crysophila       Desmoncus    Dictyocarpum 
+##               2               9               7               3 
+##          Elaeis         Euterpe    Gastrococcus         Gaussia 
+##               1               7               1               5 
+##         Geonoma      Hypospathe        Iriartea      Iriartella 
+##              51               3               1               2 
+##           Itaya          Juania          Jubaea     Leopoldinia 
+##               1               1               1               3 
+##    Lepidocaryum      Lytocaryum       Manicaria        Mauritia 
+##               1               2               1               2 
+##     Mauritiella  Neonicholsonia      Oenocarpus      Parajubaea 
+##               3               1               9               2 
+##  Pholidostachys     Phytelephas Polyandrococcus        Prestoea 
+##               4               6               1              11 
+##   Pseudophoenix          Raphia     Reinhardtia  Rhapidophyllum 
+##               4               1               6               1 
+##       Roystonea           Sabal        Schippia         Serenoa 
+##               9              16               1               1 
+##        Socratea         Syagrus    Synechanthus         Thrinax 
+##               5              30               2               7 
+##      Trithrinax    Washingtonia          Welfia   Wendlandiella 
+##               3               2               1               1 
+##        Wettinia          Zombia 
+##              21               1</code></pre>
+<pre class="r"><code>hist(spec_genera, main = &quot;Histgram of spcies per genus&quot;, xlab=&quot;Spcies per genus&quot;)</code></pre>
+<p><img src="data:image/png;base64,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K1+AApGFrnwBCkQWuvIFKBBZ6MoXoEBkoStfgAKRha58AQpEFrryBSgQWejKF6BAZKErX4ACkYWufAEKRBa68gUoEFnoyhegQGShK1+AApGFrnwBCkQWuvIFKBBZ6MoXoEBkoStfgAKRha58AQpEFrryBSgQWejKF6BAZKErX4ACkYWufAEKRBa68gUoEFnoyhegQGShK1+AApGFrnwBCkQWuvIFKBBZ6MoXoEBkoStfgAKRha58AQpEFrryBSgQWejKF6BAZKErX4ACkbVe+f3zP05OTn49/5SwrAAFImu38s9eF1OP3627uAAFImuz8i+fFrP2fl5vBQIUiKzFyr/YL0Pz4WHlQflL7+VaaxCgQGTtVf7XJ4PAfFN74eMgUO/8ts4qBCgQWXuVf7oQl2WkHqyzCgEKRNZa5fdfFcX8CftFUdxb5268AAUia63yB4ebC+frTa9dRYACkQnQTcjdPpBFm6fwvflRS07hgV3SXuUfLaRleVn0/jqrEKBAZO1V/uf9QYK+r71wOcjPhYPSKwlQILIWK/90OHT+8BfqHKYAABEcSURBVKeT0i/VSPqDtdYgQIHI2qz8D/tzj3L2Xqy3AgEKRNZq5feP6xHae77ujEwCFIis7crvn50cHx4ePj95lzCfnQAFIgtU+UWDlRdttWfh2weyCFT5AhTYLqErX4ACkYWufAEKRBa68gUoEFnoyhegQGShK1+AApG1OZ1dE9PZATtDgG5C7vaBLNqr/IUvNRagwG5psfLL6T8PbrQGAQpE1mblN32v3FoEKBBZq5W/7ncgzROgQGTtVv7FzU7iBSgQWbuVPziJv8khqAAFImu58j8fHv6P9KUFKBBZ6MoXoEBkoStfgAKRha58AQpEFrryBSgQWejKF6BAZKErX4ACkYWufAEKRBa68gUoEFnoyhegQGShK1+AApGFrnwBCkQWuvIFKBBZ6MoXoEBkoStfgAKRha58AQpEFrryBSgQWejKF6BAZKErX4ACkYWufAEKRBa68gUoEFnoyhegQGShK1+AApGFrnwBCkQWuvIFKBBZ6MoXoEBkoStfgAKRha58AQpEFrrytyhAc8u7/dBRoStPgApQiCx05W1RgHa7feio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQLekfeio0JUnQFduP7e82w+ZhP7kC9CV288t7/ZDJqE/+QJU+xBZ6E++ANU+RBb6ky9AtQ+Rhf7kC1DtQ2ShP/kCVPsQWehPvgDVPkQW+pMvQLUPkYX+5AtQ7UNkoT/5AlT7EFnoT74A1T5EFvqTL0C1D5GF/uQLUO1DZKE/+QJU+xBZ6E++ANU+RBb6ky9AtQ+Rhf7kC1DtQ2ShP/kCVPsQWehPvgDVPkQW+pMvQLUPkYX+5AtQ7UNkoT/5AlT7EFnoT74A1T5EFvqTL0C1D5GF/uQLUO1DZKE/+QJU+xBZ6E++ANU+RBb6ky9AtQ+Rhf7kC1DtQ2ShP/kCVPsQWehPvgDVPkQW+pMvQLW/JQqyyvcXn63lFQhQ7W+F3PFBvr/6bC2vQIBqfyvk3n7t52u67Qb653+cnJz8ev4pYVkBqv2tkHv7tZ+v6VbXfva6dpT9+N26iwtQ7W+F3Nuv/XxNt7juy6dzFyr2fl5vBQJU+1sh9/ZrP1/T7a36Yr8MzYeHlQflL72Xa61BgGp/K+Tefu3na7q1NX99MgjMN7UXPg4C9c5v66xCgGp/K+Tefu3na7q1NZ8uxGUZqQfrrEKAan8r5N5+7edruq0V918VxfwJ+0VR3FvnbrwA1f5WyL392s/XdFsrHhxuLpyvN71W60r6+NhWxuYCWyI5p25KgALbLjmnbqrNU/je/KildU/hASJrL7qPFtKyvCx6v7X2AG5ZewH6eX+QoO9rL1wO8nPhoBRga7V48eC0vDbRO/zppPRLNZL+oL3mAG5Zm1dfP+zPXentvWixNYBb1urtq/5xPUJ7z91AAnZJ2/f/+2cnx4eHh89P3klPYMd0/BESgHQCFCCRAAVIJEABEglQgEQCFCCRAAVIJEABEglQgEQCFCCRAAVIJEABEglQgEQCFCDRrgTobX37HxBPvuDJ1vIm5f7rA3LKFz3ZWt6kjDswBNufuwd52f58TWdreZN8gHL3IC/bn7sHeQnQG/IByt2DvGx/7h7kJUBvyAcodw/ysv25e5CXAL0hH6DcPcjL9ufuQV4C9IZ8gHL3IC/bn7sHeQnQG/IByt2DvGx/7h7kJUBvyAcodw/ysv25e5CXAL0hH6DcPcjL9ufuQV4C9IZ8gHL3IC/bn7sHeQnQG/IByt2DvGx/7h7kJUBvyAcodw/ysv25e5CXAL0hH6DcPcjL9ufuQV4C9IZ8gHL3IC/bn7sHeQnQG/IByt2DvGx/7h7kJUBvyAcodw/ysv25e5CXAL0hH6DcPcjL9ufuQV4C9IZ8gHL3IC/bn7sHeQnQG/IByt2DvGx/7h7kJUABto8ABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAES7UCAXr7eL4re4/e5+3G7+scPi6K4W9/sDu6Iz/vFy8kv3dr+/ofyA/DwxafJK93a/rOFrc2y/dsfoB8Ge63U+0vuntym8VYXxffzL3VoR3x9UkwDtFvb/3n8Adj7bfRKp7a//3b8+T8Yv5Rn+7c+QC+KiZfXv3tX1La6uL/wUmd2xFFtY7u1/ZP8LIp71TFot7b/aLq1B9UrmbZ/2wO0PAbZGxy0nz0tiju/Xf/+3TDc6nffqs3u/Tx5qWM74qJWLd3a/nJrey/KCzn7owTp1vaX/36U5+qXr3J//rc9QE/H/wL3X9WO5nfdxeS4s9zs4Y8d3BFlzUwCtFvbfzpJiYvRdndu+0cFcDTa2lzbv+UBOthb1T9Aw3+U7n26+t0742h6mjLa7A7uiMEm3/mv4x3Rre2vbe3ox25t/6AAxls7OpbItv1bHqCDg5Dxzqrtwi4Z7YEO7ojBMcfL03GAdmv7Bxlxf/aVbm3/YoBm2/4tD9DpuezMYVmHjD453dsRgxA5+DYJ0G5t/8XCWWq3tn/2FL7c2Gzbv/0BejD++XT3PzcNRp+czu2IwXHG4B+OeoAejP9o97d/uIXDYY93X1SvdGv7h5e/hzeRXo8ufWbb/i0P0Pq+WvxnuQMGn6Th+UrndkR1EjfZ7G5tf7nxpzPjQLu1/YPkfFrE2H4ButX6R9Ob8J3aEaNt7G6A/jAZ9Ti8Hd+t7f9WDWAqPa6ufArQNJ373Mwq8/NOF49AxvcMuhmg/WF4lKewX96OnqTo1PZ/G27vSO/F6HcBmqBrn5tZ/ckw4q7tiKP5fzc6tf3DAD2ofr4oZq9lfOvA9lf5+f2fo39AXn4ToKk69rmZdTl5DKlrO2IxN7u1/UfFdKhjdc+5W9tfmwPhQ3UOJkDTdOzm44xy8oTJTBKd2hHTYZAdvQt/VNvaasu7tf2Lg5bchU/TseFvdcOzmMkTF53aEdMLYJPpJDq1/eUOOBj/fNHN7X9Z+/nAONBUHXsAo+ZtMXOi0qkd0RCgndr+mbg47eD2L56wexIpTcceAZ46LWY/JZ3aEQ0B2qntLzdxMuNQdbzVre1fPN70LHyibk1CMzH4BN2ZnXm7mztieijSre0vh/9WIfFhOhC0O9tfzmY3+nsfjUIwG1Oi8cyY3ZgGcWz8/NHsSx3cEdMA7db2lwlSbu2XyZWcbm3/UX0Y0/BgNNf2b3uAdmwi7pHZc9gqS7u6I7o5I33tE9DFGemrqWDrz3KakT7V7136KphK/1VDgHZxR8zcTejW9o+3dvwsY8e2f1oC9/Ju//YHaMe+jLBU//d3GqAd3BGzQ/66tf1fjh8MtvbRu+kr3dr+s2fDrc29/TsQoAB5CFCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAIUIJEABUgkQAESCVCARAKUzep/fLZfFMXdH9+vvMSr4s5vbXYJ2iJA2agPZXpW7q0YoQKUrSVA2aSLombFWBSgbC0BygZ9fVIUe28+DX46Px4cit77lLtD0CoBygad1kLz8yBBX2btDbRNgLJBR0Xv58kvgzS9n7Ev0D4BygbNBOjgEPT++H+Xz4qi9/2f4z/qf3gw+P1xdZdpeg20/+FhURSP3nyavK38/e7zyXK1FS+scWbRo8GR8MdBG49mbmSVywxe+vpkfJw8u9SwI/3j2a6NN2jQaLXQkk7RSQKUDRocdB7Mv1bG3efq3vwkjJ5Wd5l6w1P8SYB+Ht/B33v/beb3uZU2rXFu0UGAfqj/+bh3Q/9uHKBzS5Ud+d/jl8Zdmw/QZZ2ikwQoG1Smy/eLx4v/5tUoc6o0Km811X4fB+g0mqrfp2+bu5i6uMb5RQcBenf4Uv0aQn2EwFwWVkv1X9XeMe7aXIAu7RSdJEDZpOFBXu+7n2ohOoyp8hCvHCI6DLSjwVteDE6on1a/jwK0uoNfniKP3jdY1967wf8vX83dz19Y48KiZRPz41CHbxotNMnCmaWGAdp78elb/+3oAHMxQJd2ik4SoGzUZCD95HLk58l4psFPZRwNgmtyJFr+MArQi0kijV4/Gh/jzQ8UXVjjwqLlsvPxdlpbaPjTwlJlgI4aOp1E6lyALu0UnSRA2az+x6fjk+Dn9ZArHQ2P6y4mZ9anwzQaRVHtBtTF8H2nyx5mWljjwqKj12dMom8cpQtLlQF6MGmifEvjEeiqT1jRAQKUzTs7fjZzpXF8MFhF5+nc1cMqQKe3xsf37y+qywF/WzhRnl/j4qK1tBwbvGl8xFgtv7jUYlwuvrK0U3SSAKUdl69H1xFHkfZt8uPR7L3xaYDWjU6XR4eys/el5tfYuOhsG9/qeVn9uLjUKgG6tFN0kgClLYPIKY/5ZuNuEELNAVq7JT5Owf5x85Ch+TU2LLoYoLXD1ipAF5daKUCXdYpOEqBsztyJc/XrikegtYCr+fi6Iazm19iw6ApHoItLrRSgyzpFJwlQNmfu4c3TcYCueA20+a72l19eF7P31Buugc4v2higC9dA55ZaNUAbO0UnCVA2Z3TSPjJKn9qL1SHp9C785N7N4A3lLfCGXB2ay7r5NS4s2hSgtTedjk/Y55ZqvOI5fmWy0JJO0UkClM0pM2lvMsjntBhfAx0F5vSi6CiVjsajh8qXy7e/nyx5UB+KtBigs2tcWLQhQKfjQMu7R6MRSbNLNd8yqlq6fDK5sdXcKTpJgLJBwxszj999Gg8HPZi89n72MaHySaTyeZ8ygmpPIpWPAX378rYYD4+vngs9ezp7aWBhjQuLNgXo+Emkj/UnkWaWagjQ8smq7z9VLU2GMTV2ik4SoGzSh5k728OAGWTR3fGN6+qQrTaA6ODb9Fy9/qx6+fpkxFAxN7n94hobFl0I0MVn4eeXagjQaVf/05PZYUzznaKTBCgbNZ5oaaD3l+qV/eL+KKr2Rolz+bQWW9PrihdzA4Smk3vszaRhwxrnF20K0MXZmOaWarplNH7Lwfgu/rJO0UkClA07e13Ol9l7NH5YpxppNIjMuy8m7xnOBzqerLM2H+jx3FSbZ6/L/JpOEHrFGmcXbQzQ8Xyg02FQs0s13nP/8na/7EFtGFRzp+gkAUrLaqM2g6xx8z2iqwQoLYsSoNNR/g0zjUASAUrLAgVo78236p672z9shgClZVECtP7s+8FmO0RnCVBaFiVAp3M9y082RYDSsjAB+u1L+YWbvk+TDRKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQSIACJBKgAIkEKEAiAQqQ6P8DEsFuJMM+kMsAAAAASUVORK5CYII=" width="672" />  </p>
 <p><strong>Choose entries of a given value</strong></p>
 <pre class="r"><code>which(species$GENUS==&quot;Ammandra&quot;) # index of all entries of genus &quot;Ammandra&quot;</code></pre>
 <pre><code>##   [1]  22379  22445  23752  23806  25260  25295  25341  27108  27148  27208
@@ -563,10 +599,8 @@ nrow(species_unique) # Number of species</code></pre>
 <h2>4. GIS shapefiles in R</h2>
 <p><strong>Exercise: Have a look at the two shapefiles 30min_grid_select50%.shp and americas.shp in QGIS</strong><br />
  </p>
-<p><strong>Loading spatial packages</strong></p>
+<p><strong>Loading Geospatial R packages</strong></p>
 <pre class="r"><code>library(rgdal)
-library(rgeos)
-library(maptools)
 library(raster)</code></pre>
 <p> </p>
 <p><strong>Load spatial poylgons into R</strong></p>
@@ -608,7 +642,7 @@ plot(americas, add=TRUE)</code></pre>
 <pre class="r"><code>grid@proj4string &lt;- CRS(&quot;+proj=longlat +ellps=WGS84 +no_defs&quot;)</code></pre>
 <pre class="r"><code>grid@proj4string</code></pre>
 <pre><code>## CRS arguments: +proj=longlat +ellps=WGS84 +no_defs</code></pre>
-<p>Check out <a href="http://proj4.org/" class="uri">http://proj4.org/</a> for spatial projections!<br />
+<p>Check out <a href="http://proj4.org/" class="uri">http://proj4.org/</a> or <a href="http://epsg.io/" class="uri">http://epsg.io/</a> for spatial projections!<br />
  </p>
 <p><strong>Access the attribute table</strong></p>
 <pre class="r"><code>head(grid@data)</code></pre>
@@ -638,7 +672,7 @@ species_grid[which(species_grid$grid_id %in% c(5328:5332)),1:4]</code></pre>
 <p> </p>
 <p><em>Join palm occurrences and spatial shapefile</em></p>
 <pre class="r"><code>names(grid@data)[1] &lt;- &quot;grid_id&quot; #rename ID column to correspond to species_grid$grid_id
-grid@data &lt;- join(grid@data, species_grid, by=&quot;grid_id&quot;, type=&quot;left&quot;) # Perform a &quot;SQL&quot; left join
+grid@data &lt;- left_join(grid@data, species_grid, by=&quot;grid_id&quot;) # Perform a &quot;SQL&quot; left join
 grid@data[is.na(grid@data)] &lt;- 0
 grid@data[which(grid@data$grid_id %in% c(5328:5332)),1:5]</code></pre>
 <pre><code>##     grid_id    AREA PORTION Acoelorraphe.wrightii Acrocomia.aculeata

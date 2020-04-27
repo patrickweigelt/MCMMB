@@ -197,7 +197,7 @@ points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia 
 
 **Create pseudo‐absences (or background data)**
 
-Pseudo-absences are necessary because occurrence data sets (like BIEN) only record presences and not true absences. Thefore, we must generate pseudo-absences, i.e. possible locations where a species could occur but doesn't.  
+Pseudo-absences are necessary because occurrence data sets (like BIEN) only record presences and not true absences. Thefore, we must generate pseudo-absences, i.e. possible locations where a species doesn't occur.  
 
 ```{R, echo=TRUE}
 # Make spatial points dataframe from grid
