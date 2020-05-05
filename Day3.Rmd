@@ -16,20 +16,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 &nbsp;
 _[back to overview](index.html)_
-&nbsp;
-&nbsp;
+&nbsp;  
+&nbsp;  
 
 
-**Preparation:** Please open your RStudio project and download all new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to find your current working directory, which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Please open your RStudio project and download all new data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:   
 
 * rgdal  
 * rgeos  
-* maptools  
 * raster  
-* plyr  
+* dplyr  
 * BIEN  
 * ROCR
-* devtools
 * performance  
 
 &nbsp;
@@ -44,17 +42,10 @@ rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to 
 
 **Load R packages & palm data set**  
 
-For downloading 'performance', first install 'devtools' and then run 
-```
-install.packages("devtools")
-devtools::install_github("easystats/performance")
-```
-
 ```{r, include=FALSE}
-library(plyr)
+library(dplyr)
 library(rgdal)
 library(rgeos)
-library(maptools)
 library(raster)
 library(BIEN)
 library(ROCR)
@@ -62,10 +53,9 @@ library(performance)
 ```
 
 ```{r, eval=FALSE}
-library(plyr)
+library(dplyr)
 library(rgdal)
 library(rgeos)
-library(maptools)
 library(raster)
 library(BIEN)
 library(ROCR)
@@ -73,12 +63,12 @@ library(performance)
 ```
 &nbsp;
 
+For today's exercise, we will continue to use the Neotropical palm data set from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
+
 ```{r}
 species <- read.csv("Data/palms_species_per_gridcell.csv")
 ```
-For today's exercise, we will continue to use the Neotropical palm data set from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
 &nbsp;
-
 
 **Data inspection**
 ```{r, echo=TRUE}
@@ -101,8 +91,6 @@ species$species[which(species$species == "Geonoma weberbaueri")] <- "Geonoma und
 
 
 **Load GIS shapefile \& join it to species distribution data**  
-Other options to convert 'long' data frames to 'wide' ones include 'dcast' via the _reshape2_ package or 'pivot_wider' via the 
-_tidyr_ package.  
 
 ```{r, echo=TRUE}
 # read a polygon shapefile
@@ -119,27 +107,27 @@ species_grid <- data.frame(grid_id = as.integer(row.names(species_grid)), specie
 
 names(grid@data)[1] <- "grid_id"
 
-grid@data <- join(grid@data, species_grid, by="grid_id", type="left")
+grid@data <- left_join(grid@data, species_grid, by="grid_id")
 
 grid@data[is.na(grid@data)] <- 0 # convert NAs to zeroes 
 grid@data[1:5,1:5] # inspect data frame
 ```
+Other options to convert 'long' data frames to 'wide' ones include 'dcast' via the _reshape2_ package or 'pivot_wider' via the 
+_tidyr_ package.  
 &nbsp;
 
-### 2. Download point occurences  
+### 2. Download point occurrences (presences)
 
 For today's practical, we will use occurrence data downloaded from [BIEN](http://bien.nceas.ucsb.edu/bien/tools/). This file 
-is also available via StudIP ('Data/Data/BIEN_data.RData).
+is also available via StudIP ('Data/Data/BIEN_data.csv).
 
 ```{r, echo=TRUE}
 #spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # Download via the internet (this can take quite some time!)
-#write.csv(spec_occ, "Data/BIEN_data.csv", row.names = FALSE)
 
 spec_occ <- read.csv("Data/BIEN_data.csv") # Or load species occurrence data from disk
 
 head(spec_occ)
 dim(spec_occ) # how many observations?
-
 ```
 &nbsp;
 
@@ -154,7 +142,6 @@ dim(spec_occ) # how many observations?
 **Exercise solution**
 ```{r, echo=FALSE}
 # Part 1 
-
 spec_occ <- spec_occ[which(!(is.na(spec_occ$latitude)|is.na(spec_occ$longitude))),]
 spec_occ <- spec_occ[which(!is.na(spec_occ$latitude) & !is.na(spec_occ$longitude)),]
 head(spec_occ)
@@ -164,7 +151,7 @@ table(spec_occ$scrubbed_species_binomial)
 ```
 &nbsp;
 
-**Map plot occurrence records and species ranges**      
+**Map occurrence records and species ranges**      
 Here we use colorblind friendly colors, which can be found via [Colorbrewer2](http://colorbrewer2.org).  
 
 ```{r,echo=TRUE}
@@ -173,34 +160,32 @@ par(mfrow=c(2,2))
   
   plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Geonoma pauciflora")
   #species 1
-  points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")], pch=19,
-         col="lightgrey")
+  points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],
+         col="lightgrey", pch=4)
 
 #species 2
 plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Geonoma undata")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],  pch=19,
-         col="lightgrey")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],
+         col="lightgrey", pch=4)
 
 #species 3
 plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Phytelephas tenuicaulis")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],  pch=19,
-         col="lightgrey")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],
+         col="lightgrey", pch=4)
 
 #species 4
 plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Mauritia flexuosa")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],  pch=19,
-         col="lightgrey")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],
+         col="lightgrey", pch=4)
 ```
 &nbsp;
 
-### 3.  Building species distribution models: step 1  
-
-**Create pseudo‐absences (or background data)**
+### 3.  Create pseudo‐absences (background data) 
 
 Pseudo-absences are necessary because occurrence data sets (like BIEN) only record presences and not true absences. Thefore, we must generate pseudo-absences, i.e. possible locations where a species doesn't occur.  
 
+**Make spatial points dataframe from grid**  
 ```{R, echo=TRUE}
-# Make spatial points dataframe from grid
 grid_centroids <- gCentroid(grid, byid=TRUE)
 grid_centroids <- SpatialPointsDataFrame(grid_centroids, data = data.frame(grid_centroids@coords, present = 0))
 names(grid_centroids@data) <- c("longitude","latitude","present")
@@ -210,9 +195,68 @@ plot(grid_centroids)
 &nbsp;
 
 
-### 3.  Building species distribution models: step 2  
+**Make spatialPoint objects for occurrences of each species**
 
-**Load and extract environmental data from spatial layers**
+```{r, echo=TRUE}
+
+americas <- readOGR("Data/americas.shp") # add shape file showing the borders of the Neotropics  
+americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
+
+# Geonoma pauciflora
+geo_pau <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], present = 1))
+
+geo_pau@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # assign projection
+
+# add pseudo-absences
+set.seed(100)
+geo_pau_abs <- rbind(grid_centroids[round(runif(nrow(geo_pau), min = 1, max = nrow(grid_centroids))),],geo_pau)
+
+par(mfrow=c(2,2))
+
+plot(geo_pau_abs, col=ifelse(geo_pau_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Geonoma pauciflora")
+plot(americas,add=TRUE)
+
+# Geonoma undata
+geo_und <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma undata"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma undata"),c("longitude","latitude")], present = 1))
+
+geo_und@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
+
+# add pseudo-absences
+set.seed(100)
+geo_und_abs <- rbind(grid_centroids[round(runif(nrow(geo_und), min = 1, max = nrow(grid_centroids))),],geo_und)
+plot(geo_und_abs, col=ifelse(geo_und_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Geonoma undata")
+plot(americas,add=TRUE)
+
+# Phytelephas tenuicaulis
+phy_ten <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis"),c("longitude","latitude")], present = 1))
+
+phy_ten@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
+
+# add pseudo-absences
+set.seed(100)
+phy_ten_abs <- rbind(grid_centroids[round(runif(nrow(phy_ten), min = 1, max = nrow(grid_centroids))),],phy_ten)
+plot(phy_ten_abs, col=ifelse(phy_ten_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Phytelephas tenuicaulis")
+plot(americas,add=TRUE)
+
+
+# Mauritia flexuosa
+mau_fle <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa"),c("longitude","latitude")], present = 1))
+
+mau_fle@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
+
+# add pseudo-absences
+set.seed(100)
+mau_fle_abs <- rbind(grid_centroids[round(runif(nrow(mau_fle), min = 1, max = nrow(grid_centroids))),],mau_fle)
+plot(mau_fle_abs, col=ifelse(mau_fle_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Mauritia flexuosa")
+plot(americas,add=TRUE)
+
+```
+&nbsp;
+
+
+### 4. Load and extract environmental data
+
+**Load environmental data**  
 For today's exercise, we use: elevation, temperature ('bio1'), and precipitation ('bio12').  
 Please note that temperature has been multiplied by 10.    
 
@@ -233,66 +277,6 @@ bio12 <- raster("Data/CHELSA_bio10_12.tif") # precipitation
 plot(bio1)
 ```
 &nbsp;
-
-**Make spatialPoint objects for occurrences of each species**
-
-
-```{r, echo=TRUE}
-
-americas <- readOGR("Data/americas.shp") # add shape file showing the borders of the Neotropics  
-americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
-
-# Geonoma pauciflora
-geo_pau <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], present = 1))
-
-geo_pau@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # assign projection
-
-# add pseudo-absences
-set.seed(100)
-geo_pau_abs <- rbind(grid_centroids[round(runif(nrow(geo_pau), min = 1, max = nrow(grid_centroids))),],geo_pau)
-
-par(mfrow=c(2,2))
-
-plot(geo_pau_abs, col=ifelse(geo_pau_abs@data$present==1,"#ef8a62","#7fbf7b"))
-plot(americas,add=TRUE)
-
-# Geonoma undata
-geo_und <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma undata"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma undata"),c("longitude","latitude")], present = 1))
-
-geo_und@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
-
-# add pseudo-absences
-set.seed(100)
-geo_und_abs <- rbind(grid_centroids[round(runif(nrow(geo_und), min = 1, max = nrow(grid_centroids))),],geo_und)
-plot(geo_und_abs, col=ifelse(geo_und_abs@data$present==1,"#ef8a62","#7fbf7b"))
-plot(americas,add=TRUE)
-
-# Phytelephas tenuicaulis
-phy_ten <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis"),c("longitude","latitude")], present = 1))
-
-phy_ten@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
-
-# add pseudo-absences
-set.seed(100)
-phy_ten_abs <- rbind(grid_centroids[round(runif(nrow(phy_ten), min = 1, max = nrow(grid_centroids))),],phy_ten)
-plot(phy_ten_abs, col=ifelse(phy_ten_abs@data$present==1,"#ef8a62","#7fbf7b"))
-plot(americas,add=TRUE)
-
-
-# Mauritia flexuosa
-mau_fle <- SpatialPointsDataFrame(coords = spec_occ[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa"),c("longitude","latitude")], data = data.frame(spec_occ[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa"),c("longitude","latitude")], present = 1))
-
-mau_fle@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
-
-# add pseudo-absences
-set.seed(100)
-mau_fle_abs <- rbind(grid_centroids[round(runif(nrow(mau_fle), min = 1, max = nrow(grid_centroids))),],mau_fle)
-plot(mau_fle_abs, col=ifelse(mau_fle_abs@data$present==1,"#ef8a62","#7fbf7b"))
-plot(americas,add=TRUE)
-
-```
-&nbsp;
-
 
 **Extract environmental data for each point (presences/absences)**
 ```{r, echo=TRUE}
@@ -316,8 +300,8 @@ mau_fle_abs@data$bio12 <- extract(bio12,mau_fle_abs)
 ```
 &nbsp;
 
-### 4.  Building species distribution models: step 3  
 
+### 5.  Building species distribution models  
 
 __One question__  
 _What distribution family is used when fitting a logistic regression?_  
@@ -359,36 +343,42 @@ summary(logreg_mau_fle)
 
 **Check model performance**
 
-We will assess classification precision of the logistic models using ROC ( Receiver Operating Characteristic Curve) and AUC (Area Under Curve) for one species (_Mauritia flexuosa_).  
-
-For the ROC, the curve should be located in the upper left of the figure.  
-For the AUC, the value should be greater than 0.50 (i.e. a good model should be correct more than 50% of the time).  
+We will assess classification precision of the logistic models using ROC (Receiver Operating Characteristic Curve) and AUC (Area Under Curve) for one species (_Mauritia flexuosa_). The ROC curve shows the true positive rate against the false positive rate at various threshold values at which the species may be considered present. The AUC is the area under the ROC curve.  
+&nbsp;
 
 ```{r, echo=TRUE}
-
 p <- predict(logreg_mau_fle, newdata=mau_fle_abs@data, type="response")
 pr <- prediction(p, mau_fle_abs@data$present)
-prf <- performance(pr, measure = "tpr", x.measure = "fpr")
-plot(prf)
 
-auc <- performance(pr, measure = "auc")
+prf <- ROCR::performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf, main="Receiver Operating Characteristic Curve")
+abline(a=0,b=1)
+```
+For the ROC, the curve should be located in the upper left of the figure which means that at intermediat threshold values the true positive rate is much higher than the false positive rate.  
+&nbsp;
+
+```{r, echo=TRUE}
+auc <- ROCR::performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
 auc
 ```
+For the AUC, the value should be greater than 0.50 (i.e. a good model should be correct more than 50% of the time). The higher the AUC, the better the model is at predicting 0s as 0s and 1s as 1s.  
 &nbsp;
 
 We can also assess model performance using commonly used indices, such as R^2^, AIC, RMSE, LOGLOSS, and PCP.  
-LOGLOSS evaluates how good or bad predicted probabilities are (high is bad, low is good).  
-PCP is percentage of correct predictions for models with binary outcomes.   
+* The Root Mean Square Error (RMSE) is the sqare root of the mean squared residuals (prediction errors). Residuals are a measure of how far from the regression line data points are.  
+* LOGLOSS evaluates how good or bad predicted probabilities are (high is bad, low is good).  
+* PCP is percentage of correct predictions for models with binary outcomes.  
 
 ```{r, echo=TRUE}
-model_performance(logreg_geo_und)
-model_performance(logreg_geo_pau)
-model_performance(logreg_phy_ten)
-model_performance(logreg_mau_fle)
+model_performance(logreg_geo_und, metrics = c("AIC","R2","RMSE","LOGLOSS","PCP"))
+model_performance(logreg_geo_pau, metrics = c("AIC","R2","RMSE","LOGLOSS","PCP"))
+model_performance(logreg_phy_ten, metrics = c("AIC","R2","RMSE","LOGLOSS","PCP"))
+model_performance(logreg_mau_fle, metrics = c("AIC","R2","RMSE","LOGLOSS","PCP"))
 ```
+&nbsp;
 
-### 5. Predict species distributions and compare to actual distributions
+### 6. Predict species distributions and compare to actual distributions
 
 **Create new data for predictions**  
 
@@ -410,10 +400,7 @@ plot(americas,add=TRUE)
 ```
 &nbsp;
 
-**Predict presences of each species using species distribution models**  
-
-We are using logistical regressions to fit species distribution models  
-
+**Predict presences of each species using our previously fitted species distribution models**  
 
 ```{r, echo=TRUE}
 
