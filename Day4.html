@@ -410,23 +410,18 @@ $(document).ready(function () {
 </div>
 
 <p>  <em><a href="index.html">back to overview</a></em>    </p>
-<p><strong>Preparation:</strong> Open your RStudio project and download new data for today from <a href="https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012">Stud-IP</a> (log in first) and unzip them into your project folder ’/data/. You can use <code>getwd()</code> to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using <code>install.packages()</code> if not done yet:</p>
+<p><strong>Preparation:</strong> Open your RStudio project and download new data for today from <a href="https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1">Stud-IP</a> (log in first) and unzip them into your project folder ’/data/. You can use <code>getwd()</code> to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using <code>install.packages()</code> if not done yet:</p>
 <ul>
 <li>rgdal<br />
 </li>
 <li>rgeos<br />
 </li>
-<li>maptools<br />
-</li>
-<li>plyr<br />
+<li>dplyr<br />
 </li>
 <li>classInt</li>
 <li>colorRamps</li>
 <li>performance</li>
 </ul>
-<p>For downloading ‘performance’, first install ‘devtools’ and then run</p>
-<pre><code>install.packages(&quot;devtools&quot;)
-devtools::install_github(&quot;easystats/performance&quot;)</code></pre>
 <p> </p>
 <div id="loading-palm-data-set-and-shapefiles" class="section level3">
 <h3>1. Loading palm data set and shapefiles</h3>
@@ -434,17 +429,17 @@ devtools::install_github(&quot;easystats/performance&quot;)</code></pre>
 <pre class="r"><code>rm(list=ls()) # You might want to remove all loaded objects first</code></pre>
 <p> </p>
 <p><strong>Load R packages &amp; palm data set</strong></p>
-<pre class="r"><code>library(plyr)
+<pre class="r"><code>library(dplyr)
 library(rgdal)
 library(rgeos)
-library(maptools)
 library(classInt)
 library(colorRamps)
 library(performance)</code></pre>
 <p> </p>
-<pre class="r"><code>species &lt;- read.csv(&quot;data/palms_species_per_gridcell.csv&quot;)</code></pre>
 <p>For today’s exercise, we will continue to use the Neotropical palm data set from <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x">Kreft, H., Sommer, J.H. &amp; Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. <em>Ecography</em>, 29, 21-30</a>.<br />
  </p>
+<pre class="r"><code>species &lt;- read.csv(&quot;data/palms_species_per_gridcell.csv&quot;)</code></pre>
+<p> </p>
 <p><strong>Data inspection</strong></p>
 <pre class="r"><code>head(species) </code></pre>
 <pre><code>##   grid_id spp_Id    GENUS EPITHET
@@ -525,7 +520,7 @@ head(coordinates)</code></pre>
 coordinates &lt;- data.frame(grid_id = grid@data$grid_id, Long = coordinates$x, Lat = coordinates$y)
 
 # join coordinates to grid shapefile
-grid@data &lt;- join(grid@data, coordinates, by=&quot;grid_id&quot;, type=&quot;left&quot;)</code></pre>
+grid@data &lt;- left_join(grid@data, coordinates, by=&quot;grid_id&quot;)</code></pre>
 <p> </p>
 </div>
 <div id="data-aggregation-species-richness-per-gridcell" class="section level3">
@@ -571,7 +566,7 @@ str(species_num)</code></pre>
 ##  Max.   :25474   Max.   :82.00</code></pre>
 <p> </p>
 <p><strong>Join species numbers to shapefile</strong></p>
-<pre class="r"><code>grid@data &lt;- join(grid@data, species_num, by=&quot;grid_id&quot;, type=&quot;left&quot;)
+<pre class="r"><code>grid@data &lt;- left_join(grid@data, species_num, by=&quot;grid_id&quot;)
 head(grid@data)</code></pre>
 <pre><code>##   grid_id AREA PORTION      Long   Lat spec_num
 ## 1     538 0.25     100 -114.2507 36.25        1
@@ -626,7 +621,7 @@ legend(&quot;bottomleft&quot;, # position
 </div>
 <div id="data-aggregation-species-richness-per-latitudinal-belt" class="section level3">
 <h3>4. Data aggregation (species richness per latitudinal belt)</h3>
-<pre class="r"><code>species_num &lt;- join(species_num, coordinates, by=&quot;grid_id&quot;, type=&quot;inner&quot;)
+<pre class="r"><code>species_num &lt;- inner_join(species_num, coordinates, by=&quot;grid_id&quot;)
 min(species_num$Lat);max(species_num$Lat)</code></pre>
 <pre><code>## [1] -34.75</code></pre>
 <pre><code>## [1] 36.25</code></pre>
@@ -816,9 +811,12 @@ points(abs(belts), predict(model3), type=&quot;l&quot;, col=&quot;blue&quot;, lw
 <p> </p>
 <p>Let’s also assess model performance using the performance package to calculate commonly used indices, such as R<sup>2</sup>, AIC, RMSE, etc.</p>
 <pre class="r"><code>compare_performance(model3,model2)</code></pre>
-<pre><code>##    Model Type      AIC      BIC        R2 R2_adjusted     RMSE BF
-## 2 model3   lm 725.8151 737.6664 0.9555197   0.9548843 2.976965 NA
-## 1 model2   lm 819.8933 828.7818 0.9129117   0.9122941 4.165524  1</code></pre>
+<pre><code>## # Comparison of Model Performance Indices
+## 
+## Model  | Type |    AIC |    BIC |   R2 | R2_adjusted | RMSE | BF
+## ----------------------------------------------------------------
+## model3 |   lm | 725.82 | 737.67 | 0.96 |        0.95 | 2.98 |   
+## model2 |   lm | 819.89 | 828.78 | 0.91 |        0.91 | 4.17 |  0</code></pre>
 </div>
 
 

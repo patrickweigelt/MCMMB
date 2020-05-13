@@ -19,22 +19,16 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 
 * rgdal  
 * rgeos  
-* maptools  
-* plyr  
+* dplyr  
 * classInt
 * colorRamps
 * performance
 
-For downloading 'performance', first install 'devtools' and then run 
-```
-install.packages("devtools")
-devtools::install_github("easystats/performance")
-```
 &nbsp;
 
 ### 1. Loading palm data set and shapefiles
@@ -49,30 +43,29 @@ rm(list=ls()) # You might want to remove all loaded objects first
 
 
 ```{r, include=FALSE}
-library(plyr)
+library(dplyr)
 library(rgdal)
 library(rgeos)
-library(maptools)
 library(classInt)
 library(colorRamps)
 library(performance)
 ```
 
 ```{r, eval=FALSE}
-library(plyr)
+library(dplyr)
 library(rgdal)
 library(rgeos)
-library(maptools)
 library(classInt)
 library(colorRamps)
 library(performance)
 ```
 &nbsp;
 
+For today's exercise, we will continue to use the Neotropical palm data set from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
+&nbsp;
 ```{r}
 species <- read.csv("data/palms_species_per_gridcell.csv")
 ```
-For today's exercise, we will continue to use the Neotropical palm data set from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
 &nbsp;
 
 
@@ -129,7 +122,7 @@ head(coordinates)
 coordinates <- data.frame(grid_id = grid@data$grid_id, Long = coordinates$x, Lat = coordinates$y)
 
 # join coordinates to grid shapefile
-grid@data <- join(grid@data, coordinates, by="grid_id", type="left")
+grid@data <- left_join(grid@data, coordinates, by="grid_id")
 ```
 &nbsp;
 
@@ -154,7 +147,7 @@ summary(species_num)
 
 **Join species numbers to shapefile**  
 ```{r, echo=TRUE}
-grid@data <- join(grid@data, species_num, by="grid_id", type="left")
+grid@data <- left_join(grid@data, species_num, by="grid_id")
 head(grid@data)
 ```
 &nbsp;
@@ -210,7 +203,7 @@ plot(americas, add=TRUE)
 ### 4. Data aggregation (species richness per latitudinal belt)  
 
 ```{r, echo=TRUE}
-species_num <- join(species_num, coordinates, by="grid_id", type="inner")
+species_num <- inner_join(species_num, coordinates, by="grid_id")
 min(species_num$Lat);max(species_num$Lat)
 ```
 &nbsp;

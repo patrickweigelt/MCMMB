@@ -354,8 +354,11 @@ prf <- ROCR::performance(pr, measure = "tpr", x.measure = "fpr")
 plot(prf, main="Receiver Operating Characteristic Curve")
 abline(a=0,b=1)
 ```
+
+&nbsp;  
+
 For the ROC, the curve should be located in the upper left of the figure which means that at intermediat threshold values the true positive rate is much higher than the false positive rate.  
-&nbsp;
+&nbsp;  
 
 ```{r, echo=TRUE}
 auc <- ROCR::performance(pr, measure = "auc")
