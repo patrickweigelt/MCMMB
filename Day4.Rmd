@@ -241,6 +241,7 @@ mean(species_num$spec_num[which(species_num$Lat>belts[20]-0.25 &
 #for loop example
 for (i in 1:10){
   print(i)
+  Sys.sleep(1)
 }
 
 # create an empty vector for the mean species counts
