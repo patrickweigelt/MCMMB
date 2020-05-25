@@ -335,7 +335,7 @@ legend("bottomleft", # position
 
 #### Exercise  
 
-1) Run a model of species richness in dependence on latititude + latitude² and compare the AIC to our best model with all environmental precitors  
+1) Run a model of species richness in dependence on latitude + latitude² and compare the AIC to our best model with all environmental predictors  
 ```{r, echo=FALSE}
 model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$Lat)^2))
 summary(model_lat)
