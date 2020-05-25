@@ -377,7 +377,7 @@ crPlots(gdm2)
 
 **A linear mixed effects model for all 4 archipelagos**
 
-_Species = log(Area) + log(Time) + log(Time)^2^ + 1|archipelago_    
+_Species = log(Area) + log(Time) + log(Time)^2^ + (1|archipelago)_    
 
 ```{r, echo=TRUE}
 gdm_all <- lme4::glmer(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2) + (1|archipelago), data=islands_gdm, family = poisson)

@@ -531,7 +531,7 @@ bio1_mean</code></pre>
 <pre><code>## [1] 6038</code></pre>
 <pre class="r"><code>nrow(grid)/10*system.time(bio1_mean &lt;- extract(bio1,grid[c(1:10),], fun=mean))/60</code></pre>
 <pre><code>##     user   system  elapsed 
-## 23.74947  0.00000 24.25263</code></pre>
+## 16.80577  0.00000 16.80577</code></pre>
 <pre class="r"><code># 16 min?</code></pre>
 <p>Note: There are faster packages for dealing with raster layers available now (<em>velox</em>, <em>fasterRaster</em>). Here, we want to make use of a workaround that also helps us top understand the data better.<br />
  </p>
@@ -812,7 +812,7 @@ legend(&quot;bottomleft&quot;, # position
 <div id="exercise-1" class="section level4">
 <h4>Exercise</h4>
 <ol style="list-style-type: decimal">
-<li>Run a model of species richness in dependence on latititude + latitude² and compare the AIC to our best model with all environmental precitors</li>
+<li>Run a model of species richness in dependence on latitude + latitude² and compare the AIC to our best model with all environmental predictors</li>
 </ol>
 <pre><code>## 
 ## Call:
