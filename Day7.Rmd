@@ -20,14 +20,14 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files?cid=a16be33e4d2eb3c1c82a459c44495012) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * ape  
 * Taxonstand  
 * rgdal  
 * rgeos  
 * maptools  
-* plyr  
+* dplyr  
 * psych
 * picante  
 * pez  
@@ -38,10 +38,10 @@ _[back to overview](index.html)_
 
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-library(plyr)
+library(dplyr)
 library(rgdal)
 library(rgeos)
-library(maptools)
+library(maptools) #  Geospatial fun
 library(Taxonstand)
 library(ape)
 library(picante)
@@ -52,11 +52,11 @@ library(colorRamps)
 ```
 
 ```{r eval=FALSE}
-library(plyr) # basic data manipulation
+library(dplyr) # basic data manipulation
 
 library(rgdal) #  Geospatial fun
 library(rgeos) #  Geospatial fun
-library(maptools)# Geospatial fun
+library(maptools) #  Geospatial fun
 
 library(Taxonstand) # Taxonomic standardisation of plant species names
 library(ape) # Analyses of phylogenetics and evolution
@@ -74,7 +74,7 @@ library(colorRamps) # for plotting nice colors
 ### a. Load a phylogeny \& look at structure of 'multiPhylo' object  
 
 
-**load Multi tree object into R**  
+**load multi-tree object into R**  
 
 Data from Faurby, S., Eiserhardt, W.L., Baker, W.J. & Svenning, J.-C. (2016).  
     An all-evidence species-level supertree for the palms (Arecaceae).  
@@ -274,7 +274,7 @@ head(grid_2degrees@data)
 plot(grid_2degrees)
 plot(americas, add=TRUE)
 
-species <- join(species, grid@data, by="grid_id", type="inner")
+species <- inner_join(species, grid@data, by="grid_id")
 head(species)
 ```
 &nbsp;
@@ -366,7 +366,7 @@ _Create a data.frame called 'palmdiversity' by joining 'pd_palms' with 'pd.out'_
 
 ```{r echo=FALSE}
 palmdiversity<- data.frame(new_ID = as.numeric(rownames(species_grid)), pd_palms) 
-palmdiversity<-join(palmdiversity,pd.out, by="new_ID")
+palmdiversity<-left_join(palmdiversity,pd.out, by="new_ID")
 head(palmdiversity)
 ```
 &nbsp;
@@ -381,7 +381,7 @@ _Join the palmdiversity data.frame to the shapefile with the new gridcell IDs_
 
 ```{r echo=FALSE}
 
-grid_2degrees@data <- join(grid_2degrees@data, palmdiversity, by = "new_ID", type="left")
+grid_2degrees@data <- left_join(grid_2degrees@data, palmdiversity, by = "new_ID")
 head(grid_2degrees@data)
 ```
 &nbsp;
