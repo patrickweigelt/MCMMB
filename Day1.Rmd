@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 1: Basics and spatial data in R"
-author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "April 22, 2019"
+author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
+date: "April 14, 2021"
 output: 
   html_document: 
     theme: flatly
@@ -58,8 +58,23 @@ _Do this only once for the entire practical part of the class and once again for
 * Start coding!
 
 
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day1.html", destfile = file.path(dir, "Day1.html"))
+htmlFile <- file.path(dir, "Day1.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.
+&nbsp;
+
+
+
 ## 2. Getting started
-**Using R as a calulator**
+**Using R as a calculator**
 
 ```{r, eval=FALSE}
 # use the console to do simple calculations
@@ -207,7 +222,7 @@ You can apply functions to vectors
 mean(vector_2) # function for calculating the mean
 sd(vector_2)   # standard deviation
 ```
-_Most functions require a certain input structure like here a vector_  
+_Functions require a certain input structure like here a vector_  
 ```{r}
 mean(c(3,6))
 mean(3,6)
@@ -275,7 +290,7 @@ df_1
 ```{r}
 str(df_1) 
 ```
-"colour" is a factor; makes sense if certain values or levels are repeated
+"colour" is a character vector
 
 &nbsp;
 
@@ -287,19 +302,26 @@ df_1$colour     # calling by column name using $
 ```
 
 ```{r}
+plot(df_1$ID,df_1$number_1, col=df_1$colour)
+```
+
+
+```{r}
+df_1[,3] <- as.factor(df_1[,3]) # change column to factor
 levels(df_1[,3])
-df_1[,3] <- as.character(df_1[,3]) # change column to character vector
 str(df_1)
 ```
-colour is a character vector
+Now "colour" is a factor, which is smaller when stored and faster to handle.  
 &nbsp;
 
 ```{r}
 plot(df_1$ID,df_1$number_1, col=df_1$colour)
 ```
+&nbsp;
+Not the factor levels including the color character strings are used for coloring but the numbers behind them.  
+&nbsp;
 
-
-Be careful when converting factors to numeric vectors or columns
+Be careful when converting factors to numeric vectors or columns!  
 ```{r}
 numeric_factor <- as.factor(df_1$number_1)
 numeric_factor
@@ -331,8 +353,8 @@ _GMTED - Digital elevation data <https://topotools.cr.usgs.gov/gmted_viewer/view
 [Elevation above sea level (mn30_grd.zip)](http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Grid_ZipFiles/mn30_grd.zip)
 
 _Chelsa - Climate data <http://chelsa-climate.org/>_  
-[Annual mean temperature (CHELSA_bio10_01.tif)](https://envidatrepo.wsl.ch/uploads/chelsa/chelsa_V1/bioclim/integer/CHELSA_bio10_01.tif)  
-[Mean annual precipitation (CHELSA_bio10_12.tif)](https://envidatrepo.wsl.ch/uploads/chelsa/chelsa_V1/bioclim/integer/CHELSA_bio10_12.tif)  
+[Annual mean temperature (CHELSA_bio10_01.tif)](https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V1/climatologies/bio/CHELSA_bio10_01.tif)  
+[Mean annual precipitation (CHELSA_bio10_12.tif)](https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V1/climatologies/bio/CHELSA_bio10_12.tif)  
 &nbsp;
 
 **Extract and copy the rasters into your R-project folder ../data/**  

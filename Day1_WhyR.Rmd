@@ -1,7 +1,7 @@
 ---
 title: "Why R? and other questions"
-author: "Dylan Craven"
-date: "April 17th, 2019"
+author: "Dylan Craven & Patrick Weigelt"
+date: "April 14th, 2021"
 output: 
   ioslides_presentation: 
     css: styles.css
@@ -24,13 +24,13 @@ knitr::opts_chunk$set(echo = FALSE)
 - Where to get help with R
 - Create a R project
 
-## R & YRodeoou
+## R & You
 
 - Tools you need to acquire and strengthen as a graduate student:    
     * Think critically (identify & assess problems)    
     * Solve problems    
     * Communicate problems and possible solutions  
-    * R is one of many tools, but it's also becoming a marketable skill (outside of science too!)  
+- R is one of many tools, but it's also becoming a marketable skill (outside of science too!)  
 
 ## Why R?
 
@@ -93,7 +93,7 @@ Other options besides RStudio: Emacs, Jupyter notebooks, Rodeo
 - File | New Project
 - Select *either* 'New Directory' or 'Existing Directory'   
   this will be the working folder for our course (on your computer)
-- Locate the project on your computer in a place (e.g. '~Desktop/Courses/Macroecology)  
+- Locate the project on your computer in a place (e.g. '~/Courses/Macroecology)  
 - Name your project  
 - Within your project's folder, create three sub-folders: 
     + data
