@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
 author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "April 29, 2020"
+date: "April 21, 2021"
 output: 
   html_document: 
     theme: flatly
@@ -18,7 +18,7 @@ _[back to overview](index.html)_
 &nbsp;
 &nbsp;
 
-**Preparation:** Please open the RStudio project we established last week and download all data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Please open the RStudio project we established last week and download all data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * rgdal
 * raster
@@ -26,11 +26,23 @@ _[back to overview](index.html)_
 
 &nbsp;
 
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day2.html", destfile = file.path(dir, "Day2.html"))
+htmlFile <- file.path(dir, "Day2.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.
+
 ## 1. Loading spreadsheet data into R  
 
 **Clean up**  
 ```{r}
-rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to also unmap loaded packages
+rm(list = ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to also unmap loaded packages
 ```
 &nbsp;
 
@@ -38,6 +50,7 @@ rm(list=ls()) # remove all objects first; alternatively press CTRL+SHIFT+F10 to 
 ```{r, include=FALSE}
 library(dplyr)
 ```
+
 ```{r, eval=FALSE}
 library(dplyr)
 ```
@@ -51,7 +64,7 @@ We use a version of `read.table()` to import data into R as a data.frame. Have a
 ```
 
 ```{r}
-species <- read.csv("data/palms_species_per_gridcell.csv")
+species <- read.csv("../data/palms_species_per_gridcell.csv")
 ```
 Here, we use data from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
 &nbsp;
@@ -66,6 +79,7 @@ str(species)
 ```{r}
 class(species$GENUS)
 ```
+
 ```{r}
 unique(species$GENUS) # or levels(species$GENUS)
 ```
@@ -77,17 +91,21 @@ unique(species$GENUS) # or levels(species$GENUS)
 ```{r}
 species$species <- paste(species$GENUS,species$EPITHET, sep = " ")
 ```
+
 `paste()` combines the characterstrings of genus and epithet into a full species name  
 &nbsp;
 
 **Sorting**  
 Click on the species object in the 'Environment' tab of RStudio or run `View(species)` to have a look at the table. Sorting in RStudio's viewer does not change the order of the actual data. To sort the data.frame, use `order()`.  
+
 ```{r, eval=FALSE}
 order(species$grid_id)
 ```
+
 Gives back the indices of grid_id in increasing order of the value of grid_id. They can be used to reorganize the data.frame accordingly
+
 ```{r}
-species <- species[order(species$grid_id),]
+species <- species[order(species$grid_id), ]
 ```
 &nbsp;
 
@@ -97,7 +115,7 @@ _`which()` and operators: `==`, `>=`, `>`, `<`, `<=`, `%in%`, `is.na()`, `is.fin
 
 **Select unique subset for certain columns**  
 ```{r}
-species_unique <- unique(species[,c("spp_Id","GENUS","EPITHET","species")])
+species_unique <- unique(species[, c("spp_Id", "GENUS", "EPITHET", "species")])
 nrow(species_unique) # Number of species
 length(unique(species$species))
 ```
@@ -107,36 +125,37 @@ See how many species there are per genus
 ```{r}
 spec_genera <- table(species_unique$GENUS) # contingency table of the counts of factor levels.
 spec_genera
-hist(spec_genera, main = "Histgram of spcies per genus", xlab="Spcies per genus")
+hist(spec_genera, main = "Histogram of species per genus",
+     xlab = "Species per genus")
 ```
 &nbsp;
 
 **Choose entries of a given value**  
 ```{r}
 which(species$GENUS=="Ammandra") # index of all entries of genus "Ammandra"
-head(species[which(species$GENUS=="Ammandra"),]) # first six rows
-unique(species$species[which(species$GENUS=="Ammandra")])
+head(species[which(species$GENUS == "Ammandra"), ]) # first six rows
+unique(species$species[which(species$GENUS == "Ammandra")])
 ```
 &nbsp;
 
 **OR**  
 ```{r}
 unique(species$species[which(species$GENUS == "Ammandra" | species$GENUS == "Washingtonia")]) # all species names in the genera "Ammandra" and "Washingtonia"
-unique(species$species[which(species$GENUS %in% c("Ammandra","Washingtonia"))])
+unique(species$species[which(species$GENUS %in% c("Ammandra", "Washingtonia"))])
 ```
 &nbsp;
 
 **AND**  
 ```{r}
-head(species[which(species$GENUS=="Ammandra" & species$EPITHET =="decasperma"),]) # all entries of Ammandra decasperma
-head(species[which(species$species=="Ammandra decasperma"),])
+head(species[which(species$GENUS=="Ammandra" & species$EPITHET == "decasperma"), ]) # all entries of Ammandra decasperma
+head(species[which(species$species == "Ammandra decasperma"), ])
 ```
 &nbsp;
 
 ## 3. data.frame exercise  
 1) Make a subset of the data.frame that only includes entries for the 4 species _Geonoma pauciflora_, _Geonoma weberbaueri_, _Phytelephas tenuicaulis_ & _Mauritia flexuosa_.  
 2) According to [The Plant List](http://www.theplantlist.org/tpl1.1/record/kew-89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
-3) In how many gridcells does each of the species occur?
+3) In how many grid cells does each of these species occurs?
 &nbsp;
 
 
@@ -150,6 +169,7 @@ head(species[which(species$species=="Ammandra decasperma"),])
 library(rgdal)
 library(raster)
 ```
+
 ```{r, eval=FALSE}
 library(rgdal)
 library(raster)
@@ -159,13 +179,16 @@ library(raster)
 
 **Load spatial poylgons into R**
 ```{r}
-grid <- readOGR("data/30min_grid_select50%.shp", integer64="allow.loss")
-americas <- readOGR("data/americas.shp")
-par(mfrow=c(1,2))
-plot(grid, border="darkgrey")
-plot(americas, add=TRUE)
-plot(grid, border="darkgrey", ylim=c(5,25), xlim=c(-85,-65))
-plot(americas, add=TRUE)
+grid <- readOGR("../data/30min_grid_select50/30min_grid_select50%.shp",
+                integer64 = "allow.loss")
+americas <- readOGR("../data/americas/americas.shp")
+
+# Plot
+par(mfrow = c(1, 2))
+plot(grid, border = "darkgrey")
+plot(americas, add = TRUE)
+plot(grid, border = "darkgrey", ylim = c(5, 25), xlim = c(-85, -65))
+plot(americas, add = TRUE)
 ```
 
 ```{r}
@@ -183,6 +206,7 @@ not defined yet!
 ```{r}
 grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 ```
+
 ```{r}
 grid@proj4string
 ```
@@ -202,35 +226,41 @@ head(grid@data)
 
 _Convert long table to species by grid-cell table_
 ```{r}
-species <- species[,c("grid_id","species")]
+species <- species[, c("grid_id", "species")]
 species_grid <- as.data.frame.matrix(table(species)) # Count species by gridcell combinations
 species_grid <- data.frame(grid_id = as.integer(row.names(species_grid)), species_grid) # Add column with grid_id
-species_grid[which(species_grid$grid_id %in% c(5328:5332)),1:4]
+species_grid[which(species_grid$grid_id %in% c(5328:5332)), 1:4]
 ```
 &nbsp;
 
 _Join palm occurrences and spatial shapefile_
 ```{r}
 names(grid@data)[1] <- "grid_id" #rename ID column to correspond to species_grid$grid_id
-grid@data <- left_join(grid@data, species_grid, by="grid_id") # Perform a "SQL" left join
+grid@data <- left_join(grid@data, species_grid, by = "grid_id") # Perform a "SQL" left join
 grid@data[is.na(grid@data)] <- 0
-grid@data[which(grid@data$grid_id %in% c(5328:5332)),1:5]
+grid@data[which(grid@data$grid_id %in% c(5328:5332)), 1:5]
 ```
 &nbsp;
 
 **Make distribution maps for the four species**  
 ```{r}
-par(mfrow=c(2,2), mar=c(1,0,2,0))
-plot(grid, col=ifelse(grid@data$Geonoma.pauciflora==1,"darkgreen","grey"), border=FALSE, main = "Geonoma pauciflora")
+par(mfrow = c(2, 2), mar = c(1, 0, 2, 0))
+plot(grid, col = ifelse(grid@data$Geonoma.pauciflora == 1, "darkgreen", "grey"),
+     border = FALSE, main = "Geonoma pauciflora")
 plot(americas, add=TRUE)
-plot(grid, col=ifelse(grid@data$Geonoma.undata==1,"darkgreen","grey"), border=FALSE, main = "Geonoma undata")
-plot(americas, add=TRUE)
-plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis==1,"darkgreen","grey"), border=FALSE, main = "Phytelephas tenuicaulis")
-plot(americas, add=TRUE)
-plot(grid, col=ifelse(grid@data$Mauritia.flexuosa==1,"darkgreen","grey"), border=FALSE, main = "Mauritia flexuosa")
-plot(americas, add=TRUE)
+plot(grid, col = ifelse(grid@data$Geonoma.undata == 1, "darkgreen", "grey"),
+     border = FALSE, main = "Geonoma undata")
+plot(americas, add = TRUE)
+plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis == 1, "darkgreen", "grey"),
+     border = FALSE, main = "Phytelephas tenuicaulis")
+plot(americas, add = TRUE)
+plot(grid, col = ifelse(grid@data$Mauritia.flexuosa == 1, "darkgreen", "grey"),
+     border = FALSE, main = "Mauritia flexuosa")
+plot(americas, add = TRUE)
 ```
 &nbsp;
 
-If you got interested have a look at this nice tutorial: <http://edrub.in/ARE212/section12.html>
+<br>
+
+To go further, you can have a look at this nice tutorial: <http://edrub.in/ARE212/section12.html>
 
