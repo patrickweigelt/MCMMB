@@ -7,6 +7,8 @@ output:
   html_document: 
     theme: flatly
     toc: yes
+editor_options: 
+ chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -54,11 +56,11 @@ library(dplyr)
 ```{r, eval=FALSE}
 library(dplyr)
 ```
-Here, we mostly use functions from base R to organize our data. However, we load the dplyr package, a toolkit for splitting, applying and combining data. For more advanced and faster functions for data manipulation have a look at the documentation of the packages packages dplyr, reshape2, data.table etc.  
+Here, we mostly use functions from base R to organize our data. However, we load the `dplyr` package, a toolkit for splitting, applying and combining data. For more advanced and faster functions related to data manipulation, have a look at the documentation of the packages `dplyr`, `reshape2`, `data.table` etc.  
 &nbsp;
 
 **Load data**  
-We use a version of `read.table()` to import data into R as a data.frame. Have a look at its help page  
+We use a version of `read.table()` to import data into R as a data.frame. Have a look at its help page.  
 ```{r, eval=FALSE}
 ?read.table
 ```
@@ -88,11 +90,11 @@ unique(species$GENUS) # or levels(species$GENUS)
 &nbsp;
 
 **Adding a column to the data.frame**  
+`paste()` allows us to combine both character strings of genus and epithet into a full species name.  
 ```{r}
-species$species <- paste(species$GENUS,species$EPITHET, sep = " ")
+species$species <- paste(species$GENUS, species$EPITHET, sep = " ")
 ```
 
-`paste()` combines the characterstrings of genus and epithet into a full species name  
 &nbsp;
 
 **Sorting**  
@@ -116,6 +118,9 @@ _`which()` and operators: `==`, `>=`, `>`, `<`, `<=`, `%in%`, `is.na()`, `is.fin
 **Select unique subset for certain columns**  
 ```{r}
 species_unique <- unique(species[, c("spp_Id", "GENUS", "EPITHET", "species")])
+# or: species_unique <- species[!duplicated(species$spp_Id),
+# c("spp_Id", "GENUS", "EPITHET", "species")]
+
 nrow(species_unique) # Number of species
 length(unique(species$species))
 ```
@@ -125,6 +130,8 @@ See how many species there are per genus
 ```{r}
 spec_genera <- table(species_unique$GENUS) # contingency table of the counts of factor levels.
 spec_genera
+
+# Histogram
 hist(spec_genera, main = "Histogram of species per genus",
      xlab = "Species per genus")
 ```
@@ -132,8 +139,10 @@ hist(spec_genera, main = "Histogram of species per genus",
 
 **Choose entries of a given value**  
 ```{r}
-which(species$GENUS=="Ammandra") # index of all entries of genus "Ammandra"
+which(species$GENUS == "Ammandra") # index of all entries of genus "Ammandra"
 head(species[which(species$GENUS == "Ammandra"), ]) # first six rows
+
+# What species belong to this genus?
 unique(species$species[which(species$GENUS == "Ammandra")])
 ```
 &nbsp;
@@ -154,10 +163,28 @@ head(species[which(species$species == "Ammandra decasperma"), ])
 
 ## 3. data.frame exercise  
 1) Make a subset of the data.frame that only includes entries for the 4 species _Geonoma pauciflora_, _Geonoma weberbaueri_, _Phytelephas tenuicaulis_ & _Mauritia flexuosa_.  
+
+```{r, echo = FALSE}
+focal_sp <- c("Geonoma pauciflora", "Geonoma weberbaueri",
+              "Phytelephas tenuicaulis", "Mauritia flexuosa")
+
+sub_sp <- species[which(species$species %in% focal_sp), ]
+```
+
 2) According to [The Plant List](http://www.theplantlist.org/tpl1.1/record/kew-89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
-3) In how many grid cells does each of these species occurs?
+
+```{r, echo = FALSE}
+unique(sub_sp$species)
+sub_sp[which(sub_sp$species == "Geonoma weberbaueri"), "species"] <- "Geonoma undata"
+unique(sub_sp$species)
+```
+
+3) In how many grid cells does each of these species occur?
 &nbsp;
 
+```{r, echo = FALSE}
+table(sub_sp$species)
+```
 
 ## 4. GIS shapefiles in R  
 
@@ -228,7 +255,11 @@ _Convert long table to species by grid-cell table_
 ```{r}
 species <- species[, c("grid_id", "species")]
 species_grid <- as.data.frame.matrix(table(species)) # Count species by gridcell combinations
+species_grid[1:5, 1:5]
+
 species_grid <- data.frame(grid_id = as.integer(row.names(species_grid)), species_grid) # Add column with grid_id
+species_grid[1:5, 1:5]
+
 species_grid[which(species_grid$grid_id %in% c(5328:5332)), 1:4]
 ```
 &nbsp;
