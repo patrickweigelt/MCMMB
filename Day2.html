@@ -413,7 +413,7 @@ rstudioapi::viewer(htmlFile)</code></pre>
 <p><strong>Load data</strong><br />
 We use a version of <code>read.table()</code> to import data into R as a data.frame. Have a look at its help page</p>
 <pre class="r"><code>?read.table</code></pre>
-<pre class="r"><code>species &lt;- read.csv(&quot;../data/palms_species_per_gridcell.csv&quot;)</code></pre>
+<pre class="r"><code>species &lt;- read.csv(&quot;data/palms_species_per_gridcell.csv&quot;)</code></pre>
 <p>Here, we use data from <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x">Kreft, H., Sommer, J.H. &amp; Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. <em>Ecography</em>, 29, 21-30</a>.<br />
  </p>
 <p><strong>Inspection</strong></p>
@@ -582,14 +582,14 @@ spec_genera</code></pre>
 library(raster)</code></pre>
 <p> </p>
 <p><strong>Load spatial poylgons into R</strong></p>
-<pre class="r"><code>grid &lt;- readOGR(&quot;../data/30min_grid_select50/30min_grid_select50%.shp&quot;,
+<pre class="r"><code>grid &lt;- readOGR(&quot;data/30min_grid_select50/30min_grid_select50%.shp&quot;,
                 integer64 = &quot;allow.loss&quot;)</code></pre>
 <pre><code>## OGR data source with driver: ESRI Shapefile 
 ## Source: &quot;C:\Users\Pierre\ownCloud\classes\macroecology\2020\R_tutorials\data\30min_grid_select50\30min_grid_select50%.shp&quot;, layer: &quot;30min_grid_select50%&quot;
 ## with 6038 features
 ## It has 3 fields
 ## Integer64 fields read as signed 32-bit integers:  ID</code></pre>
-<pre class="r"><code>americas &lt;- readOGR(&quot;../data/americas/americas.shp&quot;)</code></pre>
+<pre class="r"><code>americas &lt;- readOGR(&quot;data/americas/americas.shp&quot;)</code></pre>
 <pre><code>## OGR data source with driver: ESRI Shapefile 
 ## Source: &quot;C:\Users\Pierre\ownCloud\classes\macroecology\2020\R_tutorials\data\americas\americas.shp&quot;, layer: &quot;americas&quot;
 ## with 1 features

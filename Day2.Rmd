@@ -64,7 +64,7 @@ We use a version of `read.table()` to import data into R as a data.frame. Have a
 ```
 
 ```{r}
-species <- read.csv("../data/palms_species_per_gridcell.csv")
+species <- read.csv("data/palms_species_per_gridcell.csv")
 ```
 Here, we use data from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
 &nbsp;
@@ -179,9 +179,9 @@ library(raster)
 
 **Load spatial poylgons into R**
 ```{r}
-grid <- readOGR("../data/30min_grid_select50/30min_grid_select50%.shp",
+grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp",
                 integer64 = "allow.loss")
-americas <- readOGR("../data/americas/americas.shp")
+americas <- readOGR("data/americas/americas.shp")
 
 # Plot
 par(mfrow = c(1, 2))
