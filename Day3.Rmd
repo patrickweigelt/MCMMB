@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 3: Download point occurrences & fit species distribution models"
 author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "May 6th, 2020"
+date: "April 28th, 2021"
 output: 
   html_document: 
     fig_height: 7
@@ -20,7 +20,7 @@ _[back to overview](index.html)_
 &nbsp;  
 
 
-**Preparation:** Please open your RStudio project and download all new data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:   
+**Preparation:** Please open your RStudio project and download all new data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:   
 
 * rgdal  
 * rgeos  
@@ -31,6 +31,20 @@ _[back to overview](index.html)_
 * performance  
 
 &nbsp;
+
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day3.html", destfile = file.path(dir, "Day3.html"))
+htmlFile <- file.path(dir, "Day3.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.  
+&nbsp;
+
 
 ### 1. Loading palm data set and setting up for later analyses
 
@@ -66,7 +80,7 @@ library(performance)
 For today's exercise, we will continue to use the Neotropical palm data set from [Kreft, H., Sommer, J.H. & Barthlott, W. (2006) The significance of geographic range size for spatial diversity patterns in Neotropical palms. _Ecography_, 29, 21-30](https://onlinelibrary.wiley.com/doi/full/10.1111/j.2005.0906-7590.04203.x).  
 
 ```{r}
-species <- read.csv("Data/palms_species_per_gridcell.csv")
+species <- read.csv("data/palms_species_per_gridcell.csv")
 ```
 &nbsp;
 
@@ -94,7 +108,7 @@ species$species[which(species$species == "Geonoma weberbaueri")] <- "Geonoma und
 
 ```{r, echo=TRUE}
 # read a polygon shapefile
-grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
+grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp", integer64="allow.loss")
 
 grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system
 #plot(grid)
@@ -124,7 +138,7 @@ is also available via StudIP ('Data/Data/BIEN_data.csv).
 ```{r, echo=TRUE}
 #spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # Download via the internet (this can take quite some time!)
 
-spec_occ <- read.csv("Data/BIEN_data.csv") # Or load species occurrence data from disk
+spec_occ <- read.csv("data/BIEN_data.csv") # Or load species occurrence data from disk
 
 head(spec_occ)
 dim(spec_occ) # how many observations?
@@ -182,7 +196,7 @@ points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia 
 
 ### 3.  Create pseudo‐absences (background data) 
 
-Pseudo-absences are necessary because occurrence data sets (like BIEN) only record presences and not true absences. Thefore, we must generate pseudo-absences, i.e. possible locations where a species doesn't occur.  
+Pseudo-absences are necessary because occurrence data sets (like BIEN) only record presences and not true absences. Therefore, we must generate pseudo-absences, i.e. possible locations where a species doesn't occur.  
 
 **Make spatial points dataframe from grid**  
 ```{R, echo=TRUE}
@@ -199,7 +213,7 @@ plot(grid_centroids)
 
 ```{r, echo=TRUE}
 
-americas <- readOGR("Data/americas.shp") # add shape file showing the borders of the Neotropics  
+americas <- readOGR("data/americas/americas.shp") # add shape file showing the borders of the Neotropics  
 americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") 
 
 # Geonoma pauciflora
@@ -209,7 +223,7 @@ geo_pau@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # assign proje
 
 # add pseudo-absences
 set.seed(100)
-geo_pau_abs <- rbind(grid_centroids[round(runif(nrow(geo_pau), min = 1, max = nrow(grid_centroids))),],geo_pau)
+geo_pau_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(geo_pau), replace = TRUE),],geo_pau)
 
 par(mfrow=c(2,2))
 
@@ -223,7 +237,7 @@ geo_und@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 
 # add pseudo-absences
 set.seed(100)
-geo_und_abs <- rbind(grid_centroids[round(runif(nrow(geo_und), min = 1, max = nrow(grid_centroids))),],geo_und)
+geo_und_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(geo_und), replace = TRUE),],geo_und)
 plot(geo_und_abs, col=ifelse(geo_und_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Geonoma undata")
 plot(americas,add=TRUE)
 
@@ -234,7 +248,7 @@ phy_ten@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 
 # add pseudo-absences
 set.seed(100)
-phy_ten_abs <- rbind(grid_centroids[round(runif(nrow(phy_ten), min = 1, max = nrow(grid_centroids))),],phy_ten)
+phy_ten_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(phy_ten), replace = TRUE),],phy_ten)
 plot(phy_ten_abs, col=ifelse(phy_ten_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Phytelephas tenuicaulis")
 plot(americas,add=TRUE)
 
@@ -246,7 +260,7 @@ mau_fle@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 
 # add pseudo-absences
 set.seed(100)
-mau_fle_abs <- rbind(grid_centroids[round(runif(nrow(mau_fle), min = 1, max = nrow(grid_centroids))),],mau_fle)
+mau_fle_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(mau_fle), replace = TRUE),],mau_fle)
 plot(mau_fle_abs, col=ifelse(mau_fle_abs@data$present==1,"#ef8a62","#7fbf7b"), main="Mauritia flexuosa")
 plot(americas,add=TRUE)
 
@@ -263,7 +277,7 @@ Please note that temperature has been multiplied by 10.
 
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
-elev <- raster("Data/mn30_grd")
+elev <- raster("data/mn30_grd")
 
 par(mfrow=c(1,1))
 plot(elev) 
@@ -272,8 +286,8 @@ plot(elev)
 
 ```{R, echo=TRUE}
 # Import climate data from Chelsa at 30 arc seconds resolution -->
-bio1 <- raster("Data/CHELSA_bio10_01.tif") # temperature*10
-bio12 <- raster("Data/CHELSA_bio10_12.tif") # precipitation
+bio1 <- raster("data/CHELSA_bio10_01.tif") # temperature*10
+bio12 <- raster("data/CHELSA_bio10_12.tif") # precipitation
 plot(bio1)
 ```
 &nbsp;
@@ -285,18 +299,22 @@ plot(bio1)
 geo_pau_abs@data$elev <- extract(elev,geo_pau_abs)
 geo_pau_abs@data$bio1 <- extract(bio1,geo_pau_abs)
 geo_pau_abs@data$bio12 <- extract(bio12,geo_pau_abs)
+geo_pau_abs <- geo_pau_abs[complete.cases(geo_pau_abs@data[,c("elev","bio1","bio12")]),]
 
 geo_und_abs@data$elev <- extract(elev,geo_und_abs)
 geo_und_abs@data$bio1 <- extract(bio1,geo_und_abs)
 geo_und_abs@data$bio12 <- extract(bio12,geo_und_abs)
+geo_und_abs <- geo_und_abs[complete.cases(geo_und_abs@data[,c("elev","bio1","bio12")]),]
 
 phy_ten_abs@data$elev <- extract(elev,phy_ten_abs)
 phy_ten_abs@data$bio1 <- extract(bio1,phy_ten_abs)
 phy_ten_abs@data$bio12 <- extract(bio12,phy_ten_abs)
+phy_ten_abs <- phy_ten_abs[complete.cases(phy_ten_abs@data[,c("elev","bio1","bio12")]),]
 
 mau_fle_abs@data$elev <- extract(elev,mau_fle_abs)
 mau_fle_abs@data$bio1 <- extract(bio1,mau_fle_abs)
 mau_fle_abs@data$bio12 <- extract(bio12,mau_fle_abs)
+mau_fle_abs <- mau_fle_abs[complete.cases(mau_fle_abs@data[,c("elev","bio1","bio12")]),]
 ```
 &nbsp;
 
@@ -357,7 +375,7 @@ abline(a=0,b=1)
 
 &nbsp;  
 
-For the ROC, the curve should be located in the upper left of the figure which means that at intermediat threshold values the true positive rate is much higher than the false positive rate.  
+For the ROC, the curve should be located in the upper left of the figure which means that at intermediate threshold values the true positive rate is much higher than the false positive rate.  
 &nbsp;  
 
 ```{r, echo=TRUE}
