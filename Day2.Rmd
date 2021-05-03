@@ -164,7 +164,7 @@ head(species[which(species$species == "Ammandra decasperma"), ])
 ## 3. data.frame exercise  
 1) Make a subset of the data.frame that only includes entries for the 4 species _Geonoma pauciflora_, _Geonoma weberbaueri_, _Phytelephas tenuicaulis_ & _Mauritia flexuosa_.  
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, eval = FALSE}
 focal_sp <- c("Geonoma pauciflora", "Geonoma weberbaueri",
               "Phytelephas tenuicaulis", "Mauritia flexuosa")
 
@@ -173,7 +173,7 @@ sub_sp <- species[which(species$species %in% focal_sp), ]
 
 2) According to [The Plant List](http://www.theplantlist.org/tpl1.1/record/kew-89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, eval = FALSE}
 unique(sub_sp$species)
 sub_sp[which(sub_sp$species == "Geonoma weberbaueri"), "species"] <- "Geonoma undata"
 unique(sub_sp$species)
@@ -182,7 +182,7 @@ unique(sub_sp$species)
 3) In how many grid cells does each of these species occur?
 &nbsp;
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, eval = FALSE}
 table(sub_sp$species)
 ```
 
