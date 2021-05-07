@@ -1,0 +1,423 @@
+---
+title: "Modern concepts and methods in Macroecology and Biogeography"
+subtitle: "Day 8: Functional biogeography"
+author: "Pierre Denelle, Holger Kreft & Patrick Weigelt"
+date: "April 30th, 2021"
+output: 
+  html_document: 
+    fig_height: 7
+    theme: flatly
+    toc: yes
+    toc_depth: 3
+editor_options: 
+ chunk_output_type: console
+---
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+&nbsp;
+_[back to overview](index.html)_
+&nbsp;
+&nbsp;
+
+**Preparation:** Please open your RStudio project and download the new data () for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/) and unzip and copy them into your .Rproj folder '/data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+
+* `FD`
+* `dplyr`
+* `RColorBrewer`
+* `psych`
+* `rgdal`
+* `rgeos`
+
+&nbsp;
+
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day8.html", destfile = file.path(dir, "Day8.html"))
+htmlFile <- file.path(dir, "Day8.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.
+
+**Load R packages & island data set**  
+
+```{r message = FALSE, warning = FALSE, include = FALSE}
+library(FD)
+library(dplyr)
+library(RColorBrewer)
+library(psych)
+library(rgdal)
+library(rgeos)
+```
+
+```{r eval = FALSE}
+library(FD) # Functional diversity
+library(dplyr) # data.frame operations
+library(RColorBrewer) # color gradients
+library(psych) # pair plot
+library(rgdal) # shapefile
+library(rgeos) # grid cells centroids
+```
+&nbsp;
+
+# 1. Data  
+## 1.1.  Loading palm distribution data  
+
+Data from  Kreft, H., Sommer, J.H. & Barthlott, W. (2006).  
+The significance of geographic range size for spatial diversity  
+patterns in Neotropical palms. _Ecography_, 29, 21-30.  
+
+```{r echo=TRUE}
+species <- read.csv("Data/palms_species_per_gridcell.csv",
+                    sep=",", stringsAsFactors = FALSE)
+head(species)
+length(unique(species$grid_id)) # number of grid cells
+
+# Adding a species column
+species$species <- paste(species$GENUS, species$EPITHET, sep = " ")
+
+# Spatial data
+# gridcells corresponding to palm distribution data and americas coastline
+grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp",
+                integer64 = "allow.loss")
+americas <- readOGR("data/americas/americas.shp")
+
+# remember to include coordinate system
+grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+# have a look at the grid's attribute table
+head(grid@data)
+
+# change clomumn name of first column ('ID')
+names(grid@data)[1] <- "grid_id"
+head(grid@data) 
+
+# plot it
+plot(grid, border= "darkgrey")
+plot(americas, add = TRUE)
+```
+&nbsp;
+
+**Calculate latitude and longitude from the grid's polygons**
+```{r, echo = TRUE}
+# convert the polygons to points (mass centroids)
+grid_centroids <- gCentroid(grid, byid = TRUE)
+
+# extract the coordinates of the points
+coordinates <- data.frame(grid_centroids@coords)
+head(coordinates)
+
+# add grid_id to coordinates data.frame
+coordinates <- data.frame(grid_id = grid@data$grid_id,
+                          Long = coordinates$x, Lat = coordinates$y)
+
+# join centroid coordinates to the grid shapefile
+grid@data <- left_join(grid@data, coordinates, by = "grid_id")
+head(grid@data)
+
+# join centroid coordinates to species data.frame
+species <- left_join(species, coordinates, by = "grid_id")
+head(species)
+```
+&nbsp;
+
+## 1.2. Trait data
+
+Data from Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019).  
+PalmTraits 1.0, a species-level functional trait database of palms worldwide.  
+_Scientific Data_, 6(1), 1–13.  
+
+A database of palm traits (Kissling et al. 2019)
+
+PalmTraits 1.0: functional traits for palm species over the world.
+
+```{r tra_palm}
+# Traits
+tra <- read.table("data/palm_traits/PalmTraits_1.0.txt",
+                  stringsAsFactors = FALSE, sep= "\t", header = TRUE)
+head(tra); dim(tra)
+# knitr::kable(tra[1:10, ])
+```
+
+Several traits available, let's check them out.
+
+### 1.2.1. Life form and habit
+Acaulescent ((leaves and inflorescence rise from the ground, i.e. lacking a visible aboveground stem) ), erect or climbing.
+Binary traits except when one species varies.
+
+StemSolitary (single-stemmed versus clustered)
+
+```{r tra_palm2}
+# Frequency of each category
+table(tra$Climbing)
+table(tra$Acaulescent)
+table(tra$Erect)
+
+# Recoding 2 as 1 (when populations vary in one trait)
+tra[which(tra$Climbing == 2), "Climbing"] <- 1
+tra[which(tra$Acaulescent == 2), "Acaulescent"] <- 1
+tra[which(tra$Erect == 2), "Erect"] <- 1
+
+table(tra$Climbing)
+table(tra$Acaulescent)
+table(tra$Erect)
+```
+
+### 1.2.2. Armature
+Whether bearing some form of spines at the stem or not, or both if populations vary in this trait.
+Whether bearing some form of spines on the leaves or not, or both if populations vary in this trait.
+
+```{r armature}
+# http://idtools.org/id/palms/palmid/gallery.php
+table(tra$StemArmed); table(tra$LeavesArmed)
+table(tra$StemArmed, tra$LeavesArmed)
+
+# Plot
+plot(table(tra$StemArmed, tra$LeavesArmed),
+     main = "Frequency of Armature classes",
+     xlab = "Stem Armed", ylab = "Leaves Armed")
+
+prpX <- prop.table(table(tra$StemArmed))
+prpY <- prop.table(table(tra$StemArmed, tra$LeavesArmed), margin = 1)
+text(prpX/2 * c(1,-1) + 0:1,
+     prpY/2 * c(-1,-1,1,1) + c(1,1,0,0),
+     paste("n=", table(tra$StemArmed, tra$LeavesArmed)))
+
+# Species examples
+head(tra[which(tra$LeavesArmed == 0 & tra$StemArmed == 0), "SpecName"])
+# https://en.wikipedia.org/wiki/Coconut#/media/File:Lefaga,_Return_to_Paradise_beach,_south_coast_Upolu_Island,_Samoa,_2009.jpg
+# Cocos nucifera
+
+View(tra[which(tra$LeavesArmed == 1 & tra$StemArmed == 1), "SpecName"])
+
+```
+
+### 1.2.3. Stem size
+
+```{r stem_size}
+# Plot
+plot(tra$MaxStemHeight_m, tra$MaxStemDia_cm, pch = 16,
+     xlab = "Maximum Stem Height (m)",
+     ylab = "Maximum Stem Diameter (cm)")
+rect(xleft = 50, xright = 172, ybottom = 0, ytop = 20,
+     lwd = 1.5, lty = 2, add = TRUE, col = "firebrick3")
+points(tra$MaxStemHeight_m, tra$MaxStemDia_cm, pch = 16,
+       xlab = "Maximum Stem Height (m)",
+       ylab = "Maximum Stem Diameter (cm)")
+
+# Create color column based on Climbing life form
+tra$col <- c("firebrick3", "dodgerblue")[
+  as.numeric(cut(tra$Climbing, breaks = 2))]
+
+plot(tra$MaxStemHeight_m, tra$MaxStemDia_cm,
+     bg = tra$col, pch = 21, col = "black",
+     xlab = "Maximum Stem Height (m)",
+     ylab = "Maximum Stem Diameter (cm)")
+legend("topright", title = "Climbing life form",
+       legend = unique(tra$Climbing),
+       col = c("firebrick3", "dodgerblue"),
+       pch = 16)
+
+# Only not climbing species
+plot(tra[which(tra$Climbing == 0), "MaxStemHeight_m"],
+     tra[which(tra$Climbing == 0), "MaxStemDia_cm"],
+     col = "black", bg = tra[which(tra$Climbing == 0), "col"], pch = 21,
+     xlab = "Maximum Stem Height (m)",
+     ylab = "Maximum Stem Diameter (cm)")
+text(50, 65, labels = "Ceroxylon quindiuense")
+arrows(x0 = 55, x1 = 61, y0 = 60, y1 = 40,
+       length = 0.1, lwd = 2)
+
+# Ceroxylon quindiuense, the world's tallest monocotyledon
+# https://commons.wikimedia.org/wiki/File:Ceroxylon_quindiuense,_the_world%27s_tallest_monocotyledon._(11211135095).jpg
+
+# UnderstoreyCanopy
+# table(tra$UnderstoreyCanopy, tra$Acaulescent)
+# boxplot(tra$MaxStemHeight_m ~ tra$UnderstoreyCanopy)
+# We won't use this trait
+```
+
+![Ceroxylon quindiuense](https://commons.wikimedia.org/wiki/File:Ceroxylon_quindiuense,_the_world%27s_tallest_monocotyledon._(11211135095).jpg)
+
+### 1.2.4. Leaf
+Many leaf traits available, let's make a pair plot to have a quick look at their correlations.
+
+![Palm leaf](https://gardeningsolutions.ifas.ufl.edu/images/plants/palms/pinnate_leaf_drawing.png)
+
+```{r leaf_traits}
+# Pair plot
+pairs.panels(tra[, c("MaxLeafNumber", "Max_Blade_Length_m",
+                     "Max_Rachis_Length_m", "Max_Petiole_length_m")],
+             density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
+### 1.2.5. Fruit
+```{r fruit_traits}
+# Pair plot
+pairs.panels(tra[, c("AverageFruitLength_cm", "MinFruitLength_cm",
+                     "MaxFruitLength_cm", "AverageFruitWidth_cm",
+                     "MinFruitWidth_cm", "MaxFruitWidth_cm")],
+             density = FALSE, ellipses = FALSE, hist.col = "grey")
+
+# All traits correlated, we'll take only AverageFruitLength_cm
+
+# Also some categorical traits
+boxplot(tra$AverageFruitLength_cm ~ tra$FruitSizeCategorical,
+        col = "grey",
+        xlab = "FruitSizeCategorical", ylab = "AverageFruitLength (cm)")
+
+table(tra$FruitShape)
+# too detailed and not complete
+
+# table(tra$FruitColorDescription)
+# table(tra$MainFruitColors)
+table(tra$Conspicuousness) # summarises colors
+
+# https://www.monaconatureencyclopedia.com/metroxylon-amicarum/?lang=en
+```
+
+# 2. Trait maps
+## 2.1. Merging data
+Merging trait table with spatial gridded dataset.
+
+```{r merge}
+tra_select <- c("Climbing", "Erect", "Acaulescent", "LeavesArmed",
+                "StemArmed", "MaxStemHeight_m", "MaxStemDia_cm",
+                "MaxLeafNumber", "Max_Blade_Length_m",
+                "Max_Petiole_length_m", "AverageFruitLength_cm",
+                "AverageFruitWidth_cm")
+
+# Trait coverage
+sp_tra <- left_join(species[!duplicated(species$species), ],
+                    tra[, c("SpecName", tra_select)],
+                    by = c("species" = "SpecName"))
+dim(sp_tra)
+head(sp_tra)
+
+summary(sp_tra[, tra_select])
+```
+
+Soem traits show a lot of NAs.
+
+## 2.2. Trait distribution
+
+MaxStemHeight_m as an example.
+
+```{r tra_distribution}
+# Map of trait coverage: MaxStemHeight_m
+# Add the trait coverage to grid spatialpolygondataframe
+species_height <- left_join(
+  species[, c("grid_id", "species", "Long", "Lat")],
+  sp_tra[, c("species", "MaxStemHeight_m")],
+  by = "species")
+head(species_height)
+
+# tapply function
+head(tapply(species_height$MaxStemHeight_m,
+            species_height$grid_id,
+            function(x) mean(x, na.rm = TRUE)))
+
+grid_mean_height <- tapply(species_height$MaxStemHeight_m,
+                           species_height$grid_id,
+                           function(x) mean(x, na.rm = TRUE))
+grid_mean_height <- data.frame(
+  grid_id = names(grid_mean_height),
+  mean_height = as.numeric(grid_mean_height))
+
+# Plot
+str(grid_mean_height$grid_id); str(grid@data$grid_id)
+grid_mean_height$grid_id <- as.numeric(as.character(grid_mean_height$grid_id))
+grid@data <- left_join(grid@data, grid_mean_height, by = "grid_id")
+
+# Make a color ramp
+col_func <- colorRampPalette(c("olivedrab1", "olivedrab4"))
+col_func(10)
+my_col <- col_func(length(unique(grid@data$mean_height)))
+
+# Rank variable for color assignment
+grid@data$order <- findInterval(grid@data$mean_height,
+                                sort(grid@data$mean_height))
+
+# Plot of height distribution
+plot(grid, col = col_func(nrow(grid@data))[grid@data$order],
+     border = NA,
+     main = "Max. Stem height\nper grid cell (m)")
+plot(americas, add = TRUE)
+
+legend("bottomleft", # position
+       legend = range(grid@data$mean_height, na.rm = TRUE), 
+       title = "Average max. stem height (m)",
+       fill = col_func(2),
+       cex = 0.7,
+       bty = "n") # no box around it
+```
+
+## 2.3. Trait coverage
+We also saw that not all species have a trait value. We therefore need to make a trait coverage assessment.
+<br>
+
+```{r tra_coverage}
+head(tapply(species_height$MaxStemHeight_m,
+            species_height$grid_id,
+            function(x) sum(is.na(x))/length(x)))
+
+grid_coverage_height <- tapply(species_height$MaxStemHeight_m,
+                               species_height$grid_id,
+                               function(x) sum(is.na(x))/length(x))
+grid_coverage_height <- data.frame(
+  grid_id = names(grid_coverage_height),
+  coverage_height = as.numeric(grid_coverage_height))
+
+# Conversion to percentages
+grid_coverage_height$coverage_height <- 100 *
+  grid_coverage_height$coverage_height
+
+# Make a color ramp
+col_cov <- colorRampPalette(c("grey10", "grey90"))
+
+# Plot
+grid_coverage_height$grid_id <- as.numeric(as.character(grid_coverage_height$grid_id))
+grid@data <- left_join(grid@data, grid_coverage_height, by = "grid_id")
+
+# Rank variable for color assignment
+grid@data$order_cov <- findInterval(grid@data$coverage_height,
+                                    sort(grid@data$coverage_height))
+
+# Plot of height distribution
+plot(grid, col = col_cov(nrow(grid@data))[grid@data$order_cov],
+     border = NA,
+     main = "Max. Stem height coverage")
+plot(americas, add = TRUE)
+
+legend("bottomleft", # position
+       legend = range(grid@data$coverage_height, na.rm = TRUE), 
+       title = "Coverage max. stem height (%)",
+       fill = col_cov(2),
+       cex = 0.7,
+       bty = "n") # no box around it
+```
+
+# 2. Trait space
+
+# 3. Functional diversity
+Mapping FRich on each grid.
+
+## 3.1. Frich per grid cell
+
+FRich for one cell
+for-loop
+Map results
+
+## 3.2. Link with SR
+Plot of the bias
+Correction with nnull model (reshuffling trait values per cell)
+New map
+
+# References
+[Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019). PalmTraits 1.0, a species-level functional trait database of palms worldwide. Scientific Data, 6(1), 1–13.](https://www.nature.com/articles/s41597-019-0189-0)  
