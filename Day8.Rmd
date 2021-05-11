@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 8: Functional biogeography"
 author: "Pierre Denelle, Holger Kreft & Patrick Weigelt"
-date: "April 30th, 2021"
+date: "June 2nd, 2021"
 output: 
   html_document: 
     fig_height: 7
@@ -73,7 +73,7 @@ The significance of geographic range size for spatial diversity
 patterns in Neotropical palms. _Ecography_, 29, 21-30.  
 
 ```{r echo=TRUE}
-species <- read.csv("Data/palms_species_per_gridcell.csv",
+species <- read.csv("data/palms_species_per_gridcell.csv",
                     sep=",", stringsAsFactors = FALSE)
 head(species)
 length(unique(species$grid_id)) # number of grid cells
