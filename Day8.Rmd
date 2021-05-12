@@ -29,6 +29,7 @@ _[back to overview](index.html)_
 * `psych`
 * `rgdal`
 * `rgeos`
+* `ade4`
 
 &nbsp;
 
@@ -53,6 +54,7 @@ library(RColorBrewer)
 library(psych)
 library(rgdal)
 library(rgeos)
+library(ade4)
 ```
 
 ```{r eval = FALSE}
@@ -62,6 +64,7 @@ library(RColorBrewer) # color gradients
 library(psych) # pair plot
 library(rgdal) # shapefile
 library(rgeos) # grid cells centroids
+library(ade4) # Dissimilarity matrix and PCoA
 ```
 &nbsp;
 
@@ -195,7 +198,6 @@ head(tra[which(tra$LeavesArmed == 0 & tra$StemArmed == 0), "SpecName"])
 # Cocos nucifera
 
 View(tra[which(tra$LeavesArmed == 1 & tra$StemArmed == 1), "SpecName"])
-
 ```
 
 ### 1.2.3. Stem size
@@ -234,9 +236,6 @@ text(50, 65, labels = "Ceroxylon quindiuense")
 arrows(x0 = 55, x1 = 61, y0 = 60, y1 = 40,
        length = 0.1, lwd = 2)
 
-# Ceroxylon quindiuense, the world's tallest monocotyledon
-# https://commons.wikimedia.org/wiki/File:Ceroxylon_quindiuense,_the_world%27s_tallest_monocotyledon._(11211135095).jpg
-
 # UnderstoreyCanopy
 # table(tra$UnderstoreyCanopy, tra$Acaulescent)
 # boxplot(tra$MaxStemHeight_m ~ tra$UnderstoreyCanopy)
@@ -244,6 +243,8 @@ arrows(x0 = 55, x1 = 61, y0 = 60, y1 = 40,
 ```
 
 ![Ceroxylon quindiuense](https://commons.wikimedia.org/wiki/File:Ceroxylon_quindiuense,_the_world%27s_tallest_monocotyledon._(11211135095).jpg)
+
+The world's tallest monocotyledon.
 
 ### 1.2.4. Leaf
 Many leaf traits available, let's make a pair plot to have a quick look at their correlations.
@@ -303,7 +304,7 @@ head(sp_tra)
 summary(sp_tra[, tra_select])
 ```
 
-Soem traits show a lot of NAs.
+Some traits do not have a great coverage (lot of NAs).
 
 ## 2.2. Trait distribution
 
@@ -403,20 +404,122 @@ legend("bottomleft", # position
        bty = "n") # no box around it
 ```
 
-# 2. Trait space
+# 3. Trait space
 
-# 3. Functional diversity
+**Distances**  
+
+If you had only numerical traits, you could use the Euclidean distances. If doing so, it would be similar to a PCA.  
+
+Now, because we also have categorical traits, we cannot simply use the Euclidean distances and we need a way to combine several types of data.  
+
+For this, we'll use the Gower's distance implemented in the `dist.ktab` function.
+
+```{r dist_ktab}
+# Making a trait table without NAs
+tra_select
+sp_tra_complete <- sp_tra[, tra_select]
+rownames(sp_tra_complete) <- sp_tra$species
+sp_tra_complete <- sp_tra_complete[complete.cases(sp_tra_complete), ]
+dim(sp_tra_complete); head(sp_tra_complete)
+
+
+?dist.ktab
+
+ktab1 <- ktab.list.df(list(sp_tra_complete[, c(6:12)],
+                           sp_tra_complete[, c(1:5)]))
+
+mat_dissim <- dist.ktab(ktab1, type = c("Q", "D"),
+                        option = "scaledBYrange") # scaled quantitative traits
+head(mat_dissim)
+all.equal(length(mat_dissim),
+          ((nrow(sp_tra_complete)*(nrow(sp_tra_complete)-1))/2))
+```
+
+**Principal Coordinate Analysis (PCoA)**
+
+PCoA relies on the distances between samples. Therefore, the first step of a PCoA is the construction of a (dis)similarity matrix. While PCA is based on Euclidean distances, PCoA can handle (dis)similarity matrices calculated from quantitative, semi-quantitative, qualitative, and mixed variables.  
+
+As always, the choice of (dis)similarity measure is critical and must be suitable to the data in question. For abundance data, Bray-Curtis distance is often recommended. You can use Jaccard index for presence/absence data. When the distance metric is Euclidean, PCoA is equivalent to PCA. 
+
+```{r pcoa}
+# ape::pcoa() # other option
+pcoa_palm <- dudi.pco(mat_dissim, scannf = FALSE, nf = 6)
+```
+
+**Coordinates**
+```{r pcoa_palm_coord}
+# Coordinates of the individuals
+# knitr::kable(pcoa_palm$li)
+
+# Coordinates of the variables
+# knitr::kable(pcoa_palm$co)
+```
+
+**Merging coordinates with trait table and plot**
+```{r pcoa_palm_plot}
+coord_sp_pcoa <- pcoa_palm$li[, 1:2]
+coord_sp_pcoa$sp <- rownames(coord_sp_pcoa)
+head(coord_sp_pcoa)
+
+# Merge back PCoA coordinates to complete trait table
+sp_tra_complete$sp <- rownames(sp_tra_complete)
+sp_tra_complete <- left_join(sp_tra_complete, coord_sp_pcoa, by = "sp")
+
+# Plot
+plot(sp_tra_complete$A1, sp_tra_complete$A2, pch = 16,
+     main = "Species coordinates on the PCoA",
+     xlab = paste0("PCoA1 (",
+                  round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[1],
+                  "%)"),
+     ylab = paste0("PCoA2 (",
+                  round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[2],
+                  "%)"))
+
+# Adding one column with all binary combinations
+sp_tra_complete$cat_comb <- paste(sp_tra_complete$Climbing,
+                                  sp_tra_complete$Erect,
+                                  sp_tra_complete$Acaulescent,
+                                  sp_tra_complete$LeavesArmed,
+                                  sp_tra_complete$StemArmed, sep = "_")
+
+plot(sp_tra_complete$A1, sp_tra_complete$A2, pch = 16,
+     col = factor(sp_tra_complete$cat_comb),
+     main = "Species coordinates on the PCoA",
+     xlab = paste0("PCoA1 (",
+                  round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[1],
+                  "%)"),
+     ylab = paste0("PCoA2 (",
+                  round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[2],
+                  "%)"))
+# Plot of variables
+ordiplot(pcoa_palm)
+
+ef <- envfit(pcoa_palm,
+             sp_tra_complete[, tra_select],
+             permu = 999)
+ef
+plot(ef, p.max = 0.1)
+
+
+```
+
+**Weighting binary traits**
+```{r}
+library(gawdis)
+```
+
+# 4. Functional diversity
 Mapping FRich on each grid.
 
-## 3.1. Frich per grid cell
+## 4.1. Frich per grid cell
 
 FRich for one cell
 for-loop
 Map results
 
-## 3.2. Link with SR
+## 4.2. Link with SR
 Plot of the bias
-Correction with nnull model (reshuffling trait values per cell)
+Correction with null model (reshuffling trait values per cell)
 New map
 
 # References
