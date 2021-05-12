@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 5: Environmental drivers of neotropical palm diversity"
-author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "May 20th, 2020"
+author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
+date: "May 12th, 2021"
 output: 
   html_document: 
     theme: flatly
@@ -19,7 +19,7 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
+**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * rgdal  
 * rgeos
@@ -29,8 +29,21 @@ _[back to overview](index.html)_
 * raster
 * car
 
-
 &nbsp;
+
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day5.html", destfile = file.path(dir, "Day5.html"))
+htmlFile <- file.path(dir, "Day5.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.  
+&nbsp;
+
 
 ### 1. Loading and preparing environmental data from spatial raster layers
 
@@ -73,7 +86,7 @@ For today's exercise, we again use the elevation, temperature ('bio1'), and prec
 
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
-elev <- raster("Data/mn30_grd")
+elev <- raster("data/mn30_grd")
 
 par(mfrow=c(1,1))
 plot(elev, main="Elevation a.s.l. (m)") 
@@ -82,8 +95,8 @@ plot(elev, main="Elevation a.s.l. (m)")
 
 ```{R, echo=TRUE}
 # Import climate data from Chelsa at 30 arc seconds resolution -->
-bio1 <- raster("Data/CHELSA_bio10_01.tif") # temperature*10
-bio12 <- raster("Data/CHELSA_bio10_12.tif") # precipitation
+bio1 <- raster("data/CHELSA_bio10_01.tif") # temperature*10
+bio12 <- raster("data/CHELSA_bio10_12.tif") # precipitation
 plot(bio1, main="Annual mean temperature (10 x C°)")
 ```
 &nbsp;
@@ -91,15 +104,15 @@ plot(bio1, main="Annual mean temperature (10 x C°)")
 
 **Load gridcell shapefile** 
 ```{r, echo=TRUE}
-grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss") # read in polygon shapefile
+grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp", integer64="allow.loss") # read in polygon shapefile
 grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system
-americas <- readOGR("Data/americas.shp")
+americas <- readOGR("data/americas/americas.shp")
 americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 plot(grid, border="darkgrey")
 plot(americas, add=TRUE)
 ```
 
-The raster layers have larger extents than  they need to have for our Neotropical palm data. We can crop them based on the palm gridcell shapefile:
+The raster layers have larger extents than they need to have for our Neotropical palm data. We can crop them based on the palm gridcell shapefile:
 ```{r, echo=TRUE, fig.height=3, fig.width=12}
 extent(grid)
 elev <- crop(elev, extent(grid)) # crop raster layers to smaller extent
@@ -215,8 +228,8 @@ hist(grid@data$elev, main="", xlab="Mean annual precipitation (mm)")
 
 **Join environmental data and species numbers**  
 ```{r, echo=TRUE, fig.height=4, fig.width=4}
-load("Data/grid_env.RData")
-load("Data/species_num.RData") # read in RData files of palm species richness from last week
+load("data/grid_env.RData")
+load("data/species_num.RData") # read in RData files of palm species richness from last week
 hist(species_num$spec_num, main="", xlab="Palm species number")
 ```
 

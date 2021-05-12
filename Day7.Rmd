@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 7: Phylogenetic diversity"
-author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "June 3rd, 2020"
+author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
+date: "May 26th, 2021"
 output: 
   html_document: 
     fig_height: 7
@@ -20,7 +20,7 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * ape  
 * Taxonstand  
@@ -32,6 +32,19 @@ _[back to overview](index.html)_
 * picante  
 * pez  
 
+&nbsp;
+
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day7.html", destfile = file.path(dir, "Day7.html"))
+htmlFile <- file.path(dir, "Day7.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.  
 &nbsp;
 
 **Load R packages & island data set**  
@@ -81,7 +94,7 @@ Data from Faurby, S., Eiserhardt, W.L., Baker, W.J. & Svenning, J.-C. (2016).
     _Molecular Phylogenetics and Evolution_, 100, 57-69.  
 
 ```{r echo=TRUE}
-palmtrees <- read.nexus("Data/Phylogeny_ConservativeCon_Checklist.nex")
+palmtrees <- read.nexus("data/Phylogeny_ConservativeCon_Checklist.nex")
 
 palmtrees
 
@@ -127,7 +140,7 @@ Data from  Kreft, H., Sommer, J.H. & Barthlott, W. (2006).
 
 
 ```{r echo=TRUE}
-species <- read.csv("Data/palms_species_per_gridcell.csv",sep=",", stringsAsFactors = FALSE)
+species <- read.csv("data/palms_species_per_gridcell.csv",sep=",", stringsAsFactors = FALSE)
 head(species)
 length(unique(species$grid_id)) # number of grid cells
 ```
@@ -219,8 +232,8 @@ _If missing species cannot be added reliably, one can remove them from the datas
 
 **Read in polygon shapefile**  
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-americas <- readOGR("Data/americas.shp")
-grid <- readOGR("Data/30min_grid_select50%.shp", integer64="allow.loss")
+americas <- readOGR("data/americas/americas.shp")
+grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp", integer64="allow.loss")
 names(grid@data)[1] <- "grid_id"
 ```
 &nbsp; 
@@ -290,7 +303,7 @@ palmtree_pruned <- drop.tip(palmtree,palmtree$tip.label[which(!palmtree$tip.labe
 length(palmtree_pruned$tip.label) # 
 length(unique(species$species))
 
-write.nexus(palmtree_pruned, file="Data/palmtree_pruned.nex")
+write.nexus(palmtree_pruned, file="data/palmtree_pruned.nex")
 ```
 &nbsp;
 
@@ -300,15 +313,15 @@ species <- unique(species[,c("new_ID","species")])
 species_grid <- as.data.frame.matrix(table(species))
 species_grid<-as.matrix(species_grid)
 
-write.csv(species_grid, file = "Data/palms_specsxsites_phylo.csv")
+write.csv(species_grid, file = "data/palms_specsxsites_phylo.csv")
 ```
 &nbsp;
 
 **Calculate phylogenetic diversity**  
 
 ```{r message=FALSE, warning=FALSE, r,echo=TRUE}
-palmtree_pruned<-read.nexus("Data/palmtree_pruned.nex") # if you have a hard time reading in the large palm phylogeny
-species_grid <- as.matrix(read.csv("Data/palms_specsxsites_phylo.csv", row.names = 1)) # in case you got stuck above
+palmtree_pruned<-read.nexus("data/palmtree_pruned.nex") # if you have a hard time reading in the large palm phylogeny
+species_grid <- as.matrix(read.csv("data/palms_specsxsites_phylo.csv", row.names = 1)) # in case you got stuck above
 
 pd_palms <- pd(species_grid, palmtree_pruned)
 head(pd_palms)

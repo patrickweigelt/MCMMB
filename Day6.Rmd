@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 6: Island Biogeography"
-author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "May 27th, 2020"
+author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
+date: "May 19th, 2021"
 output: 
   html_document: 
     fig_height: 7
@@ -21,7 +21,7 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/f2231e31931a8a9f8ed5122c11f7cec6?cid=8beba58cd80307ca961780fe77c529a1) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+**Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * rgdal  
 * maps  
@@ -33,6 +33,19 @@ _[back to overview](index.html)_
 * performance
 
 
+&nbsp;
+
+If you want to visualize this tutorial in the viewer inside RStudio (to save space on your screen) run the following chunk of code:
+```{r viewer, eval=FALSE}
+install.packages("rstudioapi") # install an R-package required for this step
+dir <- tempfile()
+dir.create(dir)
+download.file("https://gift.uni-goettingen.de/mcmmb/index.html", destfile = file.path(dir, "index.html"))
+download.file("https://gift.uni-goettingen.de/mcmmb/Day6.html", destfile = file.path(dir, "Day6.html"))
+htmlFile <- file.path(dir, "Day6.html")
+rstudioapi::viewer(htmlFile)
+```
+Now you can conveniently copy code from the viewer into your script.  
 &nbsp;
 
 **Load R packages & island data set**  
@@ -64,7 +77,7 @@ library(performance)
 &nbsp;
 
 ```{r}
-islands <- read.csv("Data/islands.csv")
+islands <- read.csv("data/islands.csv")
 ```
 
 ### 1. Data exploration  
@@ -96,9 +109,9 @@ title(main = "Angiosperm species richness")
 points(islands$longitude, islands$latitude, pch=ifelse(islands$spec_num >= 1,1,4), cex = (log10(islands$spec_num+1)/2.6)^2+1, col = my.col.fr.S, lwd=2)
 
 if(.Platform$OS.type == "windows"){ 
-  savePlot("Data/islands.pdf", type = "pdf")
+  savePlot("data/islands.pdf", type = "pdf")
 }else{
-  dev.copy2pdf(file = "Data/islands.pdf")
+  dev.copy2pdf(file = "data/islands.pdf")
 }
 
 # quartz.save("Data/islands.pdf", type = "pdf") # for Mac 

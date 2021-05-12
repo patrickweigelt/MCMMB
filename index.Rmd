@@ -29,6 +29,7 @@ RStudio from <https://www.rstudio.com/>
 * Day 5: [Environmental drivers of neotropical palm diversity](Day5.html)
 * Day 6: [Island Biogeography](Day6.html)
 * Day 7: [Phylogenetic diversity](Day7.html)
+* Day 8: [Functional biogeography](Day8.html)  
 
 
 
