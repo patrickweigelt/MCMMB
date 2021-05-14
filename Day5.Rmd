@@ -216,9 +216,9 @@ head(grid@data)
 
 cor(grid@data[,c("temp","prec","elev")])
 par(mfrow=c(1,3))
-hist(grid@data$temp, main="", xlab="Elevation a.s.l. (m)")
-hist(grid@data$prec, main="", xlab="Annual mean temperature (C°)")
-hist(grid@data$elev, main="", xlab="Mean annual precipitation (mm)")
+hist(grid@data$temp, main="", xlab="Annual mean temperature (C°)")
+hist(grid@data$prec, main="", xlab="Mean annual precipitation (mm)")
+hist(grid@data$elev, main="", xlab="Elevation a.s.l. (m)")
 
 #save(grid, file="Data/grid_env.RData")
 ```
