@@ -394,6 +394,12 @@ plot(pd_palms$SR, pd_palms$residuals,
 **Calculate generic phylogenetic metrics (absolute and standardized)**  
 
 Phylogenetic diversity metrics are standardized by first using a null model to generate expected values.  
+The principle of null models is illustrated in the following figure:  
+
+```{r null_model_principle, fig.label = "Null model principle", out.width = "70%", echo = FALSE}
+knitr::include_graphics("figures/null_model_principle.JPG")
+```
+
 Then, the observed value is compared to the null, usually using standardized effect sizes (SES):
 <br>
 $$SES = (observed - mean.null)/sd.null$$
