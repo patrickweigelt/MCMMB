@@ -480,13 +480,18 @@ plot(sp_tra_complete$A1, sp_tra_complete$A2, pch = 16,
                    "%)"))
 
 # Add the projection of traits on this plot
-ordiplot(pcoa_palm)
+ordiplot(pcoa_palm,
+         main = "Species coordinates on the PCoA",
+         xlab = paste0("PCoA1 (",
+                       round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[1],
+                       "%)"),
+         ylab = paste0("PCoA2 (",
+                       round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[2],
+                       "%)"))
 # ?envfit
-ef <- envfit(pcoa_palm,
-             sp_tra_complete[, tra_select],
-             permu = 999)
+ef <- envfit(pcoa_palm, sp_tra_complete[, tra_select])
 ef
-plot(ef, p.max = 0.1)
+plot(ef)
 ```
 
 Similarly as for the vegetative height of palms, we can plot the first axes of the PCoA.
