@@ -15,9 +15,9 @@ Here we provide links to the tutorials of the "Modern concepts and methods in Ma
 
 QGIS from <https://www.qgis.org/>
 
-R from <http://www.r-project.org/>
+R from <https://cran.r-project.org/>
 
-RStudio from <https://www.rstudio.com/>
+RStudio from <https://www.rstudio.com/products/rstudio/download/>
 
 
 ## 2. Links to tutorials

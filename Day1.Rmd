@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 1: Basics and spatial data in R"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "April 14, 2021"
+date: "April 20, 2022"
 output: 
   html_document: 
     theme: flatly
@@ -26,14 +26,14 @@ English format for exchanging data with others:
 
 * Decimal symbol: " . "  
 * Digit grouping symbol: " , "  
-* List seperator: " , "  
+* List separator: " , "  
 &nbsp;
 
 ### b) Install software
 
 * Get QGIS from <https://www.qgis.org/>
-* Get R from <http://www.r-project.org/>
-* Get RStudio from <https://www.rstudio.com/>
+* Get R from <https://cran.r-project.org/>
+* Get RStudio from <https://www.rstudio.com/products/rstudio/download/>
 
 ### c) Create a new project in RStudio
 
@@ -136,6 +136,7 @@ ls()
 ```{r, eval=FALSE}
 ?sqrt # will open help page in Help tab of RStudio or browser
 ??squareroot
+??`install package` # Or use google
 ```
 &nbsp;
 
@@ -225,7 +226,7 @@ sd(vector_2)   # standard deviation
 _Functions require a certain input structure like here a vector_  
 ```{r}
 mean(c(3,6))
-mean(3,6)
+mean(3,6) # actually means mean(x=3, trim=6, na.rm = FALSE)
 #?mean
 ```
 &nbsp;
@@ -236,6 +237,8 @@ mean(3,6)
 plot(vector_2,vector_1)
 ```
 
+There are two major ways of plotting in R: Base R like above and [ggplot2](https://www.cedricscherer.com/2019/08/05/a-ggplot2-tutorial-for-beautiful-plotting-in-r/) which we will touch upon throughout the tutorials.
+&nbsp;
 
 ### c) Arrays and matrices
 _tables of values of the same mode with n dimensions (matrix = 2 dimensions)_
@@ -259,7 +262,7 @@ matrix_2[,5]  # select a column
 ```
 &nbsp;
 
-You can do calculations with numeric matrices just like with values and vectors
+You can do element-wise calculations with numeric matrices just like with values and vectors
 ```{r}
 matrix_1 + 1
 matrix_1 ^ 2
@@ -267,13 +270,15 @@ matrix_1 ^ 2
 
 ```{r}
 matrix_1 + matrix_2 # matrix by matrix
-matrix_1 * vector_2 # matrix by vector; vector of length 6 is recycled!
+matrix_1 * vector_2 # matrix by vector; vector of length 6 is recycled! In this case each column is multiplied by the vector because they have the same length
 ```
 
 ```{r}
 mean(matrix_1)     # mean of all values in matrix
 colMeans(matrix_1) # mean values per column
 ```
+You can also do proper matrix calculations like Matrix multiplication or cross-products. For example, see [this](https://www.statmethods.net/advstats/matrix.html).
+
 &nbsp;
 
 
@@ -315,9 +320,13 @@ Now "colour" is a factor, which is smaller when stored and faster to handle.
 &nbsp;
 
 ```{r}
-plot(df_1$ID,df_1$number_1, col=df_1$colour)
+plot(df_1$ID,df_1$number_1, col=df_1$colour,
+     xlab = "ID", ylab= "Number 2")
 ```
+
 &nbsp;
+&nbsp;
+
 Not the factor levels including the color character strings are used for coloring but the numbers behind them.  
 &nbsp;
 
@@ -366,10 +375,15 @@ getwd()
 &nbsp;
 
 **Load raster library**  
-```{r}
+```{r, eval=FALSE}
 # install.packages("raster") # install the raster package in case not done yet
+library(raster)
+```
+
+```{r, echo=FALSE}
 library(raster, quietly = TRUE)
 ```
+
 ```{r, echo=FALSE}
 if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # raster saves large temporary files in your user operating systems` user folder. You might want to change this if you're running out of disk space
 ```
@@ -379,7 +393,7 @@ if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # rast
 ```{r}
 elev <- raster("data/mn30_grd")
 par(mfrow=c(1,1))
-plot(elev)
+plot(elev, main = "Elevation")
 ```
 &nbsp;
 
@@ -389,8 +403,8 @@ bio1 <- raster("data/CHELSA_bio10_01.tif")
 bio12 <- raster("data/CHELSA_bio10_12.tif")
 ```
 ```{r}
-plot(bio1)  # Temperature (*10 °C)
-plot(bio12) # Precipitation (mm)
+plot(bio1, main = "Temperature")  # Temperature (*10 °C)
+plot(bio12, main = "Precipitation") # Precipitation (mm)
 ```
 &nbsp;
 
@@ -409,8 +423,11 @@ area(bio1)
 
 **You can do calculations with the raster layers**  
 ```{r}
-bio1 <- bio1/10      # Careful! this is computer intense and might take a long time
-plot(bio1)           # Temperature (°C)
+system.time(log_bio12 <- log10(bio12+1)) # Careful! this is computer intense and might take a long time
+plot(log_bio12, main = "Precipitation")           # Log-transformed precipitation
+
+bio1 <- bio1/10      
+plot(bio1, main = "Temperature")           # Temperature (°C)
 points(9.916,51.541, pch=4) # Göttingen
 text(9.916,51.541, "You are here", pos = 4)
 ```
