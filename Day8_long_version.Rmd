@@ -30,6 +30,7 @@ _[back to overview](index.html)_
 * `rgdal`
 * `rgeos`
 * `ade4`
+* `gawdis`
 
 &nbsp;
 
@@ -55,6 +56,7 @@ library(psych)
 library(rgdal)
 library(rgeos)
 library(ade4)
+library(gawdis)
 ```
 
 ```{r eval = FALSE}
@@ -65,27 +67,29 @@ library(psych) # pair plot
 library(rgdal) # shapefile
 library(rgeos) # grid cells centroids
 library(ade4) # Dissimilarity matrix and PCoA
+library(gawdis) # Different weights to trais before PCoA
 ```
 &nbsp;
 
 # 1. Data  
 ## 1.1.  Loading palm distribution data  
+
 Data from  Kreft, H., Sommer, J.H. & Barthlott, W. (2006).  
 The significance of geographic range size for spatial diversity  
 patterns in Neotropical palms. _Ecography_, 29, 21-30.  
 
-We here import a transformed version of the data to speed up the calculations. Now each cell is at a 2 degrees resolution, and species occurrences have been aggregated into these bigger cells. See [practical 7](https://gift.uni-goettingen.de/mcmmb/Day7.html#loading-grid-shapefile-and-changing-resolution) for more details.
-
 ```{r echo=TRUE}
-species <- readRDS("data/palm_species_per_gridcell_2degrees.rds")
-
+species <- read.csv("data/palms_species_per_gridcell.csv",
+                    sep=",", stringsAsFactors = FALSE)
 head(species)
-length(unique(species$new_ID)) # number of grid cells
-length(unique(species$species)) # number of species
+length(unique(species$grid_id)) # number of grid cells
+
+# Adding a species column
+species$species <- paste(species$GENUS, species$EPITHET, sep = " ")
 
 # Spatial data
 # gridcells corresponding to palm distribution data and americas coastline
-grid <- readOGR("data/2degrees_grid/data_2degrees_grid_.shp",
+grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp",
                 integer64 = "allow.loss")
 americas <- readOGR("data/americas/americas.shp")
 
@@ -95,52 +99,83 @@ americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
 
 # have a look at the grid's attribute table
 head(grid@data)
-head(species)
-# Latitude and longitude centroids have already been calculated
 
-# Plot
+# change clomumn name of first column ('ID')
+names(grid@data)[1] <- "grid_id"
+head(grid@data) 
+
+# plot it
 plot(grid, border= "darkgrey")
 plot(americas, add = TRUE)
 ```
 &nbsp;
 
+**Calculate latitude and longitude from the grid's polygons**
+```{r, echo = TRUE}
+# convert the polygons to points (mass centroids)
+grid_centroids <- gCentroid(grid, byid = TRUE)
+
+# extract the coordinates of the points
+coordinates <- data.frame(grid_centroids@coords)
+head(coordinates)
+
+# add grid_id to coordinates data.frame
+coordinates <- data.frame(grid_id = grid@data$grid_id,
+                          Long = coordinates$x, Lat = coordinates$y)
+
+# join centroid coordinates to the grid shapefile
+grid@data <- left_join(grid@data, coordinates, by = "grid_id")
+head(grid@data)
+
+# join centroid coordinates to species data.frame
+species <- left_join(species, coordinates, by = "grid_id")
+head(species)
+```
+&nbsp;
+
 ## 1.2. Trait data
-A database of palm traits has recently been published. These data come from Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019).  
+
+Data from Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019).  
 PalmTraits 1.0, a species-level functional trait database of palms worldwide.  
 _Scientific Data_, 6(1), 1–13.  
+
+A database of palm traits (Kissling et al. 2019)
+
+PalmTraits 1.0: functional traits for palm species over the world.
 
 ```{r tra_palm}
 # Traits
 tra <- read.table("data/palm_traits/PalmTraits_1.0.txt",
                   stringsAsFactors = FALSE, sep= "\t", header = TRUE)
-dim(tra)
-head(tra)
+head(tra); dim(tra)
+# knitr::kable(tra[1:10, ])
 ```
 
-Many traits are available. Before checking them, we merge the trait table with the species data frame.
+Several traits available, before checking them, we merge the trait table with the species data frame.
 
 ## 1.2. Merging tables
+Merging trait table with spatial gridded dataset.
+
 ```{r merge}
-# Replace space with underscore in trait table before merging
-tra$SpecName <- gsub(" ", "_", tra$SpecName)
-sp_tra <- left_join(species[!duplicated(species$species), ], # we here remove duplicates per species
+# Trait coverage
+sp_tra <- left_join(species[!duplicated(species$species), ],
                     tra,
-                    by = c("species" = "SpecName")) # species are not called the same in both tables
+                    by = c("species" = "SpecName"))
 dim(sp_tra)
 head(sp_tra)
 ```
 
 ## 1.3. Trait description
-When using a functional trait table, several facets have to be inspected. Specifically, we should look at:
-- trait type (*continuous*, _ordinal_, _categorical_, _binary_)
+Here, we aim at describing several facets of each trait. Specifically, we should look at:
+- trait type (continuous, ordinal, categorical, binary)
 - trait coverage (how many species have a trait value)
 - trait distribution (if too asymmetrical, log-transformation)
 - trait correlation (are some traits carrying the same information?)
 - ecological significance (is the trait varying against environment? biotic variable? physiological process?)
 
 ### 1.3.1. Life form and habit
-Binary traits except when one species varies (in that case 0, 1 or 2).
-Acaulescent (leaves and inflorescence rise from the ground, i.e. lacking a visible aboveground stem), erect or climbing.
+Acaulescent ((leaves and inflorescence rise from the ground, i.e. lacking a visible aboveground stem) ), erect or climbing.
+Binary traits except when one species varies.
 
 StemSolitary (single-stemmed versus clustered)
 
@@ -160,20 +195,41 @@ table(sp_tra$Climbing) # very unbalanced
 table(sp_tra$Acaulescent)
 table(sp_tra$Erect)
 
-# For sake of simplicity, we won't consider the life form here
+# Several life forms possible?
+table(sp_tra$Climbing, sp_tra$Acaulescent, sp_tra$Erect)
+unique(apply(sp_tra[, c("Climbing", "Acaulescent", "Erect")], 1, sum))
+# not only 1, it means that some plants have several life forms...
+# let's check it out
+sp_tra$sum_life_form <- apply(sp_tra[, c("Climbing", "Acaulescent",
+                                         "Erect")], 1,
+                              sum)
+table(sp_tra$sum_life_form)
+sp_tra[which(sp_tra$sum_life_form == 2),
+       c("species", "Climbing", "Acaulescent", "Erect")]
+
+# Only two exceptions => let's recode them
+# https://www.palmpedia.net/wiki/Chamaedorea_elatior => climbing
+sp_tra[which(sp_tra$species == "Chamaedorea elatior"), "Erect"] <- 0
+# https://en.wikipedia.org/wiki/Phytelephas_macrocarpa => acaulescent
+sp_tra[which(sp_tra$species == "Phytelephas macrocarpa"), "Erect"] <- 0
+
+# Now every species has only one life form
+sp_tra$sum_life_form <- apply(sp_tra[, c("Climbing", "Acaulescent",
+                                         "Erect")], 1,
+                              sum)
+table(sp_tra$sum_life_form)
+
+# We can now recode the whole life form as one categorical trait
+sp_tra$life_form <- ifelse(sp_tra$Climbing > 0, "Climbing",
+                           ifelse(sp_tra$Acaulescent > 0, "Acaulescent",
+                                  "Erect"))
+table(sp_tra$life_form)
+# very unbalanced: few climbing species
 ```
 
 ### 1.3.2. Armature
 Whether bearing some form of spines at the stem or not, or both if populations vary in this trait.
 Whether bearing some form of spines on the leaves or not, or both if populations vary in this trait.
-
-```{r non_armed_stem, fig.label = "Cocos_nucifera", out.width = "50%", echo = FALSE}
-knitr::include_graphics("figures/Cocos_nucifera.jpg")
-```
-
-```{r armed_stem, fig.label = "Aiphanes_minima", out.width = "50%", echo = FALSE}
-knitr::include_graphics("figures/Aiphanes_minima.jpg")
-```
 
 ```{r armature}
 # http://idtools.org/id/palms/palmid/gallery.php
@@ -191,11 +247,20 @@ text(prpX/2 * c(1,-1) + 0:1,
      prpY/2 * c(-1,-1,1,1) + c(1,1,0,0),
      paste("n=", table(sp_tra$StemArmed, sp_tra$LeavesArmed)))
 
-# For sake of simplicity, we won't use these 2 traits here
+# Species examples
+head(sp_tra[which(sp_tra$LeavesArmed == 0 &
+                    sp_tra$StemArmed == 0), "species"])
+# https://en.wikipedia.org/wiki/Coconut#/media/File:Lefaga,_Return_to_Paradise_beach,_south_coast_Upolu_Island,_Samoa,_2009.jpg
+# Cocos nucifera
+
+# http://palmpedia.net/wiki/Mauritiella_armata (leaves not armed, stem yes)
+
+# View(sp_tra[which(sp_tra$LeavesArmed == 1 &
+#                     sp_tra$StemArmed == 1), "SpecName"])
 ```
 
 ### 1.3.3. Stem size
-Continuous trait
+
 ```{r stem_size}
 # Plot
 plot(sp_tra$MaxStemHeight_m, sp_tra$MaxStemDia_cm, pch = 16,
@@ -205,8 +270,8 @@ rect(xleft = 18, xright = 55, ybottom = 0, ytop = 10,
      lwd = 1.5, lty = 2, add = TRUE, col = "#e3484850")# "firebrick3")
 
 # Create color column based on Climbing life form
-sp_tra$col <- c("firebrick3", "dodgerblue", "dodgerblue")[
-  as.numeric(cut(sp_tra$Climbing, breaks = 3))]
+sp_tra$col <- c("firebrick3", "dodgerblue")[
+  as.numeric(cut(sp_tra$Climbing, breaks = 2))]
 
 plot(sp_tra$MaxStemHeight_m, sp_tra$MaxStemDia_cm,
      bg = sp_tra$col, pch = 21, col = "black",
@@ -214,7 +279,7 @@ plot(sp_tra$MaxStemHeight_m, sp_tra$MaxStemDia_cm,
      ylab = "Maximum Stem Diameter (cm)")
 legend("topright", title = "Climbing life form", bg = "grey",
        legend = unique(sp_tra$Climbing),
-       col = c("firebrick3", "firebrick3", "dodgerblue", "dodgerblue"),
+       col = c("firebrick3", "dodgerblue"),
        pch = 16)
 text(50, 65, labels = "Ceroxylon quindiuense")
 arrows(x0 = 55, x1 = 61, y0 = 60, y1 = 40,
@@ -226,13 +291,12 @@ arrows(x0 = 55, x1 = 61, y0 = 60, y1 = 40,
 # We won't use this sp_trait
 ```
 
-The world's tallest monocotyledon:
-```{r tallest_palm, fig.label = "Ceroxylon quindiuense", out.width = "50%", echo = FALSE}
-knitr::include_graphics("figures/Ceroxylon_quindiuense.jpg")
-```
+![Ceroxylon quindiuense](https://commons.wikimedia.org/wiki/File:Ceroxylon_quindiuense,_the_world%27s_tallest_monocotyledon._(11211135095).jpg)
+
+The world's tallest monocotyledon.
 
 ### 1.3.4. Leaf
-Many leaf traits are available, and they may carry similar information. Let's make a pair plot to have a quick look at this.
+Many leaf traits available, let's make a pair plot to have a quick look at their correlations.
 
 ![Palm leaf](https://gardeningsolutions.ifas.ufl.edu/images/plants/palms/pinnate_leaf_drawing.png)
 
@@ -243,12 +307,9 @@ pairs.panels(sp_tra[, c("MaxLeafNumber", "Max_Blade_Length_m",
              density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 
-The last three traits are highly correlated. We will just keep the blade length.
+Some leaf traits are highly correlated.
 
 ### 1.3.5. Fruit
-Similarly, many fruit traits are available. Let's make another pair plot.
-<br>
-
 ```{r fruit_traits}
 # Pair plot
 pairs.panels(sp_tra[, c("AverageFruitLength_cm", "MinFruitLength_cm",
@@ -256,7 +317,7 @@ pairs.panels(sp_tra[, c("AverageFruitLength_cm", "MinFruitLength_cm",
                         "MinFruitWidth_cm", "MaxFruitWidth_cm")],
              density = FALSE, ellipses = FALSE, hist.col = "grey")
 
-# All traits are highly correlated, we'll take only AverageFruitLength_cm
+# All traits correlated, we'll take only AverageFruitLength_cm
 
 # Also some categorical traits
 boxplot(sp_tra$AverageFruitLength_cm ~ sp_tra$FruitSizeCategorical,
@@ -269,68 +330,70 @@ table(sp_tra$FruitShape)
 # table(sp_tra$FruitColorDescription)
 # table(sp_tra$MainFruitColors)
 table(sp_tra$Conspicuousness) # summarises colors
+
+# https://www.monaconatureencyclopedia.com/metroxylon-amicarum/?lang=en
 ```
 
 ## 1.4. Traits selected
 Based on the different trait properties we just observed, we can come with a subset of relevant traits to keep.
-Note that we just conserve the continuous traits for sake of simplicity.
-<br>
-
 ```{r tra_select}
-tra_select <- c("MaxStemHeight_m", "MaxLeafNumber", "Max_Blade_Length_m",
+tra_select <- c("life_form", "LeavesArmed", "StemArmed",
+                "MaxStemHeight_m", "MaxLeafNumber", "Max_Blade_Length_m",
                 "AverageFruitLength_cm")
 
 # Only columns of interest
 sp_tra <- sp_tra[, c("species", tra_select)]
 
 # Distribution of continuous traits
-pairs.panels(sp_tra[, tra_select], density = FALSE, ellipses = FALSE, hist.col = "grey")
+pairs.panels(sp_tra[, c("LeavesArmed", "StemArmed",
+                        "MaxStemHeight_m", "MaxLeafNumber",
+                        "Max_Blade_Length_m", "AverageFruitLength_cm")],
+             density = FALSE, ellipses = FALSE, hist.col = "grey")
 
 # Log-transforming all the continuous traits
-sp_tra$log_height <- log(sp_tra$MaxStemHeight_m + 1) # adding 1 here to avoid -Inf values
+sp_tra$log_height <- log(sp_tra$MaxStemHeight_m + 1)
 sp_tra$log_leaf_nb <- log(sp_tra$MaxLeafNumber)
 sp_tra$log_blade <- log(sp_tra$Max_Blade_Length_m)
 sp_tra$log_fruit_length <- log(sp_tra$AverageFruitLength_cm)
 
 # Plot
-plot(sp_tra$AverageFruitLength_cm, sp_tra$log_fruit_length, pch = 16,
-     xlab = "Fruit length (cm)", ylab = "Log-transformed fruit length")
+plot(sp_tra$AverageFruitLength_cm, sp_tra$log_fruit_length, pch = 16)
 
 # Change vector of traits of interest
-tra_select <- c("log_height", "log_leaf_nb", "log_blade", "log_fruit_length")
+tra_select <- c("life_form", "LeavesArmed", "StemArmed", "log_height",
+                "log_leaf_nb", "log_blade", "log_fruit_length")
 ```
 
 # 2. Trait maps
 ## 2.1. Trait distribution
-We here aim at mapping the distribution of one trait. We do it here with the maximal stem height.
-<br>
+
+MaxStemHeight_m as an example.
 
 ```{r tra_distribution}
 # Map of trait coverage: MaxStemHeight_m
 # Add the trait coverage to grid spatialpolygondataframe
 species_height <- left_join(
-  species[, c("new_ID", "species", "Long", "Lat")],
+  species[, c("grid_id", "species", "Long", "Lat")],
   sp_tra[, c("species", "MaxStemHeight_m")],
   by = "species")
 head(species_height)
 
 # tapply function
 head(tapply(species_height$MaxStemHeight_m,
-            species_height$new_ID,
-            function(x) mean(x, na.rm = TRUE))) # argument na.rm necessary here
+            species_height$grid_id,
+            function(x) mean(x, na.rm = TRUE)))
 
 grid_mean_height <- tapply(species_height$MaxStemHeight_m,
-                           species_height$new_ID,
+                           species_height$grid_id,
                            function(x) mean(x, na.rm = TRUE))
 grid_mean_height <- data.frame(
-  new_ID = names(grid_mean_height),
+  grid_id = names(grid_mean_height),
   mean_height = as.numeric(grid_mean_height))
-dim(grid_mean_height); head(grid_mean_height)
 
 # Plot
-str(grid_mean_height$new_ID); str(grid@data$new_ID)
-grid_mean_height$new_ID <- as.numeric(as.character(grid_mean_height$new_ID))
-grid@data <- left_join(grid@data, grid_mean_height, by = "new_ID")
+str(grid_mean_height$grid_id); str(grid@data$grid_id)
+grid_mean_height$grid_id <- as.numeric(as.character(grid_mean_height$grid_id))
+grid@data <- left_join(grid@data, grid_mean_height, by = "grid_id")
 
 # Make a color ramp
 col_func <- colorRampPalette(c("olivedrab1", "olivedrab4"))
@@ -361,28 +424,26 @@ We also saw that not all species have a trait value. We therefore need to make a
 
 ```{r tra_coverage}
 head(tapply(species_height$MaxStemHeight_m,
-            species_height$new_ID,
-            function(x) sum(is.na(x))/length(x))) # coverage calculation
+            species_height$grid_id,
+            function(x) sum(is.na(x))/length(x)))
 
 grid_coverage_height <- tapply(species_height$MaxStemHeight_m,
-                               species_height$new_ID,
+                               species_height$grid_id,
                                function(x) sum(is.na(x))/length(x))
 grid_coverage_height <- data.frame(
-  new_ID = names(grid_coverage_height),
+  grid_id = names(grid_coverage_height),
   coverage_height = as.numeric(grid_coverage_height))
-dim(grid_mean_height); head(grid_mean_height)
 
 # Conversion to percentages
 grid_coverage_height$coverage_height <- 100 *
   grid_coverage_height$coverage_height
-head(grid_mean_height)
 
 # Make a color ramp
 col_cov <- colorRampPalette(c("grey10", "grey90"))
 
 # Plot
-grid_coverage_height$new_ID <- as.numeric(as.character(grid_coverage_height$new_ID))
-grid@data <- left_join(grid@data, grid_coverage_height, by = "new_ID")
+grid_coverage_height$grid_id <- as.numeric(as.character(grid_coverage_height$grid_id))
+grid@data <- left_join(grid@data, grid_coverage_height, by = "grid_id")
 
 # Rank variable for color assignment
 grid@data$order_cov <- findInterval(grid@data$coverage_height,
@@ -401,9 +462,6 @@ legend("bottomleft", # position
        cex = 0.7,
        bty = "n") # no box around it
 ```
-
-We can see that the coverage has a huge influence on the conclusion we drew before.
-<br>
 
 # 3. Trait space
 The main objective here is to reduce dimensionality, in order to get the main axes of variation between species.
@@ -428,12 +486,13 @@ dim(sp_tra_complete); head(sp_tra_complete)
 # Gower distance
 ?dist.ktab
 
-ktab1 <- ktab.list.df(list(sp_tra_complete))
+ktab1 <- ktab.list.df(list(sp_tra_complete[, 1, drop = FALSE],
+                           sp_tra_complete[, c(2:3)],
+                           sp_tra_complete[, c(4:7)]))
 
-mat_dissim <- dist.ktab(ktab1, type = "Q", option = "scaledBYrange") # scaled quantitative traits
+mat_dissim <- dist.ktab(ktab1, type = c("N", "D", "Q"),
+                        option = "scaledBYrange") # scaled quantitative traits
 head(mat_dissim)
-
-# n*(n-1)/2 pairwise combinations
 all.equal(length(mat_dissim),
           ((nrow(sp_tra_complete)*(nrow(sp_tra_complete)-1))/2))
 ```
@@ -441,9 +500,7 @@ all.equal(length(mat_dissim),
 ## 3.2. Principal Coordinate Analysis (PCoA)
 
 PCoA relies on the distances between samples. Therefore, the first step of a PCoA is the construction of a (dis)similarity matrix. While PCA is based on Euclidean distances, PCoA can handle (dis)similarity matrices calculated from quantitative, semi-quantitative, qualitative, and mixed variables.  
-<br>
-In our case, we would get a similar result with a PCA since we only have continuous traits and we used Euclidean distances in the dissimilarity matrix.
-<br>
+
 As always, the choice of (dis)similarity measure is critical and must be suitable to the data in question. For abundance data, Bray-Curtis distance is often recommended. You can use Jaccard index for presence/absence data. When the distance metric is Euclidean, PCoA is equivalent to PCA. 
 
 ```{r pcoa}
@@ -451,15 +508,17 @@ As always, the choice of (dis)similarity measure is critical and must be suitabl
 pcoa_palm <- dudi.pco(mat_dissim, scannf = FALSE, nf = 6)
 ```
 
+**Coordinates**
+```{r pcoa_palm_coord}
+# Coordinates of the individuals
+# knitr::kable(pcoa_palm$li)
+
+# Coordinates of the variables
+# knitr::kable(pcoa_palm$co)
+```
+
 **Merging coordinates with trait table and plot**
 ```{r pcoa_palm_plot}
-# Coordinates of the individuals
-head(pcoa_palm$li)
-
-# Barplot of eigenvectors
-barplot((pcoa_palm$eig / sum(pcoa_palm$eig))*100)
-
-# Table with the coordinates on the first 2 axes only
 coord_sp_pcoa <- pcoa_palm$li[, 1:2]
 coord_sp_pcoa$sp <- rownames(coord_sp_pcoa)
 head(coord_sp_pcoa)
@@ -467,7 +526,6 @@ head(coord_sp_pcoa)
 # Merge back PCoA coordinates to complete trait table
 sp_tra_complete$sp <- rownames(sp_tra_complete)
 sp_tra_complete <- left_join(sp_tra_complete, coord_sp_pcoa, by = "sp")
-head(sp_tra_complete)
 
 # Plot
 plot(sp_tra_complete$A1, sp_tra_complete$A2, pch = 16,
@@ -479,54 +537,163 @@ plot(sp_tra_complete$A1, sp_tra_complete$A2, pch = 16,
                    round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[2],
                    "%)"))
 
-# Add the projection of traits on this plot
-ordiplot(pcoa_palm,
-         main = "Species coordinates on the PCoA",
-         xlab = paste0("PCoA1 (",
-                       round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[1],
-                       "%)"),
-         ylab = paste0("PCoA2 (",
-                       round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[2],
-                       "%)"))
-# ?envfit
-ef <- envfit(pcoa_palm, sp_tra_complete[, tra_select])
+# Adding one column with all binary combinations
+sp_tra_complete$cat_comb <- paste(sp_tra_complete$life_form,
+                                  sp_tra_complete$LeavesArmed,
+                                  sp_tra_complete$StemArmed, sep = "_")
+
+plot(sp_tra_complete$A1, sp_tra_complete$A2, pch = 16,
+     col = factor(sp_tra_complete$cat_comb),
+     main = "Species coordinates on the PCoA",
+     xlab = paste0("PCoA1 (",
+                   round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[1],
+                   "%)"),
+     ylab = paste0("PCoA2 (",
+                   round((pcoa_palm$eig / sum(pcoa_palm$eig))*100, 2)[2],
+                   "%)"))
+# Plot of variables
+ordiplot(pcoa_palm)
+
+ef <- envfit(pcoa_palm,
+             sp_tra_complete[, tra_select],
+             permu = 999)
 ef
-plot(ef)
+plot(ef, p.max = 0.1)
 ```
 
-Similarly as for the vegetative height of palms, we can plot the first axes of the PCoA.
-<br>
+## 3.3. Gawdis
+**Weighting binary traits**
+using `gawdis` package.
+
+```{r}
+# Distance matrix with equal weights
+rownames(sp_tra_complete) <- sp_tra_complete$sp
+mat_dissim_w <- gawdis(sp_tra_complete[, tra_select],
+                       w.type = "analytic")
+attr(mat_dissim_w, "weights")
+
+# po <- gawdis(sp_tra_complete[, tra_select], w.type = "optimized", 
+#               opti.maxiter = 50)
+# attr(po, "weights")
+
+# Comparison
+# plot(po, pop)
+
+# PCoA with new distance matrix
+pcoa_palm_w <- dudi.pco(mat_dissim_w, scannf = FALSE, nf = 6)
+
+coord_sp_pcoa_w <- pcoa_palm_w$li[, 1:2]
+colnames(coord_sp_pcoa_w) <- paste0(colnames(coord_sp_pcoa_w), "_w")
+coord_sp_pcoa_w$sp <- rownames(coord_sp_pcoa_w)
+head(coord_sp_pcoa_w)
+
+# Merge back PCoA coordinates to complete trait table
+sp_tra_complete <- left_join(sp_tra_complete, coord_sp_pcoa_w, by = "sp")
+
+# Plot
+plot(sp_tra_complete$A1_w, sp_tra_complete$A2_w, pch = 16,
+     main = "Species coordinates on the PCoA",
+     xlab = paste0("PCoA1 (",
+                   round((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100,
+                         2)[1],
+                   "%)"),
+     ylab = paste0("PCoA2 (",
+                   round((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100,
+                         2)[2],
+                   "%)"))
+
+ef <- envfit(pcoa_palm_w,
+             sp_tra_complete[, tra_select],
+             permu = 999)
+ef
+plot(ef, p.max = 0.1)
+
+# Barplot of eigenvectors
+barplot((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100)
+
+# Check where are the different categories
+# Create color column based on life form
+sp_tra_complete$col <- ifelse(
+  sp_tra_complete$life_form == "Erect", "firebrick3",
+  ifelse(sp_tra_complete$life_form == "Acaulescent", "dodgerblue",
+         "orange"))
+
+plot(sp_tra_complete$A1_w, sp_tra_complete$A2_w, pch = 16,
+     col = sp_tra_complete$col,
+     main = "Species coordinates on the PCoA",
+     xlab = paste0("PCoA1 (",
+                   round((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100,
+                         2)[1],
+                   "%)"),
+     ylab = paste0("PCoA2 (",
+                   round((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100,
+                         2)[2],
+                   "%)"))
+legend("topright", title = "Life forms",
+       legend = c("Erect", "Acaulescent", "Climbing"),
+       col = c("firebrick3", "dodgerblue", "orange"),
+       pch = 16)
+plot(ef, p.max = 0.1)
+
+
+# Create color and shape based on armature (leaves and stems)
+sp_tra_complete$col <- ifelse(
+  sp_tra_complete$LeavesArmed == 0, "lightgreen", "darkgreen")
+sp_tra_complete$shape <- ifelse(
+  sp_tra_complete$StemArmed == 0, 16, 17)
+
+plot(sp_tra_complete$A1_w, sp_tra_complete$A2_w,
+     col = sp_tra_complete$col,
+     pch = sp_tra_complete$shape,
+     # pch = c(16, 17)[as.numeric(sp_tra_complete$StemArmed)],
+     main = "Species coordinates on the PCoA",
+     xlab = paste0("PCoA1 (",
+                   round((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100,
+                         2)[1],
+                   "%)"),
+     ylab = paste0("PCoA2 (",
+                   round((pcoa_palm_w$eig / sum(pcoa_palm_w$eig))*100,
+                         2)[2],
+                   "%)"))
+legend("topright", title = "Leaf armature",
+       legend = c("Leaves unarmed", "Leaves armed"),
+       col = c("lightgreen", "darkgreen"),
+       pch = 16)
+legend("topleft", title = "Stem armature",
+       legend = c("Stem unarmed", "Stem armed"),
+       pch = c(16, 17))
+plot(ef, p.max = 0.1)
+```
 
 ```{r pcoa_axes_map}
 # Plot of A1 and A2
 # Map of trait coverage: MaxStemHeight_m
 species_pcoa <- left_join(
-  species[, c("new_ID", "species", "Long", "Lat")],
-  sp_tra_complete[, c("sp", "A1", "A2")],
+  species[, c("grid_id", "species", "Long", "Lat")],
+  sp_tra_complete[, c("sp", "A1_w", "A2_w")],
   by = c("species" = "sp"))
 head(species_pcoa)
 
 # tapply function
-grid_mean_pcoa1 <- tapply(species_pcoa$A1,
-                          species_pcoa$new_ID,
+grid_mean_pcoa1 <- tapply(species_pcoa$A1_w,
+                          species_pcoa$grid_id,
                           function(x) mean(x, na.rm = TRUE))
 grid_mean_pcoa1 <- data.frame(
-  new_ID = names(grid_mean_pcoa1),
+  grid_id = names(grid_mean_pcoa1),
   mean_pcoa1 = as.numeric(grid_mean_pcoa1))
-head(grid_mean_pcoa1)
 
-grid_mean_pcoa2 <- tapply(species_pcoa$A2,
-                          species_pcoa$new_ID,
+grid_mean_pcoa2 <- tapply(species_pcoa$A2_w,
+                          species_pcoa$grid_id,
                           function(x) mean(x, na.rm = TRUE))
 grid_mean_pcoa2 <- data.frame(
-  new_ID = names(grid_mean_pcoa2),
+  grid_id = names(grid_mean_pcoa2),
   mean_pcoa2 = as.numeric(grid_mean_pcoa2))
 
 # Plot
-grid_mean_pcoa1$new_ID <- as.numeric(as.character(grid_mean_pcoa1$new_ID))
-grid@data <- left_join(grid@data, grid_mean_pcoa1, by = "new_ID")
-grid_mean_pcoa2$new_ID <- as.numeric(as.character(grid_mean_pcoa2$new_ID))
-grid@data <- left_join(grid@data, grid_mean_pcoa2, by = "new_ID")
+grid_mean_pcoa1$grid_id <- as.numeric(as.character(grid_mean_pcoa1$grid_id))
+grid@data <- left_join(grid@data, grid_mean_pcoa1, by = "grid_id")
+grid_mean_pcoa2$grid_id <- as.numeric(as.character(grid_mean_pcoa2$grid_id))
+grid@data <- left_join(grid@data, grid_mean_pcoa2, by = "grid_id")
 
 # Make a color ramp
 col_func <- colorRampPalette(c("olivedrab1", "olivedrab4"))
@@ -574,48 +741,40 @@ legend("bottomleft", # position
 
 We here just focus on functional richness which is the volume of functional space occupied by a community convex hull that encompasses all points.  
 
-```{r frich_image, fig.label = "Functional richness", out.width = "50%", echo = FALSE}
-knitr::include_graphics("figures/frich.JPG")
-```
-<br>
+Mapping FRich on each grid.
 
 ## 4.1. Frich per grid cell
-We here at calculating and then mapping the functional richness per grid cell.
-<br>
-
+FRich for one cell
 ```{r frich}
 # One grid cell only
-tmp <- species_pcoa[which(species_pcoa$new_ID == 1011), ]
-tmp
+tmp <- species_pcoa[which(species_pcoa$grid_id == 1832), ]
 
-# Frich
-tmp_fd <- dbFD(x = tmp[, c("A1", "A2")], calc.FGR = FALSE,
+tmp_fd <- dbFD(x = tmp[, c("A1_w", "A2_w")], calc.FGR = FALSE,
                calc.CWM = FALSE, calc.FDiv = FALSE)
 tmp_fd$FRic
+
 ```
 
-We now perform a  `for-loop` to do this step for each cell.
-
 ```{r frich_forloop, eval = FALSE}
-# Removal of NAs
-sp_frich <- species_pcoa[complete.cases(species_pcoa$A1), ]
+# For all grid IDs
+sp_frich <- species_pcoa[complete.cases(species_pcoa$A1_w), ]
 
 grid_frich <- c()
-for(i in 1:length(unique(sp_frich$new_ID))){
-  tmp <- sp_frich[which(sp_frich$new_ID == unique(sp_frich$new_ID)[i]), ]
+for(i in 5230:length(unique(sp_frich$grid_id))){
+  tmp <- sp_frich[which(sp_frich$grid_id == unique(sp_frich$grid_id)[i]), ]
   
-  if(nrow(tmp) > 2){ # control needed here: at least three species for a volume
-    # FD indices
-    tmp_fd <- dbFD(x = tmp[, c("A1", "A2")], calc.FGR = FALSE,
-                   calc.CWM = FALSE, calc.FDiv = FALSE)
-    
-    # Binding the results
-    tmp <- data.frame(new_ID = unique(sp_frich$new_ID)[i],
-                      nb_sp = nrow(tmp),
-                      frich = tmp_fd$FRic)
-    rownames(tmp) <- NULL
+  if(nrow(tmp) > 2){ # at least three species for a volume
+  # FD indices
+  tmp_fd <- dbFD(x = tmp[, c("A1_w", "A2_w")], calc.FGR = FALSE,
+                 calc.CWM = FALSE, calc.FDiv = FALSE)
+
+  # Binding the results
+  tmp <- data.frame(grid_id = unique(sp_frich$grid_id)[i],
+                    nb_sp = nrow(tmp),
+                    frich = tmp_fd$FRic)
+  rownames(tmp) <- NULL
   } else{
-    tmp <- data.frame(new_ID = unique(sp_frich$new_ID)[i],
+    tmp <- data.frame(grid_id = unique(sp_frich$grid_id)[i],
                       nb_sp = nrow(tmp),
                       frich = NA)
   }
@@ -625,20 +784,16 @@ for(i in 1:length(unique(sp_frich$new_ID))){
 # saveRDS(grid_frich, "data/Frich_grid.rds")
 ```
 
-We can directly import the results to save time.
-
 ```{r frich_forloop2}
+# Import results
 grid_frich <- readRDS("data/Frich_grid.rds")
 ```
 
-We can now map the results.
+Map results
 
 ```{r frich_map}
-grid@data$new_ID <- as.character(grid@data$new_ID)
-grid_frich$new_ID <- as.character(grid_frich$new_ID)
-
-grid@data <- left_join(grid@data, grid_frich, by = "new_ID")
-head(grid@data)
+# Plot
+grid@data <- left_join(grid@data, grid_frich, by = "grid_id")
 
 # Make a color ramp
 col_func <- colorRampPalette(c("steelblue1", "steelblue4"))
@@ -650,7 +805,6 @@ grid@data$order <- findInterval(grid@data$frich,
                                 sort(grid@data$frich))
 
 # Plot of height distribution
-par(mfrow = c(1, 1))
 plot(grid, col = col_func(nrow(grid@data))[grid@data$order],
      border = NA,
      main = "Functional richness")
@@ -665,8 +819,7 @@ legend("bottomleft", # position
 ```
 
 ## 4.2. Link with SR
-Like for phylogenetic diversity, there is a positive correlation between functional richness and species richness. We here plot this bias.
-<br>
+Plot of the bias
 
 ```{r frich_SR}
 sr_frich <- lm(frich ~ nb_sp, data = grid_frich)
@@ -683,11 +836,8 @@ points(predict(sr_frich2, data.frame(nb_sp = 1:70)),
        col = "steelblue", lwd = 2, type = "l")
 ```
 
-To take this bias into account, we should perform a null model. We won't do it here, but the principle is to reshuffle the trait values per cell a certain number of times and then to compute the Standardized Effect Size (see practical 7).
+Correction with null model (reshuffling trait values per cell)
+New map
 
 # References
 [Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019). PalmTraits 1.0, a species-level functional trait database of palms worldwide. Scientific Data, 6(1), 1–13.](https://www.nature.com/articles/s41597-019-0189-0)  
-
-[Kreft, H., Sommer, J.H. and Barthlott, W. (2006), The significance of geographic range size for spatial diversity patterns in Neotropical palms. Ecography, 29: 21-30.](https://doi.org/10.1111/j.2005.0906-7590.04203.x)
-
-Pictures of palms: http://idtools.org/id/palms/palmid/gallery.php
