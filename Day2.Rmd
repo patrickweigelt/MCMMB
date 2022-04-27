@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
 author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "April 21, 2021"
+date: "April 27, 2022"
 output: 
   html_document: 
     theme: flatly
@@ -22,7 +22,7 @@ _[back to overview](index.html)_
 
 **Preparation:** Please open the RStudio project we established last week and download all data for the class from  [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder /data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
-* rgdal
+* sf
 * raster
 * dplyr
 
@@ -56,7 +56,7 @@ library(dplyr)
 ```{r, eval=FALSE}
 library(dplyr)
 ```
-Here, we mostly use functions from base R to organize our data. However, we load the `dplyr` package, a toolkit for splitting, applying and combining data. For more advanced and faster functions related to data manipulation, have a look at the documentation of the packages `dplyr`, `reshape2`, `data.table` etc.  
+As a start, we use functions from base R to organize our data. However, we load the `dplyr` package, a toolkit for splitting, applying and combining data. For more advanced and faster functions related to data manipulation, have a look at the documentation of the packages `dplyr`, `reshape2`, `data.table` etc.  
 &nbsp;
 
 **Load data**  
@@ -171,7 +171,7 @@ focal_sp <- c("Geonoma pauciflora", "Geonoma weberbaueri",
 sub_sp <- species[which(species$species %in% focal_sp), ]
 ```
 
-2) According to [The Plant List](http://www.theplantlist.org/tpl1.1/record/kew-89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
+2) According to the [World Checklist of Vascular Plants](https://wcsp.science.kew.org/namedetail.do?name_id=89598), _Geonoma weberbaueri_ is a synonym of _Geonoma undata_. Rename it!
 
 ```{r, echo = FALSE, eval = FALSE}
 unique(sub_sp$species)
@@ -193,12 +193,13 @@ table(sub_sp$species)
 
 **Loading Geospatial R packages**
 ```{r, include=FALSE}
-library(rgdal)
+library(sf)
 library(raster)
 ```
 
 ```{r, eval=FALSE}
-library(rgdal)
+install.packages("sf")
+library(sf)
 library(raster)
 ```
 
@@ -206,16 +207,16 @@ library(raster)
 
 **Load spatial poylgons into R**
 ```{r}
-grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp",
-                integer64 = "allow.loss")
-americas <- readOGR("data/americas/americas.shp")
+grid <- st_read("data/30min_grid_select50/30min_grid_select50%.shp")
+americas <- st_read("data/americas/americas.shp")
 
 # Plot
 par(mfrow = c(1, 2))
-plot(grid, border = "darkgrey")
-plot(americas, add = TRUE)
-plot(grid, border = "darkgrey", ylim = c(5, 25), xlim = c(-85, -65))
-plot(americas, add = TRUE)
+plot(st_geometry(grid), border = "darkgrey")
+plot(st_geometry(americas), add=TRUE)
+
+plot(st_geometry(grid), border = "darkgrey", ylim = c(5, 25), xlim = c(-85, -65))
+plot(st_geometry(americas), add = TRUE)
 ```
 
 ```{r}
@@ -227,22 +228,23 @@ extent(grid)
 
 **Projection**
 ```{r}
-grid@proj4string
+st_crs(grid)
 ```
 not defined yet!
 ```{r}
-grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
 ```
 
 ```{r}
-grid@proj4string
+st_crs(grid)
+st_geometry(grid)
 ```
 Check out <http://proj4.org/> or <http://epsg.io/> for spatial projections!  
 &nbsp;
 
 **Access the attribute table**  
 ```{r}
-head(grid@data)
+head(grid)
 ```
 &nbsp;
 
@@ -266,32 +268,24 @@ species_grid[which(species_grid$grid_id %in% c(5328:5332)), 1:4]
 
 _Join palm occurrences and spatial shapefile_
 ```{r}
-names(grid@data)[1] <- "grid_id" #rename ID column to correspond to species_grid$grid_id
-grid@data <- left_join(grid@data, species_grid, by = "grid_id") # Perform a "SQL" left join
-grid@data[is.na(grid@data)] <- 0
-grid@data[which(grid@data$grid_id %in% c(5328:5332)), 1:5]
+names(grid)[1] <- "grid_id" #rename ID column to correspond to species_grid$grid_id
+grid <- left_join(grid, species_grid, by = "grid_id") # Perform a "SQL" left join
+grid[is.na(grid)] <- 0
+grid[which(grid$grid_id %in% c(5328:5332)), 1:5]
 ```
 &nbsp;
 
 **Make distribution maps for the four species**  
 ```{r}
-par(mfrow = c(2, 2), mar = c(1, 0, 2, 0))
-plot(grid, col = ifelse(grid@data$Geonoma.pauciflora == 1, "darkgreen", "grey"),
-     border = FALSE, main = "Geonoma pauciflora")
-plot(americas, add=TRUE)
-plot(grid, col = ifelse(grid@data$Geonoma.undata == 1, "darkgreen", "grey"),
-     border = FALSE, main = "Geonoma undata")
-plot(americas, add = TRUE)
-plot(grid, col=ifelse(grid@data$Phytelephas.tenuicaulis == 1, "darkgreen", "grey"),
-     border = FALSE, main = "Phytelephas tenuicaulis")
-plot(americas, add = TRUE)
-plot(grid, col = ifelse(grid@data$Mauritia.flexuosa == 1, "darkgreen", "grey"),
-     border = FALSE, main = "Mauritia flexuosa")
-plot(americas, add = TRUE)
+plot(grid[c("Geonoma.pauciflora", "Geonoma.undata", "Phytelephas.tenuicaulis", "Mauritia.flexuosa")], border = NA, pal=c("grey","darkgreen"))
 ```
 &nbsp;
 
+```{r}
+plot(st_geometry(grid), col=ifelse(grid$Geonoma.undata==1,"darkgreen","grey"), border=NA, main="Geonoma undata")
+plot(st_geometry(americas), add=TRUE)
+```
 <br>
 
-To go further, you can have a look at this nice tutorial: <http://edrub.in/ARE212/section12.html>
+To go further, you can have a look at this nice tutorials: <http://edrub.in/ARE212/section12.html>,  <https://r-spatial.github.io/sf/articles/sf5.html>
 
