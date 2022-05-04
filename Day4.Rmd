@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 4: The latitudinal diversity gradient"
 author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "May 5th, 2021"
+date: "May 11th, 2022"
 output: 
   html_document: 
     theme: flatly
@@ -20,7 +20,6 @@ _[back to overview](index.html)_
 &nbsp;
 &nbsp;
 
-
 **Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * `rgdal`  
@@ -29,6 +28,8 @@ _[back to overview](index.html)_
 * `classInt`
 * `colorRamps`
 * `performance`
+* `sf`
+* `ggplot2`
 
 &nbsp;
 
@@ -46,7 +47,7 @@ rstudioapi::viewer(htmlFile)
 ```
 Now you can conveniently copy code from the viewer into your script.
 
-### 1. Loading palm data set and shapefiles
+# 1. Loading palm data set and shapefiles
 
 **Clean up workspace**  
 ```{r}
@@ -56,7 +57,6 @@ rm(list = ls()) # You might want to remove all loaded objects first
 
 **Load R packages & palm data set**  
 
-
 ```{r, include = FALSE}
 library(dplyr)
 library(rgdal)
@@ -64,6 +64,8 @@ library(rgeos)
 library(classInt)
 library(colorRamps)
 library(performance)
+library(sf)
+library(ggplot2)
 ```
 
 ```{r, eval = FALSE}
@@ -73,6 +75,8 @@ library(rgeos)
 library(classInt)
 library(colorRamps)
 library(performance)
+library(sf)
+library(ggplot2)
 ```
 &nbsp;
 
@@ -82,7 +86,6 @@ For today's exercise, we will continue to use the Neotropical palm data set from
 species <- read.csv("data/palms_species_per_gridcell.csv")
 ```
 &nbsp;
-
 
 **Data inspection**
 ```{r, echo = TRUE}
@@ -98,51 +101,50 @@ length(unique(species$species)) # number of species
 ```
 &nbsp;
 
-
 **Load GIS shapefiles**  
 ```{r, echo = TRUE}
 # gridcells corresponding to palm distribution data and americas coastline
-grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp",
-                integer64 = "allow.loss")
-americas <- readOGR("data/americas/americas.shp")
+grid <- st_read("data/30min_grid_select50/30min_grid_select50%.shp")
+americas <- st_read("data/americas/americas.shp")
 
-# remember to include coordinate system
-grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
-americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+# remember to define the Coordinate Reference System (CRS)
+st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
+st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
 
 # have a look at the grid's attribute table
-head(grid@data) 
+head(grid)
 
 # change clomumn name of first column ('ID')
-names(grid@data)[1] <- "grid_id"
-head(grid@data) 
+colnames(grid)[colnames(grid) == "ID"] <- "grid_id"
+head(grid)
 
 # plot it
-plot(grid, border= "darkgrey")
-plot(americas, add = TRUE)
+plot(st_geometry(grid), border = "darkgrey")
+plot(st_geometry(americas), add = TRUE)
 ```
 &nbsp;
 
 **Calculate latitude and longitude from the grid's polygons**
 ```{r, echo = TRUE}
 # convert the polygons to points (mass centroids)
-grid_centroids <- gCentroid(grid, byid = TRUE)
+grid_centroids <- st_centroid(grid)
 
 # extract the coordinates of the points
-coordinates <- data.frame(grid_centroids@coords)
-head(coordinates)
+coordinates <- data.frame(st_coordinates(grid_centroids))
+str(coordinates)
 
-# add grid_id to coordinates data.frame
-coordinates <- data.frame(grid_id = grid@data$grid_id,
-                          Long = coordinates$x, Lat = coordinates$y)
+# add grid_id
+coordinates <- data.frame(grid_id = grid_centroids$grid_id,
+                          Long = coordinates$X,
+                          Lat = coordinates$Y)
 
 # join centroid coordinates to the grid shapefile
-grid@data <- left_join(grid@data, coordinates, by = "grid_id")
-head(grid@data)
+grid <- left_join(grid, coordinates, by = "grid_id")
+head(grid)
 ```
 &nbsp;
 
-### 2. Data aggregation (species richness per gridcell)  
+# 2. Data aggregation (species richness per gridcell)  
 
 **Count species per gridcell**
 ```{r, echo = TRUE}
@@ -162,15 +164,93 @@ summary(species_num)
 
 **Join species richness per grid to the shapefile**  
 ```{r, echo = TRUE}
-grid@data <- left_join(grid@data, species_num, by = "grid_id")
-head(grid@data)
+grid <- left_join(grid, species_num, by = "grid_id")
+head(grid)
 ```
 &nbsp;
 
-**Make a species richness map** 
+**Make a species richness map**  
+We will make this map using two different approaches: using the *base R* architecture and the *ggplot2* one.  
+Both approaches will rely on the same color Palette, draw from this [site](https://colorbrewer2.org/).
+
+With a base R approach.
+
+```{r}
+# Defining a color palette
+library(RColorBrewer)
+cols <- rev(brewer.pal(4, "RdYlBu"))
+pal <- colorRampPalette(cols)
+
+# Rank variable for colour assignment
+grid$spec_num_order <- findInterval(grid$spec_num, sort(grid$spec_num))
+
+# Plot
+plot(st_geometry(grid), col = pal(nrow(grid))[grid$spec_num_order],
+     border = NA,
+     main = "Palm species richness")
+plot(st_geometry(americas), add = TRUE)
+
+legend("bottomleft", # position
+       # legend = names(attr(my.col.fr, "table")),
+       legend = c(round(range(df$Temp), 1)),
+       title = "Species number",
+       fill = attr(my.col.fr, "palette"),
+       cex = 0.7,
+       bty = "n") # no box around it
+
+legend("topright", col=pal(2), pch=19,
+       legend=c(round(range(df$Temp), 1)))
+```
+
+Using **ggplot2** R package.
+
+```{r}
+set.seed(1)
+ex <- data.frame(x = seq(1:100),
+                 y = rnorm(100),
+                 cat = c(rep("A", 50), rep("B", 50)))
+
+par(xpd = TRUE)
+plot(ex$x, ex$y, col = c("darkblue", "firebrick3")[as.factor(ex$cat)],
+     pch = c(16, 17)[as.factor(ex$cat)], cex = 2,
+     main = "Example plot", xlab = "X axis", ylab = "Y axis",
+     bty = "n")
+legend("topright",
+       c("Category A", "Category B"),
+       inset = c(-0.1, 0),
+       title = "Legend title",
+       text.font = 3,
+       col = c("darkblue", "firebrick3"),
+       pch = c(16, 17),
+       # lty = 1, lwd = 2, seg.len = 1,
+       bg = "gray95")
+
+# Quick introduction to ggplot2
+ggplot(ex, aes(x, y)) +
+  geom_point(aes(color = cat, shape = cat), size = 3) +
+  scale_color_manual("Legend title",
+                     values = c("darkblue", "firebrick3")) +
+  scale_shape_manual("Legend title",
+                     values = c(16, 17)) +
+  labs(title = "Example plot", x = "X axis", y = "Y axis") +
+  theme_classic()
+
+```
+
+```{r}
+ggplot(grid) +
+  geom_sf(color = NA, aes(fill = spec_num)) +
+  # geom_sf(st_geometry(americas)) +
+  scale_fill_viridis_c("Species number") +
+  theme_void()
+```
+
+*Bonus: custom discrete color scale*
+<details><summary>Bonus</summary>
+Plot with intervals instead of a continuous color scale.
 ```{r, echo = TRUE}
 # Splitting species richness in 10 intervals
-my.class.fr <- classIntervals(grid@data$spec_num, n = 10, style = "equal",
+my.class.fr <- classIntervals(grid$spec_num, n = 10, style = "equal",
                               dataPrecision = 0) # bin data into n quantiles
 my.class.fr
 
@@ -182,8 +262,9 @@ my.pal
 my.col.fr <- findColours(my.class.fr, my.pal) # ramp colors based on classInts
 
 # Plot
-plot(grid, col = my.col.fr, border = NA, main = "Palm species richness")
-plot(americas, add = TRUE)
+plot(st_geometry(grid), col = my.col.fr, border = NA,
+     main = "Palm species richness")
+plot(st_geometry(americas), add = TRUE)
 
 legend("bottomleft", # position
        legend = names(attr(my.col.fr, "table")), 
@@ -193,8 +274,10 @@ legend("bottomleft", # position
        bty = "n") # no box around it
 ```
 
+</details>
 
-### 3. Exercise  
+
+# 3. Exercise  
 
 1) How many of the grid cells are located within the Tropics (within +/- 23.433333)?  
 ```{r, echo = FALSE, eval = FALSE}
@@ -219,10 +302,10 @@ length(grid@data$spec_num[which(grid@data$spec_num > 20 &
 plot(grid, border= "darkgrey")
 plot(grid[which(grid@data$spec_num > 20 & grid@data$Lat < -17), ],
      col="red", border = NA, add = TRUE)
-plot(americas, add = TRUE)
+plot(st_geometry(americas), add = TRUE)
 ```
 
-### 4. Data aggregation (species richness per latitudinal belt)  
+# 4. Data aggregation (species richness per latitudinal belt)  
 
 ```{r, echo = TRUE}
 # Merging coordinates to species_num data.frame
@@ -323,7 +406,7 @@ write.csv(species_num, "data/species_num.csv", row.names = FALSE)
 ```
 &nbsp;
 
-### 5. The latitudinal gradient model  
+# 5. The latitudinal gradient model (LDG)
 In case you had problems creating the `species_num` and `species_per_belt` data.frames you can now load our provided *.Rdata files
 ```{r, echo = TRUE}
 load("data/species_num.RData")
