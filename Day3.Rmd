@@ -370,6 +370,9 @@ pr <- prediction(p, mau_fle_abs$present)
 prf <- ROCR::performance(pr, measure = "tpr", x.measure = "fpr")
 plot(prf, main="Receiver Operating Characteristic Curve")
 abline(a=0,b=1)
+text(0.9,0.75, "low threshold")
+text(0.3,0.05, "high threshold")
+
 ```
 
 &nbsp;  
