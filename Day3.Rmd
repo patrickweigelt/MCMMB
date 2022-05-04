@@ -95,7 +95,9 @@ species$species <- paste(species$GENUS,species$EPITHET, sep = " ") # make new co
 **Create a subset of the palm data set (4 palm species)**
 
 ```{r, echo=TRUE}
-species <- species[which(species$species %in% c("Geonoma pauciflora","Geonoma weberbaueri","Phytelephas tenuicaulis","Mauritia flexuosa")),]
+species <- species[which(species$species %in% 
+                           c("Geonoma pauciflora","Geonoma weberbaueri",
+                             "Phytelephas tenuicaulis","Mauritia flexuosa")),]
 unique(species$species) # list species in data set
 
 species$species[which(species$species == "Geonoma weberbaueri")] <- "Geonoma undata" # Rename to accepted name in World Checklist of Vascular Plants  
@@ -171,23 +173,27 @@ Here we use colorblind friendly colors, which can be found via [Colorbrewer2](ht
 
 par(mfrow=c(2,2))
 
-  plot(st_geometry(grid), col=ifelse(grid$Geonoma.pauciflora==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Geonoma pauciflora")
+  plot(st_geometry(grid), col=ifelse(grid$Geonoma.pauciflora==1,"#ef8a62","#7fbf7b"), 
+       border=FALSE, main = "Geonoma pauciflora")
   #species 1
   points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],
          col="lightgrey", pch=4)
 
 #species 2
-plot(st_geometry(grid), col=ifelse(grid$Geonoma.undata==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Geonoma undata")
+plot(st_geometry(grid), col=ifelse(grid$Geonoma.undata==1,"#ef8a62","#7fbf7b"), 
+     border=FALSE, main = "Geonoma undata")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],
          col="lightgrey", pch=4)
 
 #species 3
-plot(st_geometry(grid), col=ifelse(grid$Phytelephas.tenuicaulis==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Phytelephas tenuicaulis")
+plot(st_geometry(grid), col=ifelse(grid$Phytelephas.tenuicaulis==1,"#ef8a62","#7fbf7b"), 
+     border=FALSE, main = "Phytelephas tenuicaulis")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],
          col="lightgrey", pch=4)
 
 #species 4
-plot(st_geometry(grid), col=ifelse(grid$Mauritia.flexuosa==1,"#ef8a62","#7fbf7b"), border=FALSE, main = "Mauritia flexuosa")
+plot(st_geometry(grid), col=ifelse(grid$Mauritia.flexuosa==1,"#ef8a62","#7fbf7b"), 
+     border=FALSE, main = "Mauritia flexuosa")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],
          col="lightgrey", pch=4)
 ```
@@ -218,50 +224,74 @@ st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
 
 # Geonoma pauciflora
 
-geo_pau = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),c("longitude","latitude")], coords = c("longitude", "latitude"), crs = "+proj=longlat +ellps=WGS84 +no_defs")
+geo_pau = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora"),
+                            c("longitude","latitude")], 
+                   coords = c("longitude", "latitude"), 
+                   crs = "+proj=longlat +ellps=WGS84 +no_defs")
 geo_pau$present = 1
 
 # add pseudo-absences
 set.seed(100)
-geo_pau_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(geo_pau), replace = TRUE),"present"],geo_pau)
+geo_pau_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),
+                                           nrow(geo_pau), replace = TRUE),"present"],
+                     geo_pau)
 
 par(mfrow=c(2,2))
 
-plot(st_geometry(geo_pau_abs), col=ifelse(geo_pau_abs$present==1,"#ef8a62","#7fbf7b"), main="Geonoma pauciflora", pch = 3)
+plot(st_geometry(geo_pau_abs), col=ifelse(geo_pau_abs$present==1,"#ef8a62","#7fbf7b"), 
+     main="Geonoma pauciflora", pch = 3)
 plot(st_geometry(americas), add=TRUE)
 
 # Geonoma undata
-geo_und = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma undata"),c("longitude","latitude")], coords = c("longitude", "latitude"), crs = "+proj=longlat +ellps=WGS84 +no_defs")
+geo_und = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Geonoma undata"),
+                            c("longitude","latitude")], 
+                   coords = c("longitude", "latitude"), 
+                   crs = "+proj=longlat +ellps=WGS84 +no_defs")
 geo_und$present = 1
 
 # add pseudo-absences
 set.seed(100)
-geo_und_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(geo_und), replace = TRUE),"present"],geo_und)
+geo_und_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),
+                                           nrow(geo_und), replace = TRUE),"present"],
+                     geo_und)
 
-plot(st_geometry(geo_und_abs), col=ifelse(geo_und_abs$present==1,"#ef8a62","#7fbf7b"), main="Geonoma undata", pch = 3)
+plot(st_geometry(geo_und_abs), col=ifelse(geo_und_abs$present==1,"#ef8a62","#7fbf7b"), 
+     main="Geonoma undata", pch = 3)
 plot(st_geometry(americas), add=TRUE)
 
 # Phytelephas tenuicaulis
-phy_ten = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis"),c("longitude","latitude")], coords = c("longitude", "latitude"), crs = "+proj=longlat +ellps=WGS84 +no_defs")
+phy_ten = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis"),
+                            c("longitude","latitude")], 
+                   coords = c("longitude", "latitude"), 
+                   crs = "+proj=longlat +ellps=WGS84 +no_defs")
 phy_ten$present = 1
 
 # add pseudo-absences
 set.seed(100)
-phy_ten_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(phy_ten), replace = TRUE),"present"],phy_ten)
+phy_ten_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),
+                                           nrow(phy_ten), replace = TRUE),"present"],
+                     phy_ten)
 
-plot(st_geometry(phy_ten_abs), col=ifelse(phy_ten_abs$present==1,"#ef8a62","#7fbf7b"), main="Phytelephas tenuicaulis", pch = 3)
+plot(st_geometry(phy_ten_abs), col=ifelse(phy_ten_abs$present==1,"#ef8a62","#7fbf7b"), 
+     main="Phytelephas tenuicaulis", pch = 3)
 plot(st_geometry(americas), add=TRUE)
 
 
 # Mauritia flexuosa
-mau_fle = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa"),c("longitude","latitude")], coords = c("longitude", "latitude"), crs = "+proj=longlat +ellps=WGS84 +no_defs")
+mau_fle = st_as_sf(spec_occ[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa"),
+                            c("longitude","latitude")], 
+                   coords = c("longitude", "latitude"), 
+                   crs = "+proj=longlat +ellps=WGS84 +no_defs")
 mau_fle$present = 1
 
 # add pseudo-absences
 set.seed(100)
-mau_fle_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),nrow(mau_fle), replace = TRUE),"present"],mau_fle)
+mau_fle_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),
+                                           nrow(mau_fle), replace = TRUE),"present"],
+                     mau_fle)
 
-plot(st_geometry(mau_fle_abs), col=ifelse(mau_fle_abs$present==1,"#ef8a62","#7fbf7b"), main="Mauritia flexuosa", pch = 3)
+plot(st_geometry(mau_fle_abs), col=ifelse(mau_fle_abs$present==1,"#ef8a62","#7fbf7b"), 
+     main="Mauritia flexuosa", pch = 3)
 plot(st_geometry(americas), add=TRUE)
 ```
 &nbsp;
@@ -453,31 +483,43 @@ mau_fle_predict_rst <- raster(new_extent, nrows=nrow(elev), ncols=ncol(elev), va
 
 par(mfrow=c(4,2), mar=c(3,1,1,1))
 
-plot(st_geometry(grid), col=ifelse(grid$Geonoma.pauciflora==1,"#7fbf7b","white"), border=FALSE, main = "Geonoma pauciflora")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")], pch=3,cex=0.3)
+plot(st_geometry(grid), col=ifelse(grid$Geonoma.pauciflora==1,"#7fbf7b","white"), 
+     border=FALSE, main = "Geonoma pauciflora")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],
+       spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")], 
+       pch=3,cex=0.3)
 plot(st_geometry(americas),add=TRUE)
 
 
 plot(geo_pau_predict_rst, main="SDM predictions", axes=FALSE, box=FALSE)
 plot(st_geometry(americas),add=TRUE)
 
-plot(st_geometry(grid), col=ifelse(grid$Geonoma.undata==1,"#7fbf7b","white"),border=FALSE, main = "Geonoma undata")
+plot(st_geometry(grid), col=ifelse(grid$Geonoma.undata==1,"#7fbf7b","white"),
+     border=FALSE, main = "Geonoma undata")
 plot(st_geometry(americas),add=TRUE)
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")], pch=3,cex=0.3)
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],
+       spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")], 
+       pch=3,cex=0.3)
 
 plot(geo_und_predict_rst,main="SDM predictions", axes=FALSE, box=FALSE)
 plot(st_geometry(americas),add=TRUE)
 
 
-plot(st_geometry(grid), col=ifelse(grid$Phytelephas.tenuicaulis==1,"#7fbf7b","white"), border=FALSE, main = "Phytelephas tenuicaulis")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")], pch=3,cex=0.3)
+plot(st_geometry(grid), col=ifelse(grid$Phytelephas.tenuicaulis==1,"#7fbf7b","white"), 
+     border=FALSE, main = "Phytelephas tenuicaulis")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],
+       spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")], 
+       pch=3,cex=0.3)
 plot(st_geometry(americas),add=TRUE)
 
 plot(phy_ten_predict_rst,main="SDM predictions", axes=FALSE, box=FALSE)
 plot(st_geometry(americas),add=TRUE)
 
-plot(st_geometry(grid), col=ifelse(grid$Mauritia.flexuosa==1,"#7fbf7b","white"), border=FALSE, main = "Mauritia flexuosa")
-points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")], pch=3,cex=0.3)
+plot(st_geometry(grid), col=ifelse(grid$Mauritia.flexuosa==1,"#7fbf7b","white"), 
+     border=FALSE, main = "Mauritia flexuosa")
+points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],
+       spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")], 
+       pch=3,cex=0.3)
 plot(st_geometry(americas),add=TRUE)
 
 plot(mau_fle_predict_rst,main="SDM predictions", axes=FALSE, box=FALSE)
