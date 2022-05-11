@@ -243,11 +243,16 @@ With a base R approach.
 ```{r}
 # Defining a color palette
 cols <- viridis(n = n_distinct(grid$spec_num))
-pal <- colorRampPalette(cols)
+# pal <- colorRampPalette(cols)
+
+colours <- viridis(n = 10)
+colours <- colorRamp(colours)(grid$spec_num/max(grid$spec_num))
+colours <- rgb(colours[,1], colours[,2], colours[,3], maxColorValue = 255)
 
 # Plot
 plot(st_geometry(grid),
-     col = pal(n_distinct(grid$spec_num))[grid$spec_num],
+     col = colours,
+     # col = cols[grid$spec_num],
      border = NA,
      main = "Palm species richness")
 plot(st_geometry(americas), add = TRUE)
