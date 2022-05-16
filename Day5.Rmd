@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 5: Environmental drivers of neotropical palm diversity"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 12th, 2021"
+date: "May 18th, 2022"
 output: 
   html_document: 
     theme: flatly
@@ -21,13 +21,16 @@ _[back to overview](index.html)_
 
 **Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
-* rgdal  
-* rgeos
-* dplyr  
+* sf
+* dplyr
+* RColorBrewer
 * classInt
 * colorRamps
-* raster
+* stars
 * car
+* ggplot2
+* viridis
+* cowplot
 
 &nbsp;
 
@@ -59,21 +62,27 @@ rm(list=ls()) # You might want to remove all loaded objects first
 ```{r, include=FALSE}
 library(dplyr)
 library(raster)
-library(rgdal)
-library(rgeos)
+library(sf)
+library(RColorBrewer)
 library(classInt)
 library(colorRamps)
 library(car)
+library(ggplot2)
+library(viridis)
+library(cowplot)
 ```
 
 ```{r, eval=FALSE}
 library(dplyr)
 library(raster)
-library(rgdal)
-library(rgeos)
+library(sf)
+library(RColorBrewer)
 library(classInt)
 library(colorRamps)
 library(car)
+library(ggplot2)
+library(viridis)
+library(cowplot)
 ```
 ```{r, echo=FALSE}
 if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # raster saves large temporary files. You might want to change the location if you're running out of disk space
@@ -87,9 +96,7 @@ For today's exercise, we again use the elevation, temperature ('bio1'), and prec
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
 elev <- raster("data/mn30_grd")
-
-par(mfrow=c(1,1))
-plot(elev, main="Elevation a.s.l. (m)") 
+plot(elev, main="Elevation a.s.l. (m)", col = terrain.colors(255)) 
 ```
 &nbsp;
 
@@ -97,19 +104,25 @@ plot(elev, main="Elevation a.s.l. (m)")
 # Import climate data from Chelsa at 30 arc seconds resolution -->
 bio1 <- raster("data/CHELSA_bio10_01.tif") # temperature*10
 bio12 <- raster("data/CHELSA_bio10_12.tif") # precipitation
-plot(bio1, main="Annual mean temperature (10 x C°)")
+plot(bio1, main="Annual mean temperature (10 x C°)", col = inferno(255))
 ```
 &nbsp;
 
 
 **Load gridcell shapefile** 
 ```{r, echo=TRUE}
-grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp", integer64="allow.loss") # read in polygon shapefile
-grid@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs") # remember to include coordinate system
-americas <- readOGR("data/americas/americas.shp")
-americas@proj4string <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
-plot(grid, border="darkgrey")
-plot(americas, add=TRUE)
+# gridcells corresponding to palm distribution data and americas coastline
+grid <- st_read("data/30min_grid_select50/30min_grid_select50%.shp")
+americas <- st_read("data/americas/americas.shp")
+
+# remember to define the Coordinate Reference System (CRS)
+st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
+st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
+
+ggplot(grid) +
+  geom_sf() +
+  geom_sf(data = americas, fill = NA, color = "black") +
+  theme_void() + ylim(-40, 40)
 ```
 
 The raster layers have larger extents than they need to have for our Neotropical palm data. We can crop them based on the palm gridcell shapefile:
@@ -118,10 +131,12 @@ extent(grid)
 elev <- crop(elev, extent(grid)) # crop raster layers to smaller extent
 bio1 <- crop(bio1, extent(grid))
 bio12 <- crop(bio12, extent(grid))
+elev <- elev * bio1 / bio1
+
 par(mfrow=c(1,3))
-plot(elev, main="Elevation a.s.l. (m)")
-plot(bio1, main="Annual mean temperature (10 x C°)")
-plot(bio12, main="Mean annual precipitation (mm)")
+plot(elev, main="Elevation a.s.l. (m)", col = terrain.colors(255))
+plot(bio1, main="Annual mean temperature (10 x C°)", col = inferno(255))
+plot(bio12, main="Mean annual precipitation (mm)", col = colorRampPalette(brewer.pal(9,"Blues"))(255))
 ```
 &nbsp;
 
@@ -135,8 +150,8 @@ bio1 <- bio1/10 # Careful, This can take a while!
 ### 2. Extracting environmental data for palm gridcells from raster layers
 ```{r, echo=TRUE, fig.height=3, fig.width=4.3}
 par(mfrow=c(1,1))
-plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76), main="Elevation a.s.l. (m)")
-plot(grid, add=TRUE)
+plot(elev, ylim=c(-6,-2), xlim=c(-82,-76), main="Elevation a.s.l. (m)", col = terrain.colors(255))
+plot(st_geometry(grid), add=TRUE)
 ```
 
 **Extract values** 
@@ -156,7 +171,7 @@ How long would it take to extract mean values for all gridcells?
 ```{r, echo=TRUE}
 nrow(grid) # number of gridcells
 nrow(grid)/10*system.time(bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean))/60
-# 16 min?
+# 20 min?
 ```
 Note: There are faster packages for dealing with raster layers available now (_velox_, _fasterRaster_). Here, we want to make use of a workaround that also helps us top understand the data better.   
 &nbsp;
@@ -171,17 +186,17 @@ extent(bio1)
 dim(bio1_30min)
 extent(bio1_30min)
 
-grid_centroids <- gCentroid(grid, byid=TRUE)
+grid_centroids <- st_centroid(grid)
 ```
 ```{r, echo=TRUE, fig.height=3, fig.width=7.5}
 par(mfrow=c(1,2))
 
-plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76), main="30 seconds resolution")
-plot(grid, add=TRUE)
+plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76), col = inferno(255), main="30 seconds resolution")
+plot(st_geometry(grid), add=TRUE)
 
-plot(bio1_30min, ylim=c(-6,-2), xlim=c(-82,-76), main="30 minutes resolution")
-plot(grid, add=TRUE)
-plot(grid_centroids, add=TRUE)
+plot(bio1_30min, ylim=c(-6,-2), xlim=c(-82,-76), col = inferno(255), main="30 minutes resolution")
+plot(st_geometry(grid), add=TRUE)
+plot(st_geometry(grid_centroids), add=TRUE, pch = 3)
 ```
 
 
@@ -199,28 +214,38 @@ prec_mean[1:10]
 # Elevation range as a measure of topographic heterogeneity
 elev_30min_min <- aggregate(elev, fact=60, fun=min, na.rm=TRUE) # minimum elevation
 elev_30min_max <- aggregate(elev, fact=60, fun=max, na.rm=TRUE) # maximum elevation
-elev_min <- extract(elev_30min_min,grid_centroids)
-elev_max <- extract(elev_30min_max,grid_centroids)
+elev_min <- extract(elev_30min_min, grid_centroids)
+elev_max <- extract(elev_30min_max, grid_centroids)
 elev_range <- elev_max - elev_min
 elev_range[1:10]
 ```
 &nbsp;
 
-**Write extracted values into attribute table of gridcell shapefile**  
+**Write extracted values into gridcell shapefile**  
 ```{r, echo=TRUE, fig.height=4, fig.width=12}
-grid@data$temp <- temp_mean
-grid@data$prec <- prec_mean
-grid@data$elev <- elev_range
+grid$temp <- temp_mean
+grid$prec <- prec_mean
+grid$elev <- elev_range
 
-head(grid@data)
+head(grid)
 
-cor(grid@data[,c("temp","prec","elev")])
-par(mfrow=c(1,3))
-hist(grid@data$temp, main="", xlab="Annual mean temperature (C°)")
-hist(grid@data$prec, main="", xlab="Mean annual precipitation (mm)")
-hist(grid@data$elev, main="", xlab="Elevation a.s.l. (m)")
+cor(st_drop_geometry(grid[,c("temp","prec","elev")]))
 
-#save(grid, file="Data/grid_env.RData")
+plot_grid(nrow = 1, ncol = 3,
+ggplot(grid, aes(temp)) +
+  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  labs(x = "Annual mean temperature (C°)", y = "Count") +
+  theme_bw(),
+ggplot(grid, aes(prec)) +
+  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  labs(x = "Mean annual precipitation (mm)", y = "Count") +
+  theme_bw(),
+ggplot(grid, aes(elev)) +
+  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  labs(x = "Elevation a.s.l. (m)", y = "Count") +
+  theme_bw()
+)
+# save(grid, file="Data/grid_env.RData")
 ```
 &nbsp;
 
@@ -230,7 +255,11 @@ hist(grid@data$elev, main="", xlab="Elevation a.s.l. (m)")
 ```{r, echo=TRUE, fig.height=4, fig.width=4}
 load("data/grid_env.RData")
 load("data/species_num.RData") # read in RData files of palm species richness from last week
-hist(species_num$spec_num, main="", xlab="Palm species number")
+
+ggplot(species_num, aes(spec_num)) +
+  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  labs(x = "Species number", y = "Count") +
+  theme_bw()
 ```
 
 
@@ -238,8 +267,8 @@ hist(species_num$spec_num, main="", xlab="Palm species number")
 
 1) Combine the species numbers ('species_num') and the newly extracted environmental data in one table.   
 ```{r, echo=FALSE}
-names(grid@data)[1] <- "grid_id" # rename ID column in gridcell shapefile
-species_num <- left_join(species_num, grid@data, by="grid_id")
+names(grid)[1] <- "grid_id" # rename ID column in gridcell shapefile
+species_num <- left_join(species_num, grid, by="grid_id")
 head(species_num)
 ```
 &nbsp;
@@ -295,18 +324,18 @@ Get predictions and get residuals and join them to gridcell shapefile
 species_num$pred <- predict(model_full)
 species_num$resi <- residuals(model_full)
 head(species_num)
-head(grid@data)
-grid@data <- left_join(grid@data, species_num[,c("grid_id","spec_num","pred","resi")], by="grid_id")
+head(grid)
+grid <- left_join(grid, species_num[,c("grid_id","spec_num","pred","resi")], by="grid_id")
 
 par(mfrow=c(1,3), mar=c(1,1,2,1))
 #Create color scheme
 
-my.class.fr<-classIntervals(grid@data$spec_num, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
+my.class.fr<-classIntervals(grid$spec_num, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
 my.pal<-matlab.like(10)
 my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
-plot(grid, col=my.col.fr, border=NA, main="Palm species richness")
-plot(americas, add=TRUE)
+plot(st_geometry(grid), col=my.col.fr, border=NA, main="Palm species richness")
+plot(st_geometry(americas), add=TRUE)
 
 legend("bottomleft", # position
        legend = names(attr(my.col.fr, "table")),
@@ -316,11 +345,11 @@ legend("bottomleft", # position
        bty = "n") # no box around it
 
 
-my.class.fr<-classIntervals(grid@data$pred, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
+my.class.fr<-classIntervals(grid$pred, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
 my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
-plot(grid, col=my.col.fr, border=NA, main="Model predictions")
-plot(americas, add=TRUE)
+plot(st_geometry(grid), col=my.col.fr, border=NA, main="Model predictions")
+plot(st_geometry(americas), add=TRUE)
 
 legend("bottomleft", # position
        legend = names(attr(my.col.fr, "table")),
@@ -329,14 +358,12 @@ legend("bottomleft", # position
        cex = 1,
        bty = "n") # no box around it
 
-
-
-my.class.fr<-classIntervals(grid@data$resi, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
+my.class.fr<-classIntervals(grid$resi, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
 my.pal<-green2red(10)
 my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
 
-plot(grid, col=my.col.fr, border=NA, main="Model residuals")
-plot(americas, add=TRUE)
+plot(st_geometry(grid), col=my.col.fr, border=NA, main="Model residuals")
+plot(st_geometry(americas), add=TRUE)
 
 legend("bottomleft", # position
        legend = names(attr(my.col.fr, "table")),
