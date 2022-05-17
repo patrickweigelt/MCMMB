@@ -22,11 +22,9 @@ _[back to overview](index.html)_
 **Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * sf
+* raster
 * dplyr
 * RColorBrewer
-* classInt
-* colorRamps
-* stars
 * car
 * ggplot2
 * viridis
@@ -64,8 +62,6 @@ library(dplyr)
 library(raster)
 library(sf)
 library(RColorBrewer)
-library(classInt)
-library(colorRamps)
 library(car)
 library(ggplot2)
 library(viridis)
@@ -77,8 +73,6 @@ library(dplyr)
 library(raster)
 library(sf)
 library(RColorBrewer)
-library(classInt)
-library(colorRamps)
 library(car)
 library(ggplot2)
 library(viridis)
@@ -233,15 +227,15 @@ cor(st_drop_geometry(grid[,c("temp","prec","elev")]))
 
 plot_grid(nrow = 1, ncol = 3,
 ggplot(grid, aes(temp)) +
-  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  geom_histogram(fill = "grey", color = "black", bins = 30) + 
   labs(x = "Annual mean temperature (C°)", y = "Count") +
   theme_bw(),
 ggplot(grid, aes(prec)) +
-  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  geom_histogram(fill = "grey", color = "black", bins = 30) + 
   labs(x = "Mean annual precipitation (mm)", y = "Count") +
   theme_bw(),
 ggplot(grid, aes(elev)) +
-  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  geom_histogram(fill = "grey", color = "black", bins = 30) + 
   labs(x = "Elevation a.s.l. (m)", y = "Count") +
   theme_bw()
 )
@@ -257,7 +251,7 @@ load("data/grid_env.RData")
 load("data/species_num.RData") # read in RData files of palm species richness from last week
 
 ggplot(species_num, aes(spec_num)) +
-  geom_histogram(fill = "grey", color = "black") + # , bins = 30
+  geom_histogram(fill = "grey", color = "black", bins = 30) + 
   labs(x = "Species number", y = "Count") +
   theme_bw()
 ```
@@ -265,23 +259,23 @@ ggplot(species_num, aes(spec_num)) +
 
 #### Exercise  
 
-1) Combine the species numbers ('species_num') and the newly extracted environmental data in one table.   
+1) Join the species numbers ('species_num') to the grid shapefile including the newly extracted environmental data.   
 ```{r, echo=FALSE}
 names(grid)[1] <- "grid_id" # rename ID column in gridcell shapefile
-species_num <- left_join(species_num, grid, by="grid_id")
-head(species_num)
+grid <- left_join(grid, species_num, by="grid_id")
+head(grid)
 ```
 &nbsp;
 
 2) Calculate 3 linear models of species richness with each environmental variable as predictor and compare their output and AIC values.  
 ```{r, echo=FALSE}
-model_elev <- lm(species_num$spec_num ~ species_num$elev)
+model_elev <- lm(grid$spec_num ~ grid$elev)
 summary(model_elev)
 
-model_temp <- lm(species_num$spec_num ~ species_num$temp)
+model_temp <- lm(grid$spec_num ~ grid$temp)
 summary(model_temp)
 
-model_prec <- lm(species_num$spec_num ~ species_num$prec)
+model_prec <- lm(grid$spec_num ~ grid$prec)
 summary(model_prec)
 
 
@@ -291,24 +285,42 @@ AIC(model_temp,model_prec,model_elev)
 
 3) Make scatterplots for all three models and plot their regression lines
 ```{r, echo=FALSE, fig.height=4, fig.width=12}
-par(mfrow=c(1,3))
-plot(species_num$spec_num ~ species_num$elev, xlab="Elevation a.s.l. (m)",  ylab="Species number")
-abline(model_elev, col="red")
-plot(species_num$spec_num ~ species_num$temp, xlab="Annual mean temperature (C°)",  ylab="Species number")
-abline(model_temp, col="red")
-plot(species_num$spec_num ~ species_num$prec, xlab="Mean annual precipitation (mm)",  ylab="Species number")
-abline(model_prec, col="red")
+# par(mfrow=c(1,3))
+# plot(grid$spec_num ~ grid$elev, xlab="Elevation a.s.l. (m)",  ylab="Species number")
+# abline(model_elev, col="red")
+# plot(grid$spec_num ~ grid$temp, xlab="Annual mean temperature (C°)",  ylab="Species number")
+# abline(model_temp, col="red")
+# plot(grid$spec_num ~ grid$prec, xlab="Mean annual precipitation (mm)",  ylab="Species number")
+# abline(model_prec, col="red")
+
+plot_grid(nrow = 1, ncol = 3,
+ggplot(grid, aes(elev, spec_num)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+  labs(x = "Elevation a.s.l. (m)", y = "Species number") +
+  theme_bw(),
+ggplot(grid, aes(temp, spec_num)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+  labs(x = "Annual mean temperature (C°)", y = "Species number") +
+  theme_bw(),
+ggplot(grid, aes(prec, spec_num)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+  labs(x = "Mean annual precipitation (mm)", y = "Species number") +
+  theme_bw())
+
 ```
 
 
 **Multipredictor model**
 ```{r, echo=TRUE, fig.height=4, fig.width=12}
-model_full <- lm(species_num$spec_num ~ species_num$temp + species_num$prec + species_num$elev)
+model_full <- lm(grid$spec_num ~ grid$temp + grid$prec + grid$elev)
 summary(model_full)
 
-model_temp_prec <- lm(species_num$spec_num ~ species_num$temp + species_num$prec)
-model_temp_elev <- lm(species_num$spec_num ~ species_num$temp + species_num$elev)
-model_elev_prec <- lm(species_num$spec_num ~ species_num$prec + species_num$elev)
+model_temp_prec <- lm(grid$spec_num ~ grid$temp + grid$prec)
+model_temp_elev <- lm(grid$spec_num ~ grid$temp + grid$elev)
+model_elev_prec <- lm(grid$spec_num ~ grid$prec + grid$elev)
 
 AIC(model_full,model_temp_prec,model_temp_elev,model_elev_prec)
 
@@ -321,65 +333,49 @@ crPlots(model_full, layout=c(1, 3), ask=FALSE, main="Partial residual plots", gr
 
 Get predictions and get residuals and join them to gridcell shapefile
 ```{r, echo=TRUE, fig.height=4, fig.width=12}
-species_num$pred <- predict(model_full)
-species_num$resi <- residuals(model_full)
-head(species_num)
+grid$pred <- predict(model_full)
+grid$resi <- residuals(model_full)
 head(grid)
-grid <- left_join(grid, species_num[,c("grid_id","spec_num","pred","resi")], by="grid_id")
-
-par(mfrow=c(1,3), mar=c(1,1,2,1))
-#Create color scheme
-
-my.class.fr<-classIntervals(grid$spec_num, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
-my.pal<-matlab.like(10)
-my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
-
-plot(st_geometry(grid), col=my.col.fr, border=NA, main="Palm species richness")
-plot(st_geometry(americas), add=TRUE)
-
-legend("bottomleft", # position
-       legend = names(attr(my.col.fr, "table")),
-       title = "Species number",
-       fill = attr(my.col.fr, "palette"),
-       cex = 1,
-       bty = "n") # no box around it
 
 
-my.class.fr<-classIntervals(grid$pred, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
-my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
+lmt <- ceiling(10*max(abs(range(grid$resi))))/10
 
-plot(st_geometry(grid), col=my.col.fr, border=NA, main="Model predictions")
-plot(st_geometry(americas), add=TRUE)
-
-legend("bottomleft", # position
-       legend = names(attr(my.col.fr, "table")),
-       title = "Species number",
-       fill = attr(my.col.fr, "palette"),
-       cex = 1,
-       bty = "n") # no box around it
-
-my.class.fr<-classIntervals(grid$resi, n=10, style="equal", warnLargeN=FALSE, dataPrecision = 0) # bin data into n quantiles
-my.pal<-green2red(10)
-my.col.fr<-findColours(my.class.fr,my.pal) # ramp colors based on classInts
-
-plot(st_geometry(grid), col=my.col.fr, border=NA, main="Model residuals")
-plot(st_geometry(americas), add=TRUE)
-
-legend("bottomleft", # position
-       legend = names(attr(my.col.fr, "table")),
-       title = "Species number",
-       fill = attr(my.col.fr, "palette"),
-       cex = 1,
-       bty = "n") # no box around it
+plot_grid(nrow = 1, ncol = 3,
+  ggplot(grid) +
+    geom_sf(color = NA, aes(fill = spec_num)) +
+    geom_sf(data = americas, fill = NA, color = "black") +
+    labs(title = "Palm species richness") +
+    scale_fill_viridis_c("Species number") +
+    theme_void() + ylim(-40, 40),
+  ggplot(grid) +
+    geom_sf(color = NA, aes(fill = pred)) +
+    geom_sf(data = americas, fill = NA, color = "black") +
+    labs(title = "Model predictions") +
+    scale_fill_viridis_c("Species number") +
+    theme_void() + ylim(-40, 40),
+  ggplot(grid) +
+    geom_sf(color = NA, aes(fill = resi)) +
+    geom_sf(data = americas, fill = NA, color = "black") +
+    labs(title = "Model residuals") +
+    # scale_fill_distiller("Species number", palette="PiYG") +
+    scale_fill_stepsn(colors=brewer.pal(10, "PiYG"),
+             n.breaks=10, limits=c(-lmt,lmt), show.limits=T) +
+    theme_void() + ylim(-40, 40))
 ```
 
 #### Exercise  
 
 1) Run a model of species richness in dependence on latitude + latitude² and compare the AIC to our best model with all environmental predictors  
 ```{r, echo=FALSE}
-model_lat <- lm(species_num$spec_num ~ abs(species_num$Lat) + I(abs(species_num$Lat)^2))
+model_lat <- lm(grid$spec_num ~ abs(grid$Lat) + I(abs(grid$Lat)^2))
 summary(model_lat)
 AIC(model_lat, model_full)
+
+ggplot(grid, aes(abs(Lat), spec_num)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x + I(x^2), color = "red") +
+  labs(x = "Latitude", y = "Species number") +
+  theme_bw()
 ```
 
 

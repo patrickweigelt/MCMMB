@@ -170,7 +170,7 @@ st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
 # have a look at the grid's attribute table
 head(grid)
 
-# change clomumn name of first column ('ID')
+# change column name of first column ('ID')
 colnames(grid)[colnames(grid) == "ID"] <- "grid_id"
 head(grid)
 
@@ -242,11 +242,11 @@ head(grid)
 With a base R approach.
 ```{r}
 # Defining a color palette
-cols <- viridis(n = n_distinct(grid$spec_num))
+# cols <- viridis(n = n_distinct(grid$spec_num))
 # pal <- colorRampPalette(cols)
 
-colours <- viridis(n = 10)
-colours <- colorRamp(colours)(grid$spec_num/max(grid$spec_num))
+cols <- viridis(n = 10)
+colours <- colorRamp(cols)(grid$spec_num/max(grid$spec_num))
 colours <- rgb(colours[,1], colours[,2], colours[,3], maxColorValue = 255)
 
 # Plot
@@ -257,10 +257,15 @@ plot(st_geometry(grid),
      main = "Palm species richness")
 plot(st_geometry(americas), add = TRUE)
 
+legend_colours <- colorRamp(cols)(seq(0,1,length.out=8))
+legend_colours <- rgb(legend_colours[,1], legend_colours[,2], 
+                      legend_colours[,3], maxColorValue = 255)
+
+
 legend("bottomleft", # position
-       legend = c(round(range(grid$spec_num), 1)),
+       legend = round(seq(0,max(grid$spec_num),length.out=8)),
        title = "Species number",
-       fill = pal(2),
+       fill = legend_colours,
        cex = 0.7,
        bty = "n") # no box around it
 ```
