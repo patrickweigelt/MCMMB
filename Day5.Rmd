@@ -345,22 +345,26 @@ plot_grid(nrow = 1, ncol = 3,
     geom_sf(color = NA, aes(fill = spec_num)) +
     geom_sf(data = americas, fill = NA, color = "black") +
     labs(title = "Palm species richness") +
-    scale_fill_viridis_c("Species number") +
-    theme_void() + ylim(-40, 40),
+    scale_fill_viridis_c("Species\nnumber", limits=range(c(grid$spec_num, grid$pred))) +
+    theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+    ylim(-40, 40),
   ggplot(grid) +
     geom_sf(color = NA, aes(fill = pred)) +
     geom_sf(data = americas, fill = NA, color = "black") +
     labs(title = "Model predictions") +
-    scale_fill_viridis_c("Species number") +
-    theme_void() + ylim(-40, 40),
+    scale_fill_viridis_c("Species\nnumber", limits=range(c(grid$spec_num, grid$pred))) +
+    theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+    ylim(-40, 40),
   ggplot(grid) +
     geom_sf(color = NA, aes(fill = resi)) +
     geom_sf(data = americas, fill = NA, color = "black") +
     labs(title = "Model residuals") +
-    # scale_fill_distiller("Species number", palette="PiYG") +
-    scale_fill_stepsn(colors=brewer.pal(10, "PiYG"),
-             n.breaks=10, limits=c(-lmt,lmt), show.limits=T) +
-    theme_void() + ylim(-40, 40))
+    #scale_fill_stepsn("Species number", colors=brewer.pal(10, "PiYG"),
+    #        n.breaks=10, limits=c(-lmt,lmt), show.limits=T) + # Option with discrete catagories
+    scale_fill_gradient2("Species\nnumber", low = brewer.pal(11, "PiYG")[1],
+    mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
+    theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+    ylim(-40, 40))
 ```
 
 #### Exercise  
