@@ -2,13 +2,15 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 6: Island Biogeography"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 19th, 2021"
+date: "May 25th, 2022"
 output: 
   html_document: 
     fig_height: 7
     theme: flatly
     toc: yes
     toc_depth: 3
+editor_options: 
+ chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -20,10 +22,8 @@ _[back to overview](index.html)_
 &nbsp;
 &nbsp;
 
-
 **Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
-* rgdal  
 * maps  
 * classInt  
 * psych
@@ -31,7 +31,14 @@ _[back to overview](index.html)_
 * lme4
 * jtools
 * performance
-
+* ggplot2
+* sf
+* GGally
+* rnaturalearth
+* rnaturalearthdata
+* ggpmisc
+* cowplot
+* tidyr
 
 &nbsp;
 
@@ -50,9 +57,7 @@ Now you can conveniently copy code from the viewer into your script.
 
 **Load R packages & island data set**  
 
-
 ```{r, include=FALSE}
-library(rgdal)
 library(maps)
 library(classInt)
 data(worldMapEnv)
@@ -61,10 +66,17 @@ library(car)
 library(lme4)
 library(jtools)
 library(performance)
+library(ggplot2)
+library(GGally)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggpmisc)
+library(cowplot)
+library(tidyr)
 ```
 
 ```{r, eval=FALSE}
-library(rgdal)
 library(maps)
 library(classInt)
 data(worldMapEnv)
@@ -73,27 +85,104 @@ library(car)
 library(lme4)
 library(jtools)
 library(performance)
+library(ggplot2)
+library(GGally)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggpmisc)
+library(cowplot)
+library(tidyr)
 ```
 &nbsp;
 
 ```{r}
 islands <- read.csv("data/islands.csv")
+
+str(islands)
 ```
 
-### 1. Data exploration  
+# 1. Data exploration  
 
-Spatial patterns of species diversity \& co-variation among biogeographic and environmental variables   
+Spatial patterns of species diversity \& co-variation among biogeographic and environmental variables.   
 
+## 1.1. Map species richness
 
-**Map species richness**  
-```{r, echo=TRUE}
+With ggplot2
 
-islands <- islands[order(islands$spec_num),] # arrange islands by species richness (low to high)
+```{r}
+# World coastlines
+world <- ne_coastline(scale = "medium", returnclass = "sf")
+class(world)
+
+# Other projections
+eckertIV <- "+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs" 
+mollweide <- "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs "
+# https://semba-blog.netlify.app/01/26/2020/world-map-and-map-projections/
+
+# Links regarding the choice of projections
+# http://www.geography.hunter.cuny.edu/~jochen/gtech361/lectures/lecture04/concepts/Map%20coordinate%20systems/Map%20projections%20and%20distortion.htm
+# http://www.geo.hunter.cuny.edu/~jochen/gtech201/lectures/lec6concepts/map%20coordinate%20systems/how%20to%20choose%20a%20projection.htm
+
+plot_grid(
+  ggplot(world) +
+    geom_sf() +
+    labs(title = "",
+         subtitle = "WGS84 projection") +
+    theme_bw() +
+    theme(panel.border = element_blank()),
+  ggplot(world) +
+    geom_sf() +
+    coord_sf(crs = eckertIV) +
+    labs(title = "World map",
+         subtitle = "EckertIV projection") +
+    theme_bw() +
+    theme(panel.border = element_blank()),
+  ggplot(world) +
+    geom_sf() +
+    coord_sf(crs = mollweide) +
+    labs(title = "",
+         subtitle = "Mollweide projection") +
+    theme_bw() +
+    theme(panel.border = element_blank()),
+  nrow = 2)
+```
+
+To combine the islands data.frame with the world map, we first need to convert it as a *sf* object.
+
+```{r}
+# Convert islands as a sf object
+islands_sf <- st_as_sf(islands, coords = c("longitude", "latitude"),
+                       crs = "+proj=longlat +ellps=WGS84 +no_defs")
+
+# Map
+ggplot(world) +
+  geom_sf() +
+  geom_sf(data = islands_sf, shape = 1, stroke = 1.5,
+          aes(size = spec_num, color = spec_num)) +
+  scale_color_viridis_c("Species richness", trans = "log", guide = "legend") +
+  scale_size_continuous("Species richness", trans = "log") +
+  coord_sf(crs = mollweide) + # coord_sf(crs = eckertIV) +
+  labs(title = "Angiosperm species richness",
+       subtitle = "Mollweide projection") +
+  theme_bw()
+
+# https://community.rstudio.com/t/ggplot2-is-it-possible-to-combine-color-fill-and-size-legends/17072
+```
+
+*Bonus: custom discrete color scale*
+<details><summary>Bonus</summary>
+```{r, echo=TRUE, eval = FALSE}
+# Arrange islands by species richness (low to high)
+islands <- islands[order(islands$spec_num), ]
 
 # create colour gradient
-my.class.fr.S<-classIntervals(islands$spec_num,n=9, style="fixed", fixedBreaks=c(0,25,50,100,200,400,800,1600,3200,6400)) # bin data into n quantiles
-my.pal<-c("midnightblue","dodgerblue4","dodgerblue2","chartreuse4","gold","orangered1","darkred")
-my.col.fr.S<-findColours(my.class.fr.S,my.pal) # ramp colors based on classInts
+my.class.fr.S <- classIntervals(
+  islands$spec_num, n = 9, style = "fixed",
+  fixedBreaks = c(0, 25, 50, 100, 200, 400, 800, 1600, 3200, 6400)) # bin data into n quantiles
+my.pal <- c("midnightblue", "dodgerblue4", "dodgerblue2", "chartreuse4",
+            "gold", "orangered1", "darkred")
+my.col.fr.S <- findColours(my.class.fr.S, my.pal) # ramp colors based on classInts
 my.col.fr.S[islands$spec_num < 1] <- "#666666" # assign grey for zero species
 
 # specify dimensions of plot for saving
@@ -104,9 +193,11 @@ if(.Platform$OS.type == "windows"){
 }
 # quartz(width=20*0.3937008, height=12*0.3937008) # for Mac 
 
-map('world', fill = FALSE)
+map("world", fill = FALSE)
 title(main = "Angiosperm species richness")
-points(islands$longitude, islands$latitude, pch=ifelse(islands$spec_num >= 1,1,4), cex = (log10(islands$spec_num+1)/2.6)^2+1, col = my.col.fr.S, lwd=2)
+points(islands$longitude, islands$latitude,
+       pch=ifelse(islands$spec_num >= 1,1,4),
+       cex = (log10(islands$spec_num+1)/2.6)^2+1, col = my.col.fr.S, lwd=2)
 
 if(.Platform$OS.type == "windows"){ 
   savePlot("data/islands.pdf", type = "pdf")
@@ -118,9 +209,9 @@ if(.Platform$OS.type == "windows"){
 dev.off()
 ```
 &nbsp;
+</details>
 
-
-**Correlations among biogeographic \& environmental variables**
+## 1.2. Correlations among biogeographic \& environmental variables
 
 _Meta-data_    
 1. **latitude**: Latitude (in decimal degrees)  
@@ -132,47 +223,90 @@ _Meta-data_
 7. **mean_prec**: Mean annual precipitation (mm yr^-1^)  
 8. **mean_homogeneity**: Habitat heterogeneity (similarity of vegetation index with surrounding pixels)   
 
+```{r, echo = TRUE, eval = FALSE}
+abiotic <- c("latitude", "area", "dist", "age_Ma", "max_elev",
+             "mean_temp", "mean_prec", "mean_homogeneity")
 
-```{r,echo=TRUE}
-pairs.panels(islands[,c(4:7,11:14)], density=F,ellipses=F, hist.col = "white")
+ggpairs(islands[, abiotic],
+        upper = list(continuous = wrap(ggally_cor, digits = 1))) +
+  theme_bw()
+
+# Other way to have a pair plot:
+# pairs.panels(islands[, c(4:7, 11:14)],
+#              density = FALSE, ellipses = FALSE,
+#              hist.col = "white")
 ```
+
+```{r, echo = FALSE, eval = TRUE, message=FALSE, warning=FALSE}
+abiotic <- c("latitude", "area", "dist", "age_Ma", "max_elev",
+             "mean_temp", "mean_prec", "mean_homogeneity")
+
+suppressWarnings(
+  ggpairs(islands[, abiotic],
+          upper = list(continuous = wrap(ggally_cor, digits = 1))) +
+    theme_bw()
+)
+```
+
 &nbsp;
 
-## 2. The species area relationship (SAR)  
+# 2. The species area relationship (SAR)  
+We here aim at linking, using the best model, island area and plant species richness.  
 
-### a) Linear model  
-
+## a) Linear model  
 _Species Richness ~ Area_  
 
 ```{r, echo=TRUE}
-
-SAR0 <- lm(spec_num ~ area, data=islands)
+SAR0 <- lm(spec_num ~ area, data = islands)
 summary(SAR0)
 
-plot(spec_num~area,data=islands)
-regLine(SAR0, col="darkgreen")
+ggplot(islands, aes(area, spec_num)) +
+  geom_point() +
+  stat_smooth(method = "lm") +
+  stat_poly_eq(method = "lm", formula = y ~ x,
+               aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~"))) +
+  labs(x = "Area (km^2)", y = "Species richness") +
+  theme_bw()
+
+# plot(spec_num ~ area, data = islands)
+# car::regLine(SAR0, col = "darkgreen")
 ```
 &nbsp;
 
-### b) Non-linear model  
-
+## b) Non-linear model  
 _Species richness ~ c + Area^z^_  
 
 ```{r, echo=TRUE}
-SAR1 <- nls(spec_num ~ c + area^z, data = islands, start = list(c = 0, z = 1))
+SAR1 <- nls(spec_num ~ c + area^z, data = islands,
+            start = list(c = 0, z = 1))
 summary(SAR1)
 
-newdata <- data.frame(area=seq(min(islands$area),max(islands$area),length.out = 100))
+ggplot(islands, aes(area, spec_num)) +
+  geom_point() +
+  geom_smooth(method = "nls",
+              formula = y ~ c + x^z,
+              method.args = list(start = c(c = 0, z = 1)),
+              se = FALSE) +
+  labs(title = "Species-area relationship",
+       x = "Island area (km^2)", y = "Species number") +
+  theme_bw()
+```
+
+```{r, echo=TRUE}
+# Predictions
+newdata <- data.frame(area = seq(min(islands$area), max(islands$area),
+                                 length.out = 100))
 predicted_richness_SAR1 <- predict(SAR1, newdata = newdata)
+head(predicted_richness_SAR1)
 
-plot(islands$area, islands$spec_num, xlab = "Island area (km)", ylab="Species number", main="Species-area relationship")
-points(newdata$area,predicted_richness_SAR1, type="l", col="darkred", lwd=2)
-
+# plot(islands$area, islands$spec_num, xlab = "Island area (km)",
+#      ylab = "Species number", main = "Species-area relationship")
+# points(newdata$area, predicted_richness_SAR1, type = "l",
+#        col = "darkred", lwd = 2)
 ```
 &nbsp;
 
-
-### c) Exercise I  
+## c) Exercise I  
 1. Make histograms of species richness and area  
 2. Apply a log10 transformation to species richness and area, make new columns of the transformed variables, and plot histograms of them  
 3. Fit a linear model to log predict species richness using log area 
@@ -180,16 +314,25 @@ points(newdata$area,predicted_richness_SAR1, type="l", col="darkred", lwd=2)
 
 &nbsp;
 
-
 **Exercise I solutions: **  
 
 _Make histograms of species richness and area_    
 
 ```{r, echo=FALSE}
-par(mfrow=c(1,2))
-# 1. look at the histograms of species richness and area
-hist(islands$area)
-hist(islands$spec_num)
+plot_grid(
+  ggplot(islands, aes(area)) +
+    geom_histogram(color = "black", fill = "grey50") +
+    labs(x = "Area (km^2)", y = "Count") +
+    theme_bw(),
+  ggplot(islands, aes(spec_num)) +
+    geom_histogram(color = "black", fill = "grey50") +
+    labs(x = "Species richness", y = "Count") +
+    theme_bw(),
+  nrow = 1)
+
+# par(mfrow = c(1, 2))
+# hist(islands$area)
+# hist(islands$spec_num)
 ```
 &nbsp;
 
@@ -201,67 +344,178 @@ _Fit a linear model to predict species richness using area_
 islands$log_area <- log10(islands$area + 1)
 islands$log_spec_num <- log10(islands$spec_num + 1)
 
-par(mfrow=c(1,2))
-hist(islands$log_area)
-hist(islands$log_spec_num)
+plot_grid(
+  ggplot(islands, aes(log_area)) +
+    geom_histogram(color = "black", fill = "grey50") +
+    labs(x = "Area (km^2) log-transformed", y = "Count") +
+    theme_bw(),
+  ggplot(islands, aes(log_spec_num)) +
+    geom_histogram(color = "black", fill = "grey50") +
+    labs(x = "Species richness log-transformed", y = "Count") +
+    theme_bw(),
+  nrow = 1)
+
+# par(mfrow = c(1, 2))
+# hist(islands$log_area)
+# hist(islands$log_spec_num)
 
 SAR2 <- lm(log_spec_num ~ log_area, data = islands)
 summary(SAR2)
 
-par(mfrow=c(1,1))
-plot(log_spec_num~log_area, data=islands)
-regLine(SAR2,col="darkgreen")
-```
+ggplot(islands, aes(log_area, log_spec_num)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, color = "darkgreen") +
+  stat_poly_eq(method = "lm", formula = y ~ x,
+               aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~"))) +
+  labs(x = "Area (km^2) log-transformed",
+       y = "Species richness log-transformed") +
+  theme_bw()
 
+# par(mfrow = c(1, 1))
+# plot(log_spec_num ~ log_area, data = islands)
+# car::regLine(SAR2, col = "darkgreen")
+```
 
 **Check model assumptions**  
 
 ```{r, echo=FALSE}
-par(mfrow=c(1,2))
+par(mfrow = c(1, 2))
 hist(residuals(SAR0))
 hist(residuals(SAR2))
 ```
 
 &nbsp;
 
-### d) Poisson generalised linear model (GLM)  
+## d) Poisson generalised linear model (GLM)  
 
 ```{r, echo=TRUE}
-SAR3 <- glm(spec_num ~ log_area, data=islands, family="poisson")
+SAR3 <- glm(spec_num ~ log_area, data = islands, family = "poisson")
+
+# 100*(161367-43825)/161367
+
+# Plot Poisson GLM
+ggplot(islands, aes(log_area, spec_num)) +
+  geom_point() +
+  geom_smooth(method = "glm", formula = y ~ x,
+              method.args = list(family = "poisson"),
+              color = "darkblue") +
+  labs(title = "GLM Poisson",
+       x = "Area log-transformed (log10 km2)",
+       y = "Species richness") +
+  theme_bw()
 
 # Plot Poisson GLM in log-log space
-plot(islands$log_area, islands$log_spec_num, xlab = "log10 island area (log10 km)", ylab="log10 species number", main="log-log Species-area relationship")
-regLine(SAR2)
+newdata_SAR3 <- data.frame(log_area = islands$log_area)
+newdata_SAR3$pred <- as.numeric(predict(SAR3,
+                                        newdata = newdata_SAR3,
+                                        type = "response"))
+# Log-transforming the predictions
+newdata_SAR3$pred_log10 <- log10(newdata_SAR3$pred + 1)
 
-newdata_SAR3 <- data.frame(log_area=seq(min(islands$log_area),max(islands$log_area),length.out = 100))
-predicted_richness_SAR3 <- predict(SAR3, newdata = newdata_SAR3, type="response")
-points(newdata_SAR3$log_area,log10(predicted_richness_SAR3+1), type="l", col="purple", lwd=2)
+ggplot(islands, aes(log_area, log_spec_num)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE,
+              color = "darkgreen") +
+  geom_line(data = newdata_SAR3, aes(log_area, pred_log10),
+            color = "darkblue", size = 1) +
+  labs(title = "log-log Species-area relationship",
+       x = "Area log-transformed (log10 km2)",
+       y = "Species richness log-transformed") +
+  theme_bw()
+```
 
-# Now plot all models together
-plot(islands$area, islands$spec_num, xlab = "Island area (km?)", ylab="Species number", main="Species-area relationship")
+In base R, the equivalent would be:  
+
+```{r, echo=TRUE, eval = FALSE}
+plot(islands$log_area, islands$log_spec_num,
+     xlab = "log10 island area (log10 km)",
+     ylab = "log10 species number",
+     main = "log-log Species-area relationship")
+car::regLine(SAR2)
+
+newdata_SAR3 <- data.frame(log_area = seq(min(islands$log_area),
+                                          max(islands$log_area),
+                                          length.out = 100))
+predicted_richness_SAR3 <- predict(SAR3, newdata = newdata_SAR3,
+                                   type = "response")
+points(newdata_SAR3$log_area, log10(predicted_richness_SAR3 + 1),
+       type = "l", col = "purple", lwd = 2)
+```
+
+Now, let's plot all models together.  
+
+```{r}
+# Make a data frame with all the predictions
+newdata_all <- data.frame(area = islands$area,
+                          log_area = islands$log_area)
+
+newdata_all$pred_SAR0 <- as.numeric(predict(SAR0,
+                                            newdata = newdata_all,
+                                            type = "response"))
+
+newdata_all$pred_SAR1 <- as.numeric(predict(SAR1,
+                                            newdata = newdata_all,
+                                            type = "response"))
+
+newdata_all$pred_SAR2 <- as.numeric(predict(SAR2,
+                                            newdata = newdata_all,
+                                            type = "response"))
+newdata_all$pred_SAR2 <- (10^newdata_all$pred_SAR2)-1
+
+newdata_all$pred_SAR3 <- as.numeric(predict(SAR3,
+                                            newdata = newdata_all,
+                                            type = "response"))
+# newdata_all$pred_SAR3_exp10 <- (10^newdata_all$pred_SAR3) - 1
+
+# we also need to reverse the log-transformation for area
+# newdata_all$logarea_exp10 <- (10^newdata_all$log_area)-1
+
+# Putting the table in a long format
+newdata_all <- pivot_longer(newdata_all, cols = contains("SAR"), names_to = "Model", values_to = "Predicted values")
+
+ggplot(newdata_all, aes(area, `Predicted values`)) +
+  geom_point(data = islands, aes(area, spec_num)) +
+  geom_line(aes(color = Model), size = 1) +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Area (km^2)", y = "Species richness") +
+  theme_bw()
+
+```
+
+With base R, the code would be like this:
+
+```{r, echo=TRUE, eval = FALSE}
+plot(islands$area, islands$spec_num, xlab = "Island area (km?)",
+     ylab = "Species number", main = "Species-area relationship")
 
 # plot the simple linear model
-regLine(SAR0, col="darkgreen")
+car::regLine(SAR0, col="darkgreen")
 
 # plot the non-linear power law model
-points(newdata$area,predicted_richness_SAR1, type="l", col="darkred", lwd=2)
+points(newdata$area, predicted_richness_SAR1, type = "l",
+       col = "darkred", lwd = 2)
 
 # plot the log-log space model in untransformed space
-newdata_SAR2 <- data.frame(log_area=log10(seq(min(islands$area),max(islands$area),length.out = 100)+1))
+newdata_SAR2 <- data.frame(log_area = log10(seq(min(islands$area),
+                                                max(islands$area),
+                                                length.out = 100) + 1))
 predicted_richness_SAR2 <- predict(SAR2, newdata = newdata_SAR2)
-points((10^newdata_SAR2$log_area)-1,(10^predicted_richness_SAR2)-1, type="l", col="purple", lwd=2)
-points(newdata$area,(10^predicted_richness_SAR2)-1, type="l", col="darkgreen", lwd=2, lty=2)
+points((10^newdata_SAR2$log_area) - 1, (10^predicted_richness_SAR2) - 1,
+       type = "l", col = "purple", lwd = 2)
+points(newdata$area, (10^predicted_richness_SAR2) - 1, type = "l",
+       col = "darkgreen", lwd = 2, lty = 2)
 
 # plot the Poisson model in untransformed space
-predicted_richness_SAR3 <- predict(SAR3, newdata = newdata_SAR3, type="response")
-points((10^newdata_SAR3$log_area)-1,predicted_richness_SAR3, type="l", col="darkblue", lwd=2)
+predicted_richness_SAR3 <- predict(SAR3, newdata = newdata_SAR3,
+                                   type = "response")
+points((10^newdata_SAR3$log_area) - 1, predicted_richness_SAR3,
+       type = "l", col="darkblue", lwd=2)
 ```
 &nbsp;
 
 **How do these models compare?**  
-  
-```{r}
 
+```{r}
 AIC(SAR0, SAR1, SAR2, SAR3)
 ```
 
@@ -269,15 +523,13 @@ AIC(SAR0, SAR1, SAR2, SAR3)
 
 &nbsp;
 
+# 3. Multi-predictor model of island biodiversity
 
-## 3. Multi-predictor model of island biodiversity
-
-
-### a) Exercise II    
+## a) Exercise II    
 
 1.  Apply a log10 transformation to area, elevation, precipitation, and temperature following:  
 _Kreft, H. et al. 2008. Global diversity of island floras from a macroecological perspective. Ecology Letters 11:116-127._  
- 
+
 2. Simplify the geology column; change all values that are **floor** or **volcanic** to **oceanic**  
 
 3. Fit a multiple linear regression to predict biodiversity patterns on islands using the following biogeographic and environmental
@@ -296,21 +548,23 @@ variables: island area, distance, temperature, precipitation, and island geology
 
 _Transform your data_
 ```{r, echo=FALSE}
-islands$log_area<-log10(islands$area)
-islands$log_spec_num<-log10(islands$spec_num+1)
+islands$log_area <- log10(islands$area)
+islands$log_spec_num <- log10(islands$spec_num + 1)
 
 islands$log_max_elev <- log10(islands$max_elev + 1)
 islands$log_mean_prec <- log10(islands$mean_prec)
-islands$log_mean_temp <- log10(islands$mean_temp+5)
+islands$log_mean_temp <- log10(islands$mean_temp + 5)
 ```
 
 &nbsp;
 
 _Simplify the geology column_
 ```{r,echo=FALSE}
-islands$geology<-as.character(islands$geology)
-islands$geology[which(islands$geology == "floor" | islands$geology == "volcanic")] <- "oceanic"
-islands$geology[which(islands$geology %in% c("floor" , "volcanic"))] <- "oceanic"
+islands$geology <- as.character(islands$geology)
+islands$geology[which(islands$geology == "floor" |
+                        islands$geology == "volcanic")] <- "oceanic"
+islands$geology[which(islands$geology %in%
+                        c("floor" , "volcanic"))] <- "oceanic"
 
 islands$geology[which(islands$geology == "floor")] <- "oceanic"
 islands$geology[which(islands$geology == "volcanic")] <- "oceanic"
@@ -321,12 +575,14 @@ summary(as.factor(islands$geology))
 
 _Fit multiple regression model_  
 
-```{r,echo=FALSE}
+```{r, echo = FALSE}
+colnames(islands)[c(6, 8, 15:19)]
+new_islands <- islands[, c(6, 8, 15:19)]
+new_islands <- na.omit(new_islands) # remove observations with NAs
 
-new_islands<-islands[,c(6,8,15:19)]
-new_islands<-na.omit(new_islands) # remove observations with NAs
-
-Multi.mod <- lm(log_spec_num ~ log_area + dist + log_max_elev+ log_mean_temp + log_mean_prec + geology, data= new_islands)
+Multi.mod <- lm(log_spec_num ~ log_area + dist + log_max_elev +
+                  log_mean_temp + log_mean_prec + geology,
+                data = new_islands)
 
 summary(Multi.mod)
 
@@ -337,17 +593,14 @@ crPlots(Multi.mod)
 _Can we improve predictions of species richness by removing individual model terms?_  
 
 ```{r,echo=FALSE}
-
-Multi.mod1<-update(Multi.mod,~ . -log_max_elev) 
-AIC(Multi.mod,Multi.mod1)
+Multi.mod1 <- update(Multi.mod, ~ . -log_max_elev) 
+AIC(Multi.mod, Multi.mod1)
 ```
 &nbsp;
 
-
-## 4. The General dynamic model of island biogeography (GDM)  
+# 4. The General dynamic model of island biogeography (GDM)  
 
 ```{r, echo=TRUE}
-
 # Assign archipelago names for 4 major archipelagos
 islands$archipelago <- NA
 islands$archipelago[which(islands$entity_ID %in% c(169:188))] <- "Hawaii"
@@ -355,8 +608,9 @@ islands$archipelago[which(islands$entity_ID %in% c(145:151))] <- "Canaries"
 islands$archipelago[which(islands$entity_ID %in% c(154:168))] <- "Galapagos"
 islands$archipelago[which(islands$entity_ID %in% c(131:139))] <- "Azores"
 islands_gdm <- islands[!is.na(islands$archipelago),]
-islands_gdm$log_age_Ma <- log10(islands_gdm$age_Ma)
 
+# Log-transforming age
+islands_gdm$log_age_Ma <- log10(islands_gdm$age_Ma)
 ```
 &nbsp;
 
@@ -364,12 +618,12 @@ islands_gdm$log_age_Ma <- log10(islands_gdm$age_Ma)
 
 _Species = Area x Time x Time^2^_    
 
-
 ```{r, echo=TRUE}
-Hawaii <- islands_gdm[which(islands_gdm$archipelago == "Hawaii"),] # subset data
+# subset data
+Hawaii <- islands_gdm[which(islands_gdm$archipelago == "Hawaii"), ]
 
 # The ATT^2 model
-gdm1 <- lm(spec_num ~ log_area + age_Ma + I(age_Ma^2), data=Hawaii)
+gdm1 <- lm(spec_num ~ log_area + age_Ma + I(age_Ma^2), data = Hawaii)
 summary(gdm1)
 crPlots(gdm1)
 ```
@@ -380,9 +634,9 @@ crPlots(gdm1)
 _Species = log(Area) x log(Time) x log(Time)^2^_    
 
 ```{r, echo=TRUE}
-gdm2 <- lm(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2), data=Hawaii)
+gdm2 <- lm(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2), data = Hawaii)
 summary(gdm2)
-AIC(gdm1,gdm2)
+AIC(gdm1, gdm2)
 
 crPlots(gdm2)
 ```
@@ -393,10 +647,11 @@ crPlots(gdm2)
 _Species = log(Area) + log(Time) + log(Time)^2^ + (1|archipelago)_    
 
 ```{r, echo=TRUE}
-gdm_all <- lme4::glmer(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2) + (1|archipelago), data=islands_gdm, family = poisson)
+gdm_all <- lme4::glmer(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2) +
+                         (1|archipelago), data = islands_gdm, family = poisson)
 summary(gdm_all)
 
 effect_plot(gdm_all, pred = "log_area", outcome.scale = "response", plot.points = TRUE)
 effect_plot(gdm_all, pred = "log_age_Ma", outcome.scale = "response", plot.points = TRUE)
-model_performance(gdm_all, metrics="common")
+model_performance(gdm_all, metrics = "common")
 ```
