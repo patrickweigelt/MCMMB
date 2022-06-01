@@ -26,13 +26,14 @@ _[back to overview](index.html)_
 
 * `ape`  
 * `Taxonstand`  
-* `rgdal`  
-* `rgeos`  
-* `maptools`  
+* `sf`  
 * `dplyr` 
 * `psych`  
 * `picante`  
-* `pez`  
+* `pez`
+* `ggplot2`
+* `cowplot`
+* `GGally`
 
 &nbsp;
 
@@ -54,24 +55,21 @@ Now you can conveniently copy code from the viewer into your script.
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(dplyr)
-library(rgdal)
-library(rgeos)
-library(maptools) #  Geospatial fun
+library(sf) #  Geospatial fun
 library(Taxonstand)
 library(ape)
 library(picante)
 library(pez)
 library(psych)
-library(classInt)
-library(colorRamps)
+library(ggplot2)
+library(cowplot)
+library(GGally)
 ```
 
 ```{r eval=FALSE}
 library(dplyr) # basic data manipulation
 
-library(rgdal) #  Geospatial fun
-library(rgeos) #  Geospatial fun
-library(maptools) #  Geospatial fun
+library(sf) #  Geospatial fun
 
 library(Taxonstand) # Taxonomic standardisation of plant species names
 library(ape) # Analyses of phylogenetics and evolution
@@ -79,8 +77,9 @@ library(picante) # Phylogenies and ecology
 library(pez) # Phylogenies and ecology
 
 library(psych) # basic stats stuff
-library(classInt) # for plotting nice colors
-library(colorRamps) # for plotting nice colors
+library(ggplot2) # for plotting
+library(cowplot) # for multi-panel plots
+library(GGally) # pairs plot
 ```
 &nbsp;
 
@@ -184,8 +183,9 @@ length(unique(species$species))
 _How many and which species in the palm distribution dataset are missing from the phylogeny?_
 
 ```{r echo=FALSE}
-table(species$species %in% palmtree$tip.label) # need for unique species
-length(unique(species$species[which(!species$species %in% palmtree$tip.label)]))
+table(unique(species$species) %in% palmtree$tip.label) # need for unique species
+# length(unique(species$species[which(!species$species %in% palmtree$tip.label)]))
+# sum(!unique(species$species) %in% palmtree$tip.label)
 
 # first five palm species
 unique(species$species[which(!species$species %in% palmtree$tip.label)])[1:5]
@@ -240,7 +240,7 @@ length(specmissing)
 &nbsp;
 
 _Missing species would have to be looked up and added manually to the phylogeny by an expert._   
-_If missing species cannot be added reliably, one can remove them from the dataset for analysis._  
+_If missing species cannot be added reliably, we need to remove them from the dataset for analysis._  
 
 ```{r echo=TRUE}
 # Removal of the species not in the phylogeny
@@ -251,38 +251,46 @@ species <- species[which(!species$species %in% specmissing), ]
 ## 3. Loading grid shapefile and changing resolution  
 **Read in polygon shapefile**  
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-americas <- readOGR("data/americas/americas.shp")
-grid <- readOGR("data/30min_grid_select50/30min_grid_select50%.shp",
-                integer64 = "allow.loss")
-names(grid@data)[1] <- "grid_id"
+# gridcells corresponding to palm distribution data and americas coastline
+grid <- st_read("data/30min_grid_select50/30min_grid_select50%.shp")
+americas <- st_read("data/americas/americas.shp")
+
+# remember to define the Coordinate Reference System (CRS)
+st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
+st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
+
+# Rename ID column for matching
+names(grid)[1] <- "grid_id"
 ```
 &nbsp; 
 
 **Convert the grid shapefile to a coarser resolution to have fewer grid cells**  
 ```{r echo=TRUE}
-grid_centroids <- gCentroid(grid, byid = TRUE) # make spatial points dataframe from grid
-grid_centroids <- SpatialPointsDataFrame(grid_centroids,
-                                         data = data.frame(grid_centroids@coords))
-names(grid_centroids@data) <- c("longitude", "latitude")
+# convert into points shapefile
+grid_centroids <- st_centroid(grid)
 
-par(mfrow = c(1, 1))
-plot(grid_centroids)
-plot(americas, add = TRUE)
+ggplot(grid_centroids) +
+  geom_sf(shape=20) +
+  geom_sf(data = americas, fill = NA, color = "black") +
+  theme_void() + ylim(-40, 40)
 ```
 &nbsp; 
 
 **Add coordinates to SpatialPolygonsDataframe**  
 ```{r echo=TRUE}
-head(grid@data)
-grid@data <- cbind(grid@data, grid_centroids@data)
-head(grid@data)
+
+# Add latitude and longitude as columns
+head(grid)
+grid <- cbind(grid, st_coordinates(grid_centroids))
+names(grid)[4:5] <- c("longitude", "latitude")
+head(grid)
 ```
 &nbsp; 
 
 **Make new IDs for neighbouring cells**  
 ```{r echo=TRUE}
-range(grid@data$longitude)
-range(grid@data$latitude)
+range(grid$longitude)
+range(grid$latitude)
 
 longitude <- seq(-116, -34, by = 2)
 latitude  <- seq(-35, 35, by = 2)
@@ -292,34 +300,38 @@ new_ID_matrix <- matrix(c(1:(length(longitude)*length(latitude))),
                         dimnames = list(longitude, latitude), byrow = TRUE)
 new_ID_matrix[1:5, 1:5]
 
-grid@data$new_ID <- NA
+grid$new_ID <- NA
 
-for(i in 1:nrow(grid@data)){
-  grid@data$new_ID[i] <- new_ID_matrix[which(longitude < grid@data$longitude[i] & 
-                                               (longitude + 2) > grid@data$longitude[i]),
-                                       which(latitude < grid@data$latitude[i] &
-                                               (latitude + 2) > grid@data$latitude[i])]
+for(i in 1:nrow(grid)){
+  grid$new_ID[i] <- new_ID_matrix[which(longitude < grid$longitude[i] & 
+                                               (longitude + 2) > grid$longitude[i]),
+                                       which(latitude < grid$latitude[i] &
+                                               (latitude + 2) > grid$latitude[i])]
 }
 
-head(grid@data)
+head(grid)
 ```
 &nbsp; 
 
 **Join neighbouring cells based on new IDs \& aggregate species distribution data using the new grid**  
 ```{r echo=TRUE}
-grid_2degrees <- unionSpatialPolygons(grid, grid@data$new_ID)
-uniqueIDs <- unique(grid@data$new_ID)
-grid_2degrees <- SpatialPolygonsDataFrame(grid_2degrees,
-                                          data = data.frame(new_ID = uniqueIDs,
-                                                            row.names = uniqueIDs))
-head(grid_2degrees@data)
-plot(grid_2degrees, col = "gray90")
-plot(americas, add = TRUE)
 
-species <- inner_join(species, grid@data, by = "grid_id")
+grid_2degrees <- group_by(grid, new_ID)
+grid_2degrees <- summarise(grid_2degrees, do_union = TRUE, is_coverage = TRUE)
+
+head(grid_2degrees)
+
+ggplot(grid_2degrees) +
+  geom_sf(fill = "gray90") +
+  geom_sf(data = americas, fill = NA, color = "black") +
+  theme_void() + ylim(-40, 40)
+
+# Add new ID also to species data.frame
+species <- inner_join(species, st_drop_geometry(grid), by = "grid_id")
 head(species)
 ```
 &nbsp;
+
 
 ## 4. Calculating phylogenetic community metrics  
 **Prune phylogeny to exclude species not in palm distribution data**  
@@ -369,6 +381,7 @@ with $l$ the length of a branch $b$.
 # ?pd
 pd_palms <- pd(species_grid, palmtree_pruned)
 dim(pd_palms) # one value per grid cell
+pd_palms <- data.frame(new_ID=as.integer(row.names(species_grid)), pd_palms)
 head(pd_palms)
 ```
 &nbsp;
@@ -379,15 +392,16 @@ head(pd_palms)
 pd_model <- lm(PD ~ SR, data = pd_palms)
 pd_palms$residuals <- residuals(pd_model)
 
-par(mfrow = c(1, 2))
-plot(pd_palms$SR, pd_palms$PD, main = "Species richness vs Faith's PD",
-     xlab = "Species number",  ylab = "Faith's PD",
-     cex.main = 0.8, cex.axis = 0.8, pch = 16)
-abline(pd_model, col = "firebrick3", lwd = 2)
-plot(pd_palms$SR, pd_palms$residuals,
-     main = "Species richness vs Faith's PD residuals",
-     xlab = "Species number", ylab = "Faith's PD residuals",
-     cex.main = 0.8, cex.axis = 0.8, pch = 16)
+plot_grid(nrow = 1, ncol = 2,
+ggplot(pd_palms, aes(SR, PD)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+  labs(x = "Species_number", y = "Faith's PD") +
+  theme_bw(),
+ggplot(pd_palms, aes(SR, residuals)) +
+  geom_point(color = "black", alpha = 0.3) +
+  labs(x = "Species_number", y = "Faith's PD residuals") +
+  theme_bw())
 ```
 
 
@@ -426,19 +440,24 @@ dim(pd.null); head(pd.null)
 # select columns of interest for final data set
 pd.out <- pd.null[, c("new_ID", "Faith_PD.observed", "Faith_PD.SES",
                       "MPD.observed", "MPD.SES", "MNTD.observed", "MNTD.SES")] 
-pd.out[is.na(pd.out)] <- 0  # change NAs to zeroes; no phylogenetic diversity if grid has only 1 spp!
+pd.out[is.na(pd.out)] <- 0  # change NAs to zeroes; zero phylogenetic diversity if grid has only 1 spp!
 
 head(pd.out)
+head(pd_palms)
 
-par(mfrow = c(1, 2))
-plot(pd_palms$SR, pd_palms$residuals,
-     main = "Species richness vs Faith's PD residuals",
-     xlab = "Species number", ylab = "Faith's PD residuals",
-     cex.main = 0.8, cex.axis = 0.8, pch = 16)
-plot(pd.out$Faith_PD.observed, pd.out$Faith_PD.SES,
-     main = "Faith's PD vs standardised Faith's PD",
-     xlab = "observed Faith's PD", ylab = "standardised Faith's PD",
-     cex.main = 0.8, cex.axis = 0.8, pch = 16)
+palmdiversity <- left_join(pd_palms, pd.out)
+
+plot_grid(nrow = 1, ncol = 2,
+ggplot(palmdiversity, aes(SR, Faith_PD.SES)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+  labs(x = "Species_number", y = "Faith's PD standardized") +
+  theme_bw(),
+ggplot(palmdiversity, aes(Faith_PD.observed, Faith_PD.SES)) +
+  geom_point(color = "black", alpha = 0.3) +
+  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+  labs(x = "Faith's PD observed", y = "Faith's PD standardized") +
+  theme_bw())
 ```
 &nbsp;
 
@@ -446,28 +465,21 @@ plot(pd.out$Faith_PD.observed, pd.out$Faith_PD.SES,
 ### a. Exercise II  
 
 **Tasks**:  
-1. Create a data.frame called 'palmdiversity' with species richness, PD and residual PD from 'pd_palms' and standardized pd metrics from 'pd.out'.    
-2. Plot correlations among the diversity metrics.   
-3. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting.   
-4. Plot maps with colours according to the diversity metrics.  
+1. Plot correlations among the diversity metrics in the palm diversity data.frame.   
+2. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting.   
+3. Plot maps with colours according to the diversity metrics.  
 
 **Exercise II solutions:**
 
-_Create a data.frame called 'palmdiversity' by joining 'pd_palms' with 'pd.out'_
-
-```{r echo=FALSE}
-palmdiversity <- data.frame(new_ID = as.numeric(rownames(species_grid)),
-                            pd_palms)
-head(palmdiversity)
-palmdiversity <- left_join(palmdiversity, pd.out, by = "new_ID")
-head(palmdiversity)
-```
-&nbsp;
 
 _Plot correlations among the diversity metrics_  
 ```{r echo=FALSE, fig.height=10, fig.width=10}
-pairs.panels(palmdiversity[, c(3:10)], method = "pearson",
-             density = FALSE, ellipses = FALSE, hist.col = "white")
+ggpairs(palmdiversity[, c(3:10)],
+        upper = list(continuous = wrap(ggally_cor, digits = 1))) +
+  theme_bw()
+
+#psych::pairs.panels(palmdiversity[, c(3:10)], method = "pearson",
+#             density = FALSE, ellipses = FALSE, hist.col = "white")
 ```
 &nbsp;
 
