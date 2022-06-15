@@ -5,7 +5,7 @@ author: "Pierre Denelle, Holger Kreft & Patrick Weigelt"
 date: "June 15th, 2022"
 output: 
   html_document: 
-    fig_height: 7
+    fig_height: 6
     theme: flatly
     toc: yes
     toc_depth: 3
@@ -146,11 +146,11 @@ Among the traits available, we have different trait types, related to growth for
 
 Traits can be either binary traits (0 or 1, sometimes 2 when one species varies in that trait)., categorical or continuous.
 
-```{r non_armed_stem, fig.label = "Cocos_nucifera", out.width = "50%", echo = FALSE}
+```{r non_armed_stem, fig.label = "Cocos_nucifera", out.width = "10%", echo = FALSE}
 knitr::include_graphics("figures/Cocos_nucifera.jpg")
 ```
 
-```{r armed_stem, fig.label = "Aiphanes_minima", out.width = "50%", echo = FALSE}
+```{r armed_stem, fig.label = "Aiphanes_minima", out.width = "10%", echo = FALSE}
 knitr::include_graphics("figures/Aiphanes_minima.jpg")
 ```
 
@@ -176,8 +176,6 @@ text(prpX/2 * c(1,-1) + 0:1,
      paste("n=", table(tra$StemArmed, tra$LeavesArmed)))
 ```
 
-![Palm leaf](https://gardeningsolutions.ifas.ufl.edu/images/plants/palms/pinnate_leaf_drawing.png)
-
 We have two traits related to stem size: maximum height and diameter of the stem.
 
 ```{r stem_size}
@@ -191,7 +189,7 @@ ggplot(tra, aes(MaxStemHeight_m, MaxStemDia_cm)) +
 ```
 
 The world's tallest monocotyledon:
-```{r tallest_palm, fig.label = "Ceroxylon quindiuense", out.width = "50%", echo = FALSE}
+```{r tallest_palm, fig.label = "Ceroxylon quindiuense", out.width = "20%", echo = FALSE}
 knitr::include_graphics("figures/Ceroxylon_quindiuense.jpg")
 ```
 
@@ -199,7 +197,7 @@ Many leaf traits are available, and they may carry similar information. Let's ma
 
 ![Palm leaf](https://gardeningsolutions.ifas.ufl.edu/images/plants/palms/pinnate_leaf_drawing.png)
 
-```{r leaf_traits}
+```{r leaf_traits, echo = TRUE, eval = FALSE}
 # Pair plot
 ggpairs(tra[, c("MaxLeafNumber", "Max_Blade_Length_m",
                 "Max_Rachis_Length_m", "Max_Petiole_length_m")])
@@ -209,18 +207,35 @@ ggpairs(tra[, c("MaxLeafNumber", "Max_Blade_Length_m",
 #              density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 
+```{r, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+suppressWarnings(
+  ggpairs(tra[, c("MaxLeafNumber", "Max_Blade_Length_m",
+                  "Max_Rachis_Length_m", "Max_Petiole_length_m")])
+)
+```
+
 The last three traits are highly correlated. We will just keep the blade length.
 
 Similarly, many fruit traits are available. Let's make another pair plot.
 <br>
 
-```{r fruit_traits}
+```{r fruit_traits, echo = TRUE, eval = FALSE}
 ggpairs(tra[, c("AverageFruitLength_cm", "MinFruitLength_cm",
                 "MaxFruitLength_cm", "AverageFruitWidth_cm",
                 "MinFruitWidth_cm", "MaxFruitWidth_cm")])
 
 # All traits are highly correlated, we'll take only AverageFruitLength_cm
+```
 
+```{r, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+suppressWarnings(
+  ggpairs(tra[, c("AverageFruitLength_cm", "MinFruitLength_cm",
+                  "MaxFruitLength_cm", "AverageFruitWidth_cm",
+                  "MinFruitWidth_cm", "MaxFruitWidth_cm")])
+)
+```
+
+```{r}
 # Also some categorical traits
 ggplot(tra, aes(FruitSizeCategorical, AverageFruitLength_cm)) +
   geom_boxplot() +
@@ -257,9 +272,17 @@ head(sp_tra)
 
 # Only columns of interest
 sp_tra <- sp_tra[, c("species", tra_select)]
+```
 
+```{r, echo = TRUE, eval = FALSE}
 # Distribution of continuous traits
 ggpairs(sp_tra[, tra_select])
+```
+
+```{r, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+suppressWarnings(
+  ggpairs(sp_tra[, tra_select])
+)
 ```
 
 Some traits are highly asymmetrical, this can drive the construction of functional spaces and functional metrics.
@@ -483,8 +506,16 @@ palm_SR <- species %>%
   summarise(SR = n())
 
 fd_palm <- left_join(fd_palm, palm_SR, by = c("site" = "new_ID"))
+```
 
+```{r, echo = TRUE, eval = FALSE}
 ggpairs(fd_palm[, c("SR", "FRic", "FDis", "FDiv", "FEve")])
+```
+
+```{r, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+suppressWarnings(
+  ggpairs(fd_palm[, c("SR", "FRic", "FDis", "FDiv", "FEve")])
+)
 ```
 
 We can also map the results.
