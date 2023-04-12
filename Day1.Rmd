@@ -18,9 +18,9 @@ _[back to overview](index.html)_
 &nbsp;
 &nbsp;
 
-## 1. Preparation
+# 1. Preparation
 
-### a) Prepare your system for exchanging data
+## a) Prepare your system for exchanging data
 Set the format your computer uses to display numbers to 
 English format for exchanging data with others:
 
@@ -29,13 +29,13 @@ English format for exchanging data with others:
 * List separator: " , "  
 &nbsp;
 
-### b) Install software
+## b) Install software
 
 * Get QGIS from <https://www.qgis.org/>
 * Get R from <https://cran.r-project.org/>
 * Get RStudio from <https://www.rstudio.com/products/rstudio/download/>
 
-### c) Create a new project in RStudio
+## c) Create a new project in RStudio
 
 _Do this only once for the entire practical part of the class and once again for your project in the end but not for each session separately_
 &nbsp;
@@ -71,9 +71,7 @@ rstudioapi::viewer(htmlFile)
 Now you can conveniently copy code from the viewer into your script.
 &nbsp;
 
-
-
-## 2. Getting started
+# 2. Getting started
 **Using R as a calculator**
 
 ```{r, eval=FALSE}
@@ -90,7 +88,6 @@ log10(10000)
 ```
 What is the answer of each of the operations?  
 &nbsp;
-
 
 **Assign a value to an object**
 
@@ -109,7 +106,6 @@ number_3 / b
 ```
 &nbsp;
 
-
 _Character strings_
 ```{r}
 text_a <- "Hello"
@@ -120,15 +116,13 @@ text_a
 ```
 &nbsp;
 
-
 In R Studio current objects are listed at the top-right corner. For seeing the stored objects in the console use:
 ```{r}
 ls()
 ```
 &nbsp;
 
-
-## 3. Getting help in R
+# 3. Getting help in R
 
 `?function.name`
 `??keyword`
@@ -140,10 +134,8 @@ ls()
 ```
 &nbsp;
 
-
-## 4. Data structures and indexing
-
-### a) Numbers \& characters
+# 4. Data structures and indexing
+## a) Numbers \& characters
 _single values_
 
 ```{r}
@@ -157,8 +149,7 @@ str(text_a)
 ```
 &nbsp;
 
-
-### b) Vectors
+## b) Vectors
 _sequences of values of the same mode_
 
 **Create a vector of numbers**
@@ -223,6 +214,7 @@ You can apply functions to vectors
 mean(vector_2) # function for calculating the mean
 sd(vector_2)   # standard deviation
 ```
+
 _Functions require a certain input structure like here a vector_  
 ```{r}
 mean(c(3,6))
@@ -230,7 +222,6 @@ mean(3,6) # actually means mean(x=3, trim=6, na.rm = FALSE)
 #?mean
 ```
 &nbsp;
-
 
 **Plotting vectors**
 ```{r}
@@ -240,7 +231,7 @@ plot(vector_2,vector_1)
 There are two major ways of plotting in R: Base R like above and [ggplot2](https://www.cedricscherer.com/2019/08/05/a-ggplot2-tutorial-for-beautiful-plotting-in-r/) which we will touch upon throughout the tutorials.
 &nbsp;
 
-### c) Arrays and matrices
+## c) Arrays and matrices
 _tables of values of the same mode with n dimensions (matrix = 2 dimensions)_
 ```{r}
 matrix_1 <- matrix(NA, nrow = 6, ncol = 6)
@@ -281,8 +272,7 @@ You can also do proper matrix calculations like Matrix multiplication or cross-p
 
 &nbsp;
 
-
-### d) data.frames 
+## d) data.frames 
 _tables of values of one mode per column_
 
 **Create a data.frame**
@@ -290,7 +280,6 @@ _tables of values of one mode per column_
 df_1 <- data.frame(ID = vector_2, number_1 = vector_1, colour = vector_4)
 df_1
 ```
-
 
 ```{r}
 str(df_1) 
@@ -307,27 +296,12 @@ df_1$colour     # calling by column name using $
 ```
 
 ```{r}
-plot(df_1$ID,df_1$number_1, col=df_1$colour)
-```
-
-
-```{r}
 df_1[,3] <- as.factor(df_1[,3]) # change column to factor
 levels(df_1[,3])
 str(df_1)
 ```
 Now "colour" is a factor, which is smaller when stored and faster to handle.  
 &nbsp;
-
-```{r}
-plot(df_1$ID,df_1$number_1, col=df_1$colour,
-     xlab = "ID", ylab= "Number 2")
-```
-
-&nbsp;
-&nbsp;
-
-Not the factor levels including the color character strings are used for coloring but the numbers behind them.  
 &nbsp;
 
 Be careful when converting factors to numeric vectors or columns!  
@@ -339,9 +313,7 @@ as.numeric(as.character(numeric_factor))
 ```
 &nbsp;
 
-
-
-## 5. data.frame exercise  
+# 5. data.frame exercise  
 
 1) Imagine a field study with 5 plots (1,2,3,...) in each of 3 vegetation types (forest, shrubland, grassland).  
 2) Create a data.frame with 1 row per plot and 2 columns for "vegetation_type" and "plot".  
@@ -354,8 +326,62 @@ knitr::kable(plots, caption="Table 1: Dataframe exercise")
 ```
 &nbsp;
 
+# 6. Plotting dataframes
 
-## 6. Loading and visualising environmental raster layers  
+In R, there are two major ways to plot your data: **base R** and **ggplot2**.  
+There is no better way to plot things, it is rather a matter of taste, but it
+is quite important to know how both work.  
+Let's see this with an easy example.  
+
+```{r}
+library(ggplot2)
+
+# The following R packages use color palettes are perceptually uniform, work
+# with black and white, accessible to colorblind
+library(RColorBrewer) # https://colorbrewer2.org/
+library(viridis) # https://www.r-bloggers.com/2018/07/ggplot2-welcome-viridis/
+
+# Example data frame
+set.seed(1) # setting a random seed (to reproduce output)
+ex <- data.frame(x = seq(1:100),
+                 y = rnorm(100),
+                 cat = c(rep("A", 50), rep("B", 50)))
+
+par(xpd = TRUE)
+plot(ex$x, ex$y,
+     col = brewer.pal(n = 3, name = "Set1")[1:2][as.factor(ex$cat)],
+     pch = c(16, 17)[as.factor(ex$cat)], cex = 2,
+     main = "Example plot", xlab = "X axis", ylab = "Y axis",
+     bty = "n")
+legend("topright",
+       c("Category A", "Category B"),
+       inset = c(-0.1, 0),
+       title = "Legend title",
+       text.font = 3,
+       col = c("darkblue", "firebrick3"),
+       pch = c(16, 17),
+       bg = "gray95")
+
+# Same plot with ggplot2
+ggplot(ex, aes(x, y)) +
+  geom_point(aes(color = cat, shape = cat), size = 3) +
+  scale_color_brewer("Legend title", palette = "Set1") +
+  scale_shape_manual("Legend title",
+                     values = c(16, 17)) +
+  labs(title = "Example plot", x = "X axis", y = "Y axis") +
+  theme_bw()
+
+# With viridis color palette
+ggplot(ex, aes(x, y)) +
+  geom_point(aes(color = cat, shape = cat), size = 3) +
+  scale_color_viridis_d("Legend title") +
+  scale_shape_manual("Legend title",
+                     values = c(16, 17)) +
+  labs(title = "Example plot", x = "X axis", y = "Y axis") +
+  theme_classic()
+```
+
+# 7. Loading and visualising environmental raster layers  
 
 **Download the following raster layers**  
 _GMTED - Digital elevation data <https://topotools.cr.usgs.gov/gmted_viewer/viewer.htm>_  
@@ -391,7 +417,7 @@ if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # rast
 
 **Import global digital elevation model and plot it**  
 ```{r}
-elev <- raster("data/mn30_grd")
+elev <- raster("data/mn30_grd/mn30_grd/")
 par(mfrow=c(1,1))
 plot(elev, main = "Elevation")
 ```
@@ -402,6 +428,7 @@ plot(elev, main = "Elevation")
 bio1 <- raster("data/CHELSA_bio10_01.tif")
 bio12 <- raster("data/CHELSA_bio10_12.tif")
 ```
+
 ```{r}
 plot(bio1, main = "Temperature")  # Temperature (*10 °C)
 plot(bio12, main = "Precipitation") # Precipitation (mm)
@@ -424,14 +451,10 @@ area(bio1)
 **You can do calculations with the raster layers**  
 ```{r}
 system.time(log_bio12 <- log10(bio12+1)) # Careful! this is computer intense and might take a long time
-plot(log_bio12, main = "Precipitation")           # Log-transformed precipitation
+plot(log_bio12, main = "Precipitation") # Log-transformed precipitation
 
 bio1 <- bio1/10      
-plot(bio1, main = "Temperature")           # Temperature (°C)
-points(9.916,51.541, pch=4) # Göttingen
-text(9.916,51.541, "You are here", pos = 4)
+plot(bio1, main = "Temperature") # Temperature (°C)
+points(9.916, 51.541, pch=4) # Göttingen
+text(9.916, 51.541, "You are here", pos = 4)
 ```
-
-
-
-
