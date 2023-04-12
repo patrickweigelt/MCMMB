@@ -74,57 +74,6 @@ library(ggplot2)
 library(cowplot)
 ```
 
-# 0. Before starting
-In R, there are two major ways to plot your data: **base R** (as we did so far) and **ggplot2**.  
-There is no better way to plot things, it is rather a matter of taste, but it is quite important to know how both work.  
-Let's see with an easy example how both work.  
-
-```{r}
-# The following R packages use color palettes are perceptually uniform, work
-# with black and white, accessible to colorblind
-library(RColorBrewer) # https://colorbrewer2.org/
-library(viridis) # https://www.r-bloggers.com/2018/07/ggplot2-welcome-viridis/
-
-# Example data frame
-set.seed(1)
-ex <- data.frame(x = seq(1:100),
-                 y = rnorm(100),
-                 cat = c(rep("A", 50), rep("B", 50)))
-
-par(xpd = TRUE)
-plot(ex$x, ex$y,
-     col = brewer.pal(n = 3, name = "Set1")[1:2][as.factor(ex$cat)],
-     pch = c(16, 17)[as.factor(ex$cat)], cex = 2,
-     main = "Example plot", xlab = "X axis", ylab = "Y axis",
-     bty = "n")
-legend("topright",
-       c("Category A", "Category B"),
-       inset = c(-0.1, 0),
-       title = "Legend title",
-       text.font = 3,
-       col = c("darkblue", "firebrick3"),
-       pch = c(16, 17),
-       bg = "gray95")
-
-# Same plot with ggplot2
-ggplot(ex, aes(x, y)) +
-  geom_point(aes(color = cat, shape = cat), size = 3) +
-  scale_color_brewer("Legend title", palette = "Set1") +
-  scale_shape_manual("Legend title",
-                     values = c(16, 17)) +
-  labs(title = "Example plot", x = "X axis", y = "Y axis") +
-  theme_bw()
-
-# With viridis color palette
-ggplot(ex, aes(x, y)) +
-  geom_point(aes(color = cat, shape = cat), size = 3) +
-  scale_color_viridis_d("Legend title") +
-  scale_shape_manual("Legend title",
-                     values = c(16, 17)) +
-  labs(title = "Example plot", x = "X axis", y = "Y axis") +
-  theme_classic()
-```
-
 # 1. Loading palm data set and shapefiles
 
 **Clean up workspace**  
@@ -244,7 +193,7 @@ With a base R approach.
 # Defining a color palette
 # cols <- viridis(n = n_distinct(grid$spec_num))
 # pal <- colorRampPalette(cols)
-
+library(viridis)
 cols <- viridis(n = 10)
 colours <- colorRamp(cols)(grid$spec_num/max(grid$spec_num))
 colours <- rgb(colours[,1], colours[,2], colours[,3], maxColorValue = 255)
