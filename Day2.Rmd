@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
-author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "April 27, 2022"
+author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
+date: "April 19, 2023"
 output: 
   html_document: 
     theme: flatly
@@ -13,6 +13,11 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c("top", "right"), color = "black")
 ```
 
 &nbsp;
@@ -104,7 +109,7 @@ Click on the species object in the 'Environment' tab of RStudio or run `View(spe
 order(species$grid_id)
 ```
 
-Gives back the indices of grid_id in increasing order of the value of grid_id. They can be used to reorganize the data.frame accordingly
+Gives back the indices of grid_id in increasing order of the value of grid_id. They can be used to reorganize the data.frame accordingly. 
 
 ```{r}
 species <- species[order(species$grid_id), ]
