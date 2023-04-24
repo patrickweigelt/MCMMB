@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 1: Basics and spatial data in R"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "April 20, 2022"
+date: "April 12, 2023"
 output: 
   html_document: 
     theme: flatly
