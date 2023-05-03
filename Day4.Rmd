@@ -1,8 +1,8 @@
 ---
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 4: The latitudinal diversity gradient"
-author: "Patrick Weigelt, Pierre Denelle, Amanda Taylor & Holger Kreft"
-date: "May 11th, 2022"
+author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
+date: "May 3rd, 2023"
 output: 
   html_document: 
     theme: flatly
@@ -26,8 +26,6 @@ _[back to overview](index.html)_
 
 **Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
-* `rgdal`  
-* `rgeos`  
 * `dplyr`  
 * `classInt`
 * `colorRamps`
@@ -56,8 +54,6 @@ Now you can conveniently copy code from the viewer into your script.
 
 ```{r, include = FALSE}
 library(dplyr)
-library(rgdal)
-library(rgeos)
 library(classInt)
 library(colorRamps)
 library(performance)
@@ -68,8 +64,6 @@ library(cowplot)
 
 ```{r, eval = FALSE}
 library(dplyr)
-library(rgdal)
-library(rgeos)
 library(classInt)
 library(colorRamps)
 library(performance)
@@ -135,12 +129,13 @@ plot(st_geometry(americas), add = TRUE)
 ggplot(grid) +
   geom_sf() +
   geom_sf(data = americas, fill = NA, color = "black") +
+  ylim(-55, 40) + 
   theme_void()
 ```
 &nbsp;
 
 **Calculate latitude and longitude from the grid's polygons**
-```{r, echo = TRUE}
+```{r, echo = TRUE, warning=FALSE}
 # convert the polygons to points (mass centroids)
 grid_centroids <- st_centroid(grid)
 
@@ -195,8 +190,6 @@ head(grid)
 With a base R approach.
 ```{r}
 # Defining a color palette
-# cols <- viridis(n = n_distinct(grid$spec_num))
-# pal <- colorRampPalette(cols)
 library(viridis)
 cols <- viridis(n = 10)
 colours <- colorRamp(cols)(grid$spec_num/max(grid$spec_num))
@@ -230,7 +223,10 @@ ggplot(grid) +
   geom_sf(data = americas, fill = NA, color = "black") +
   labs(title = "Palm species richness") +
   scale_fill_viridis_c("Species number") +
-  theme_void()
+  ylim(-55, 40) +
+  theme_void() + 
+  theme(plot.title = element_text(hjust = 0.5,vjust = 10),
+        plot.margin = margin(1,0,0,0, "cm"))
 ```
 
 *Bonus: custom discrete color scale*
@@ -273,7 +269,10 @@ ggplot(grid) +
   geom_sf(data = americas, fill = NA, color = "black") +
   labs(title = "Palm species richness") +
   scale_fill_viridis_d("Species number") +
-  theme_void()
+  ylim(-55, 40) +
+  theme_void() + 
+  theme(plot.title = element_text(hjust = 0.5,vjust = 10),
+        plot.margin = margin(1,0,0,0, "cm"))
 ```
 
 </details>
@@ -312,6 +311,7 @@ ggplot(grid) +
   geom_sf(data = grid[which(grid$spec_num > 20 & grid$Lat < -17), ],
           color = "firebrick3") +
   geom_sf(data = americas, color = "black", fill = NA) +
+  ylim(-55, 40) +
   theme_void()
 ```
 
@@ -326,7 +326,7 @@ range(species_num$Lat)
 
 **Establish latitudinal belts**
 ```{r, echo = TRUE}
-belts <- seq(min(species_num$Lat), max(species_num$Lat), by = 0.5)
+belts <- round(seq(min(species_num$Lat), max(species_num$Lat), by = 0.5), 2)
 belts
 length(belts)
 ```
