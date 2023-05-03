@@ -1006,7 +1006,7 @@ species_per_belt_dplyr &lt;- summarize(species_num, richness = mean(spec_num))
 species_per_belt_dplyr &lt;- species_per_belt_dplyr$richness
 species_num &lt;- ungroup(species_num)</code></pre>
 <p> </p>
-<p><strong>Compare loop and apply approach</strong></p>
+<p><strong>Compare loop, apply and dplyr approach</strong></p>
 <pre class="r"><code># compare loop and apply approach
 all(species_per_belt_apply == species_per_belt_loop)</code></pre>
 <pre><code>## [1] TRUE</code></pre>

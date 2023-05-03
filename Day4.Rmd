@@ -416,7 +416,7 @@ species_num <- ungroup(species_num)
 ```
 &nbsp;
 
-**Compare loop and apply approach**
+**Compare loop, apply and dplyr approach**
 ```{r, echo = TRUE}
 # compare loop and apply approach
 all(species_per_belt_apply == species_per_belt_loop)
