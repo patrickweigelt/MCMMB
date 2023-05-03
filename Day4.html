@@ -910,7 +910,7 @@ range(species_num$Lat)</code></pre>
 <pre><code>## [1] -34.75000  36.24999</code></pre>
 <p> </p>
 <p><strong>Establish latitudinal belts</strong></p>
-<pre class="r"><code>belts &lt;- round(seq(min(species_num$Lat), max(species_num$Lat), by = 0.5), 2)
+<pre class="r"><code>belts &lt;- seq(round(min(species_num$Lat),2), round(max(species_num$Lat),2), by = 0.5)
 belts</code></pre>
 <pre><code>##   [1] -34.75 -34.25 -33.75 -33.25 -32.75 -32.25 -31.75 -31.25 -30.75 -30.25
 ##  [11] -29.75 -29.25 -28.75 -28.25 -27.75 -27.25 -26.75 -26.25 -25.75 -25.25
@@ -926,9 +926,9 @@ belts</code></pre>
 ## [111]  20.25  20.75  21.25  21.75  22.25  22.75  23.25  23.75  24.25  24.75
 ## [121]  25.25  25.75  26.25  26.75  27.25  27.75  28.25  28.75  29.25  29.75
 ## [131]  30.25  30.75  31.25  31.75  32.25  32.75  33.25  33.75  34.25  34.75
-## [141]  35.25  35.75</code></pre>
+## [141]  35.25  35.75  36.25</code></pre>
 <pre class="r"><code>length(belts)</code></pre>
-<pre><code>## [1] 142</code></pre>
+<pre><code>## [1] 143</code></pre>
 <p> </p>
 <p><strong>Species richness of one particular latitudinal
 belt</strong><br />
@@ -997,9 +997,20 @@ species_per_belt_apply &lt;- sapply(belts, function(x)
 
 species_per_belt_apply &lt;- sapply(belts, species_per_belt_function)</code></pre>
 <p> </p>
+<p><strong>Species richness across all latitudinal belts (‘dplyr
+approach’)</strong></p>
+<pre class="r"><code># create belt column
+species_num$belt &lt;- round(species_num$Lat*100/25)*25/100 # round at a quarter
+species_num &lt;- group_by(species_num, belt)
+species_per_belt_dplyr &lt;- summarize(species_num, richness = mean(spec_num))
+species_per_belt_dplyr &lt;- species_per_belt_dplyr$richness
+species_num &lt;- ungroup(species_num)</code></pre>
+<p> </p>
 <p><strong>Compare loop and apply approach</strong></p>
 <pre class="r"><code># compare loop and apply approach
 all(species_per_belt_apply == species_per_belt_loop)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>all(species_per_belt_apply == species_per_belt_dplyr)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
 <pre class="r"><code>species_per_belt &lt;- species_per_belt_apply</code></pre>
 <p> </p>

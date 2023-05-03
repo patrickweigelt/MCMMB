@@ -293,6 +293,12 @@ nrow(grid[which(abs(grid$Lat) < 23.433333), ])
 data.frame(
   Tropics = mean(grid$spec_num[which(abs(grid$Lat) < 23.433333)]),
   nonTropics = mean(grid$spec_num[which(abs(grid$Lat) >= 23.433333)]))
+
+# alternatively
+grid$climate <- ifelse(grid$Lat > -23.433333 & grid$Lat < 23.433333, 
+                       "tropical", "non-tropical")
+aggregate(grid$spec_num, list(grid$climate), FUN = mean)
+
 ```
 &nbsp;
 
@@ -326,7 +332,7 @@ range(species_num$Lat)
 
 **Establish latitudinal belts**
 ```{r, echo = TRUE}
-belts <- round(seq(min(species_num$Lat), max(species_num$Lat), by = 0.5), 2)
+belts <- seq(round(min(species_num$Lat),2), round(max(species_num$Lat),2), by = 0.5)
 belts
 length(belts)
 ```
@@ -399,10 +405,23 @@ species_per_belt_apply <- sapply(belts, species_per_belt_function)
 ```
 &nbsp;
 
+**Species richness across all latitudinal belts ('dplyr approach')**
+```{r, echo = TRUE}
+# create belt column
+species_num$belt <- round(species_num$Lat*100/25)*25/100 # round at a quarter
+species_num <- group_by(species_num, belt)
+species_per_belt_dplyr <- summarize(species_num, richness = mean(spec_num))
+species_per_belt_dplyr <- species_per_belt_dplyr$richness
+species_num <- ungroup(species_num)
+```
+&nbsp;
+
 **Compare loop and apply approach**
 ```{r, echo = TRUE}
 # compare loop and apply approach
 all(species_per_belt_apply == species_per_belt_loop)
+all(species_per_belt_apply == species_per_belt_dplyr)
+
 species_per_belt <- species_per_belt_apply
 ```
 &nbsp;
