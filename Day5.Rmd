@@ -2,15 +2,21 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 5: Environmental drivers of neotropical palm diversity"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 18th, 2022"
+date: "May 10th, 2023"
 output: 
   html_document: 
     theme: flatly
     toc: yes
+editor_options: 
+ chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c("top", "right"), color = "black")
 ```
 
 &nbsp;
@@ -18,11 +24,10 @@ _[back to overview](index.html)_
 &nbsp;
 &nbsp;
 
-
 **Preparation:** Open your RStudio project and download new data for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) (log in first) and unzip them into your project folder '/data/. You can use `getwd()` to get your current working directory which is your project folder as long as you do not change it. Please install the following R-packages using `install.packages()` if not done yet:  
 
 * sf
-* raster
+* terra
 * dplyr
 * RColorBrewer
 * car
@@ -46,7 +51,7 @@ Now you can conveniently copy code from the viewer into your script.
 &nbsp;
 
 
-### 1. Loading and preparing environmental data from spatial raster layers
+# 1. Loading and preparing environmental data from spatial raster layers
 
 **Clean up workspace**  
 ```{r}
@@ -56,10 +61,9 @@ rm(list=ls()) # You might want to remove all loaded objects first
 
 **Load R packages**  
 
-
 ```{r, include=FALSE}
 library(dplyr)
-library(raster)
+library(terra)
 library(sf)
 library(RColorBrewer)
 library(car)
@@ -70,7 +74,7 @@ library(cowplot)
 
 ```{r, eval=FALSE}
 library(dplyr)
-library(raster)
+library(terra)
 library(sf)
 library(RColorBrewer)
 library(car)
@@ -78,6 +82,7 @@ library(ggplot2)
 library(viridis)
 library(cowplot)
 ```
+
 ```{r, echo=FALSE}
 if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # raster saves large temporary files. You might want to change the location if you're running out of disk space
 ```
@@ -89,19 +94,18 @@ For today's exercise, we again use the elevation, temperature ('bio1'), and prec
 
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
-elev <- raster("data/mn30_grd")
+elev <- rast("data/mn30_grd/mn30_grd/") + 0 # + 0 to treat raster as numeric
 plot(elev, main="Elevation a.s.l. (m)", col = terrain.colors(255)) 
 ```
 &nbsp;
 
 ```{R, echo=TRUE}
 # Import climate data from Chelsa at 30 arc seconds resolution -->
-bio1 <- raster("data/CHELSA_bio10_01.tif") # temperature*10
-bio12 <- raster("data/CHELSA_bio10_12.tif") # precipitation
+bio1 <- rast("data/CHELSA_bio10_01.tif") # temperature*10
+bio12 <- rast("data/CHELSA_bio10_12.tif") # precipitation
 plot(bio1, main="Annual mean temperature (10 x C°)", col = inferno(255))
 ```
 &nbsp;
-
 
 **Load gridcell shapefile** 
 ```{r, echo=TRUE}
@@ -116,21 +120,23 @@ st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
 ggplot(grid) +
   geom_sf() +
   geom_sf(data = americas, fill = NA, color = "black") +
-  theme_void() + ylim(-40, 40)
+  theme_void() +
+  ylim(-40, 40)
 ```
 
 The raster layers have larger extents than they need to have for our Neotropical palm data. We can crop them based on the palm gridcell shapefile:
 ```{r, echo=TRUE, fig.height=3, fig.width=12}
-extent(grid)
-elev <- crop(elev, extent(grid)) # crop raster layers to smaller extent
-bio1 <- crop(bio1, extent(grid))
-bio12 <- crop(bio12, extent(grid))
+ext(grid)
+elev <- crop(elev, ext(grid)) # crop raster layers to smaller extent
+bio1 <- crop(bio1, ext(grid))
+bio12 <- crop(bio12, ext(grid))
 elev <- elev * bio1 / bio1
 
-par(mfrow=c(1,3))
+par(mfrow = c(1, 3))
 plot(elev, main="Elevation a.s.l. (m)", col = terrain.colors(255))
 plot(bio1, main="Annual mean temperature (10 x C°)", col = inferno(255))
-plot(bio12, main="Mean annual precipitation (mm)", col = colorRampPalette(brewer.pal(9,"Blues"))(255))
+plot(bio12, main="Mean annual precipitation (mm)",
+     col = colorRampPalette(brewer.pal(9,"Blues"))(255))
 ```
 &nbsp;
 
@@ -140,85 +146,87 @@ bio1 <- bio1/10 # Careful, This can take a while!
 ```
 &nbsp;
 
-
-### 2. Extracting environmental data for palm gridcells from raster layers
+# 2. Extracting environmental data for palm gridcells from raster layers
 ```{r, echo=TRUE, fig.height=3, fig.width=4.3}
-par(mfrow=c(1,1))
-plot(elev, ylim=c(-6,-2), xlim=c(-82,-76), main="Elevation a.s.l. (m)", col = terrain.colors(255))
-plot(st_geometry(grid), add=TRUE)
+zoom(elev, e = ext(c(-82, -76, -6, -2)),
+     main = "Elevation a.s.l. (m)",
+     col = terrain.colors(255))
+plot(st_geometry(grid), add = TRUE)
 ```
 
 **Extract values** 
 ```{r, echo=TRUE}
-bio1_values <- extract(bio1,grid[c(1:10),])
+bio1_values <- extract(bio1,grid[c(1:10), ])
 str(bio1_values) #bio1_values is a list
 bio1_values[[1]][1:10] #Use [[]] to index a list
 mean(bio1_values[[1]])
 bio1_mean <- sapply(bio1_values, mean) # apply a function to all elements of a list
 bio1_mean
-bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean) # define the function for aggregation already in extract()
+bio1_mean <- extract(bio1,grid[c(1:10),], fun = mean) # define the function for aggregation already in extract()
 bio1_mean
 ```
 
-
-How long would it take to extract mean values for all gridcells?
+How long would it take to extract mean values for all grid cells?
 ```{r, echo=TRUE}
-nrow(grid) # number of gridcells
-nrow(grid)/10*system.time(bio1_mean <- extract(bio1,grid[c(1:10),], fun=mean))/60
+nrow(grid) # number of grid cells
+nrow(grid)/10*system.time(bio1_mean <- extract(bio1, grid[c(1:10), ], fun = mean))/60
 # 20 min?
 ```
 Note: There are faster packages for dealing with raster layers available now (_velox_, _fasterRaster_). Here, we want to make use of a workaround that also helps us top understand the data better.   
 &nbsp;
 
-
 **Faster work-around: aggregating the raster layers**  
 Aggregate raster layer to the resolution of the palm grid and convert grid to spatial points  
 ```{r, echo=TRUE}
-bio1_30min <- aggregate(bio1, fact=60, fun=mean, na.rm=TRUE)
+bio1_30min <- aggregate(bio1, fact = 60, fun = mean, na.rm = TRUE)
 dim(bio1)
-extent(bio1)
+ext(bio1)
 dim(bio1_30min)
-extent(bio1_30min)
+ext(bio1_30min)
 
 grid_centroids <- st_centroid(grid)
 ```
+
 ```{r, echo=TRUE, fig.height=3, fig.width=7.5}
 par(mfrow=c(1,2))
 
-plot(bio1, ylim=c(-6,-2), xlim=c(-82,-76), col = inferno(255), main="30 seconds resolution")
+zoom(bio1, e = ext(c(-82, -76, -6, -2)),
+     main = "30 seconds resolution",
+     col = inferno(255))
 plot(st_geometry(grid), add=TRUE)
 
-plot(bio1_30min, ylim=c(-6,-2), xlim=c(-82,-76), col = inferno(255), main="30 minutes resolution")
+zoom(bio1_30min, e = ext(c(-82, -76, -6, -2)),
+     main = "30 minutes resolution",
+     col = inferno(255))
 plot(st_geometry(grid), add=TRUE)
 plot(st_geometry(grid_centroids), add=TRUE, pch = 3)
 ```
 
-
 **Extract values based on spatial points and aggregated raster** 
 ```{r, echo=TRUE}
 # Temperature
-temp_mean <- extract(bio1_30min,grid_centroids) # extract values
-temp_mean[1:10]
+temp_mean <- extract(bio1_30min, grid_centroids) # extract values
+head(temp_mean)
 
 # Precipitation
-bio12_30min <- aggregate(bio12, fact=60, fun=mean, na.rm=TRUE)
-prec_mean <- extract(bio12_30min,grid_centroids)
-prec_mean[1:10]
+bio12_30min <- aggregate(bio12, fact = 60, fun = mean, na.rm = TRUE)
+prec_mean <- extract(bio12_30min, grid_centroids)
+head(prec_mean)
 
 # Elevation range as a measure of topographic heterogeneity
 elev_30min_min <- aggregate(elev, fact=60, fun=min, na.rm=TRUE) # minimum elevation
 elev_30min_max <- aggregate(elev, fact=60, fun=max, na.rm=TRUE) # maximum elevation
 elev_min <- extract(elev_30min_min, grid_centroids)
 elev_max <- extract(elev_30min_max, grid_centroids)
-elev_range <- elev_max - elev_min
+elev_range <- elev_max$mn30_grd - elev_min$mn30_grd
 elev_range[1:10]
 ```
 &nbsp;
 
 **Write extracted values into gridcell shapefile**  
 ```{r, echo=TRUE, fig.height=4, fig.width=12}
-grid$temp <- temp_mean
-grid$prec <- prec_mean
+grid$temp <- temp_mean$CHELSA_bio10_01
+grid$prec <- prec_mean$CHELSA_bio10_12
 grid$elev <- elev_range
 
 head(grid)
@@ -226,28 +234,29 @@ head(grid)
 cor(st_drop_geometry(grid[,c("temp","prec","elev")]))
 
 plot_grid(nrow = 1, ncol = 3,
-ggplot(grid, aes(temp)) +
-  geom_histogram(fill = "grey", color = "black", bins = 30) + 
-  labs(x = "Annual mean temperature (C°)", y = "Count") +
-  theme_bw(),
-ggplot(grid, aes(prec)) +
-  geom_histogram(fill = "grey", color = "black", bins = 30) + 
-  labs(x = "Mean annual precipitation (mm)", y = "Count") +
-  theme_bw(),
-ggplot(grid, aes(elev)) +
-  geom_histogram(fill = "grey", color = "black", bins = 30) + 
-  labs(x = "Elevation a.s.l. (m)", y = "Count") +
-  theme_bw()
+          ggplot(grid, aes(temp)) +
+            geom_histogram(fill = "grey", color = "black", bins = 30) + 
+            labs(x = "Annual mean temperature (C°)", y = "Count") +
+            theme_bw(),
+          ggplot(grid, aes(prec)) +
+            geom_histogram(fill = "grey", color = "black", bins = 30) + 
+            labs(x = "Mean annual precipitation (mm)", y = "Count") +
+            theme_bw(),
+          ggplot(grid, aes(elev)) +
+            geom_histogram(fill = "grey", color = "black", bins = 30) + 
+            labs(x = "Elevation a.s.l. (m)", y = "Count") +
+            theme_bw()
 )
 # save(grid, file="Data/grid_env.RData")
 ```
 &nbsp;
 
-### 3. Modelling palm species richness  
+# 3. Modelling palm species richness  
 
 **Join environmental data and species numbers**  
 ```{r, echo=TRUE, fig.height=4, fig.width=4}
 load("data/grid_env.RData")
+grid <- st_as_sf(grid) # convert as a sf object
 load("data/species_num.RData") # read in RData files of palm species richness from last week
 
 ggplot(species_num, aes(spec_num)) +
@@ -256,12 +265,11 @@ ggplot(species_num, aes(spec_num)) +
   theme_bw()
 ```
 
-
-#### Exercise  
+# Exercise  
 
 1) Join the species numbers ('species_num') to the grid shapefile including the newly extracted environmental data.   
 ```{r, echo=FALSE}
-names(grid)[1] <- "grid_id" # rename ID column in gridcell shapefile
+names(grid)[1] <- "grid_id" # rename ID column in grid cell shape file
 grid <- left_join(grid, species_num, by="grid_id")
 head(grid)
 ```
@@ -294,22 +302,21 @@ AIC(model_temp,model_prec,model_elev)
 # abline(model_prec, col="red")
 
 plot_grid(nrow = 1, ncol = 3,
-ggplot(grid, aes(elev, spec_num)) +
-  geom_point(color = "black", alpha = 0.3) +
-  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
-  labs(x = "Elevation a.s.l. (m)", y = "Species number") +
-  theme_bw(),
-ggplot(grid, aes(temp, spec_num)) +
-  geom_point(color = "black", alpha = 0.3) +
-  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
-  labs(x = "Annual mean temperature (C°)", y = "Species number") +
-  theme_bw(),
-ggplot(grid, aes(prec, spec_num)) +
-  geom_point(color = "black", alpha = 0.3) +
-  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
-  labs(x = "Mean annual precipitation (mm)", y = "Species number") +
-  theme_bw())
-
+          ggplot(grid, aes(elev, spec_num)) +
+            geom_point(color = "black", alpha = 0.3) +
+            stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+            labs(x = "Elevation a.s.l. (m)", y = "Species number") +
+            theme_bw(),
+          ggplot(grid, aes(temp, spec_num)) +
+            geom_point(color = "black", alpha = 0.3) +
+            stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+            labs(x = "Annual mean temperature (C°)", y = "Species number") +
+            theme_bw(),
+          ggplot(grid, aes(prec, spec_num)) +
+            geom_point(color = "black", alpha = 0.3) +
+            stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+            labs(x = "Mean annual precipitation (mm)", y = "Species number") +
+            theme_bw())
 ```
 
 
@@ -322,11 +329,12 @@ model_temp_prec <- lm(grid$spec_num ~ grid$temp + grid$prec)
 model_temp_elev <- lm(grid$spec_num ~ grid$temp + grid$elev)
 model_elev_prec <- lm(grid$spec_num ~ grid$prec + grid$elev)
 
-AIC(model_full,model_temp_prec,model_temp_elev,model_elev_prec)
+AIC(model_full, model_temp_prec, model_temp_elev, model_elev_prec)
 
-crPlots(model_full, layout=c(1, 3), ask=FALSE, main="Partial residual plots", grid=FALSE, ylab="Partial residuals (species richness)")
+crPlots(model_full, layout = c(1, 3), ask = FALSE,
+        main = "Partial residual plots", grid = FALSE,
+        ylab = "Partial residuals (species richness)")
 ```
-
 
 
 **Plot species richness, model predictions and residuals**
@@ -337,23 +345,27 @@ grid$pred <- predict(model_full)
 grid$resi <- residuals(model_full)
 head(grid)
 
-
 lmt <- ceiling(10*max(abs(range(grid$resi))))/10
 
-plot_grid(nrow = 1, ncol = 3,
+plot_grid(
+  nrow = 1, ncol = 3,
   ggplot(grid) +
     geom_sf(color = NA, aes(fill = spec_num)) +
     geom_sf(data = americas, fill = NA, color = "black") +
     labs(title = "Palm species richness") +
-    scale_fill_viridis_c("Species\nnumber", limits=range(c(grid$spec_num, grid$pred))) +
-    theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+    scale_fill_viridis_c("Species\nnumber",
+                         limits = range(c(grid$spec_num, grid$pred))) +
+    theme_void() +
+    theme(plot.title = element_text(margin = margin(0, 0, 10, 0))) + 
     ylim(-40, 40),
   ggplot(grid) +
     geom_sf(color = NA, aes(fill = pred)) +
     geom_sf(data = americas, fill = NA, color = "black") +
     labs(title = "Model predictions") +
-    scale_fill_viridis_c("Species\nnumber", limits=range(c(grid$spec_num, grid$pred))) +
-    theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+    scale_fill_viridis_c("Species\nnumber",
+                         limits = range(c(grid$spec_num, grid$pred))) +
+    theme_void() +
+    theme(plot.title = element_text(margin = margin(0, 0, 10, 0))) + 
     ylim(-40, 40),
   ggplot(grid) +
     geom_sf(color = NA, aes(fill = resi)) +
@@ -362,12 +374,14 @@ plot_grid(nrow = 1, ncol = 3,
     #scale_fill_stepsn("Species number", colors=brewer.pal(10, "PiYG"),
     #        n.breaks=10, limits=c(-lmt,lmt), show.limits=T) + # Option with discrete catagories
     scale_fill_gradient2("Species\nnumber", low = brewer.pal(11, "PiYG")[1],
-    mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
-    theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+                         mid = brewer.pal(11, "PiYG")[6],
+                         high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
+    theme_void() +
+    theme(plot.title = element_text(margin = margin(0, 0, 10, 0))) + 
     ylim(-40, 40))
 ```
 
-#### Exercise  
+# Exercise  
 
 1) Run a model of species richness in dependence on latitude + latitude² and compare the AIC to our best model with all environmental predictors  
 ```{r, echo=FALSE}
@@ -381,7 +395,3 @@ ggplot(grid, aes(abs(Lat), spec_num)) +
   labs(x = "Latitude", y = "Species number") +
   theme_bw()
 ```
-
-
-
-
