@@ -133,10 +133,10 @@ bio12 <- crop(bio12, ext(grid))
 elev <- elev * bio1 / bio1
 
 par(mfrow = c(1, 3))
-plot(elev, main="Elevation a.s.l. (m)", col = terrain.colors(255))
-plot(bio1, main="Annual mean temperature (10 x C°)", col = inferno(255))
-plot(bio12, main="Mean annual precipitation (mm)",
-     col = colorRampPalette(brewer.pal(9,"Blues"))(255))
+plot(elev, main = "Elevation a.s.l. (m)", col = terrain.colors(255))
+plot(bio1, main = "Annual mean temperature (10 x C°)", col = inferno(255))
+plot(bio12, main = "Mean annual precipitation (mm)",
+     col = colorRampPalette(brewer.pal(9, "Blues"))(255))
 ```
 &nbsp;
 
@@ -156,27 +156,39 @@ plot(st_geometry(grid), add = TRUE)
 
 **Extract values** 
 ```{r, echo=TRUE}
-bio1_values <- extract(bio1,grid[c(1:10), ])
-str(bio1_values) #bio1_values is a list
-bio1_values[[1]][1:10] #Use [[]] to index a list
-mean(bio1_values[[1]])
-bio1_mean <- sapply(bio1_values, mean) # apply a function to all elements of a list
-bio1_mean
-bio1_mean <- extract(bio1,grid[c(1:10),], fun = mean) # define the function for aggregation already in extract()
+bio1_values <- extract(bio1, grid[c(1:10), ])
+str(bio1_values) # bio1_values is a data.frame
+bio1_values$CHELSA_bio10_01[1:5] # 5 first values
+
+# Mean temperature across all grid cells
+mean(bio1_values$CHELSA_bio10_01)
+# Mean value per grid cell
+tapply(bio1_values$CHELSA_bio10_01, bio1_values$ID, mean)
+
+# With dplyr
+bio1_values %>%
+  group_by(ID) %>%
+  reframe(mean_grid = mean(CHELSA_bio10_01))
+
+# Or, we directly extract the mean temperature per grid cell
+bio1_mean <- extract(bio1, grid[c(1:10), ], fun = mean)
 bio1_mean
 ```
 
 How long would it take to extract mean values for all grid cells?
 ```{r, echo=TRUE}
 nrow(grid) # number of grid cells
-nrow(grid)/10*system.time(bio1_mean <- extract(bio1, grid[c(1:10), ], fun = mean))/60
-# 20 min?
+nrow(grid)/10*system.time(bio1_mean <- extract(bio1, grid[c(1:10), ],
+                                               fun = mean))/60
+# more than 1 minute, used to be around 20 minutes with raster package
 ```
+
 Note: There are faster packages for dealing with raster layers available now (_velox_, _fasterRaster_). Here, we want to make use of a workaround that also helps us top understand the data better.   
 &nbsp;
 
-**Faster work-around: aggregating the raster layers**  
+**Alternative work-around: aggregating the raster layers**  
 Aggregate raster layer to the resolution of the palm grid and convert grid to spatial points  
+
 ```{r, echo=TRUE}
 bio1_30min <- aggregate(bio1, fact = 60, fun = mean, na.rm = TRUE)
 dim(bio1)
@@ -199,7 +211,10 @@ zoom(bio1_30min, e = ext(c(-82, -76, -6, -2)),
      main = "30 minutes resolution",
      col = inferno(255))
 plot(st_geometry(grid), add=TRUE)
-plot(st_geometry(grid_centroids), add=TRUE, pch = 3)
+plot(st_geometry(grid_centroids), add = TRUE, pch = 3)
+
+# 30 arc-second roughly correspond to 1 km at the Equator
+# 30 arc-minutes roughly correspond to 55 kms at the Equator
 ```
 
 **Extract values based on spatial points and aggregated raster** 
@@ -214,8 +229,8 @@ prec_mean <- extract(bio12_30min, grid_centroids)
 head(prec_mean)
 
 # Elevation range as a measure of topographic heterogeneity
-elev_30min_min <- aggregate(elev, fact=60, fun=min, na.rm=TRUE) # minimum elevation
-elev_30min_max <- aggregate(elev, fact=60, fun=max, na.rm=TRUE) # maximum elevation
+elev_30min_min <- aggregate(elev, fact = 60, fun = min, na.rm = TRUE) # minimum elevation
+elev_30min_max <- aggregate(elev, fact = 60, fun = max, na.rm = TRUE) # maximum elevation
 elev_min <- extract(elev_30min_min, grid_centroids)
 elev_max <- extract(elev_30min_max, grid_centroids)
 elev_range <- elev_max$mn30_grd - elev_min$mn30_grd
@@ -231,7 +246,7 @@ grid$elev <- elev_range
 
 head(grid)
 
-cor(st_drop_geometry(grid[,c("temp","prec","elev")]))
+cor(st_drop_geometry(grid[,c("temp", "prec", "elev")]))
 
 plot_grid(nrow = 1, ncol = 3,
           ggplot(grid, aes(temp)) +
@@ -265,12 +280,12 @@ ggplot(species_num, aes(spec_num)) +
   theme_bw()
 ```
 
-# Exercise  
+# Exercise 1  
 
 1) Join the species numbers ('species_num') to the grid shapefile including the newly extracted environmental data.   
 ```{r, echo=FALSE}
 names(grid)[1] <- "grid_id" # rename ID column in grid cell shape file
-grid <- left_join(grid, species_num, by="grid_id")
+grid <- left_join(grid, species_num, by = "grid_id")
 head(grid)
 ```
 &nbsp;
@@ -287,7 +302,7 @@ model_prec <- lm(grid$spec_num ~ grid$prec)
 summary(model_prec)
 
 
-AIC(model_temp,model_prec,model_elev)
+AIC(model_temp, model_prec, model_elev)
 ```
 &nbsp;
 
@@ -319,8 +334,8 @@ plot_grid(nrow = 1, ncol = 3,
             theme_bw())
 ```
 
-
 **Multipredictor model**
+
 ```{r, echo=TRUE, fig.height=4, fig.width=12}
 model_full <- lm(grid$spec_num ~ grid$temp + grid$prec + grid$elev)
 summary(model_full)
@@ -345,7 +360,8 @@ grid$pred <- predict(model_full)
 grid$resi <- residuals(model_full)
 head(grid)
 
-lmt <- ceiling(10*max(abs(range(grid$resi))))/10
+# Option with discrete categories
+# lmt <- ceiling(10*max(abs(range(grid$resi))))/10
 
 plot_grid(
   nrow = 1, ncol = 3,
@@ -371,8 +387,9 @@ plot_grid(
     geom_sf(color = NA, aes(fill = resi)) +
     geom_sf(data = americas, fill = NA, color = "black") +
     labs(title = "Model residuals") +
-    #scale_fill_stepsn("Species number", colors=brewer.pal(10, "PiYG"),
-    #        n.breaks=10, limits=c(-lmt,lmt), show.limits=T) + # Option with discrete catagories
+    # Option with discrete categories
+    # scale_fill_stepsn("Species number", colors = brewer.pal(10, "PiYG"),
+    #        n.breaks = 10, limits = c(-lmt, lmt), show.limits = TRUE) + 
     scale_fill_gradient2("Species\nnumber", low = brewer.pal(11, "PiYG")[1],
                          mid = brewer.pal(11, "PiYG")[6],
                          high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
@@ -381,7 +398,7 @@ plot_grid(
     ylim(-40, 40))
 ```
 
-# Exercise  
+# Exercise 2  
 
 1) Run a model of species richness in dependence on latitude + latitude² and compare the AIC to our best model with all environmental predictors  
 ```{r, echo=FALSE}
