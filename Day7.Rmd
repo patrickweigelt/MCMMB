@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 7: Phylogenetic diversity"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "June 1st, 2022"
+date: "May 23th, 2023"
 output: 
   html_document: 
     fig_height: 7
@@ -14,6 +14,10 @@ editor_options:
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c("top", "right"), color = "black")
 ```
 
 &nbsp;
@@ -110,7 +114,7 @@ An all-evidence species-level supertree for the palms (Arecaceae).
 _Molecular Phylogenetics and Evolution_, 100, 57-69.  
 
 ```{r echo=TRUE}
-palmtrees <- read.nexus("data/Phylogeny_ConservativeCon_Checklist.nex")
+palmtrees <- read.nexus("data/Phylogeny_ConservativeCon_Checklist/Phylogeny_ConservativeCon_Checklist.nex")
 
 palmtrees
 
