@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 6: Island Biogeography"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 25th, 2022"
+date: "May 17th, 2023"
 output: 
   html_document: 
     fig_height: 7
@@ -38,7 +38,9 @@ _[back to overview](index.html)_
 * rnaturalearthdata
 * ggpmisc
 * cowplot
+* dplyr
 * tidyr
+* GIFT
 
 &nbsp;
 
@@ -73,7 +75,9 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(ggpmisc)
 library(cowplot)
+library(dplyr)
 library(tidyr)
+library(GIFT)
 ```
 
 ```{r, eval=FALSE}
@@ -92,21 +96,65 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(ggpmisc)
 library(cowplot)
+library(dplyr)
 library(tidyr)
+library(GIFT)
 ```
 &nbsp;
 
-```{r}
-islands <- read.csv("data/islands.csv")
+# 1. Data extraction & exploration  
 
+## 1.1. Data extraction from GIFT database
+
+We will download island-level angiosperm species richness and environmental data from the  [GIFT](https://gift.uni-goettingen.de/home) database ([Weigelt et al. 2020](https://onlinelibrary.wiley.com/doi/10.1111/jbi.13623)) using the [GIFT R-package](https://biogeomacro.github.io/GIFT/).
+
+
+```{r}
+# Islands in GIFT
+islands <- GIFT_regions(GIFT_version = "2.1")
+islands <- islands[which(islands$suit_geo == 1 & islands$entity_class == "Island"), 
+                   c("entity_ID", "geo_entity")]
+
+# Geographic characteristics
+islands_geo <- GIFT_env(entity_ID = islands$entity_ID,
+                        miscellaneous = c("longitude","latitude","area","dist"),
+                        GIFT_version = "2.1")
+islands_geo$geo_entity <- NULL
+
+islands <- inner_join(islands, islands_geo, by="entity_ID")
+
+# Island geology
+islands_geology <- read.csv("data/islands_geology.csv")
+
+islands <- inner_join(islands, islands_geology, by="entity_ID")
+
+# Angiosperm species richness
+islands_richness <- GIFT_richness(taxon_name = "Angiospermae", GIFT_version = "2.1")
+islands_richness <- islands_richness[!is.na(islands_richness$native),
+                                     c("entity_ID","native","endemic_min")]
+names(islands_richness) <- c("entity_ID","spec_num","end_num")
+
+islands <- inner_join(islands, islands_richness, by="entity_ID")
+
+# Environmental data
+islands_env <- GIFT_env(entity_ID = islands$entity_ID,
+                        rasterlayer = c("mx30_grd", "CHELSA_bio10_1", 
+                                       "CHELSA_bio10_12", "Homogeneity_01_05_1km_uint16"),
+                        sumstat = list("max","mean","mean","mean"),
+                        GIFT_version = "2.1")
+
+names(islands_env) <- c("entity_ID", "geo_entity", "max_elev", "mean_temp", "mean_prec", "mean_homogeneity")
+islands_env$geo_entity <- NULL
+
+islands <- inner_join(islands, islands_env, by="entity_ID")
 str(islands)
+
+# write.csv(islands, "data/islands.csv", row.names = FALSE)
+# islands <- read.csv("data/islands.csv")
 ```
 
-# 1. Data exploration  
 
-Spatial patterns of species diversity \& co-variation among biogeographic and environmental variables.   
-
-## 1.1. Map species richness
+## 1.2. Map species richness
 
 With ggplot2
 
@@ -148,10 +196,10 @@ plot_grid(
   nrow = 2)
 ```
 
-To combine the islands data.frame with the world map, we first need to convert it as a *sf* object.
+To combine the islands data.frame with the world map, we first need to convert it to an *sf* object.
 
 ```{r}
-# Convert islands as a sf object
+# Convert islands to sf object
 islands_sf <- st_as_sf(islands, coords = c("longitude", "latitude"),
                        crs = "+proj=longlat +ellps=WGS84 +no_defs")
 
@@ -211,20 +259,20 @@ dev.off()
 &nbsp;
 </details>
 
-## 1.2. Correlations among biogeographic \& environmental variables
+## 1.3. Correlations among biogeographic \& environmental variables
 
 _Meta-data_    
 1. **latitude**: Latitude (in decimal degrees)  
 2. **area**: Island area (in km^2^)    
 3. **dist**: Distance to the nearest continent (in km)   
-4. **age_Ma**: Island age (in millions of years)    
+4. **age_MA**: Island geological age (million years)     
 5. **max_elev**: Maximum elevation (m)     
 6. **mean_temp**: Mean annual temperature (degrees Celsius)    
 7. **mean_prec**: Mean annual precipitation (mm yr^-1^)  
 8. **mean_homogeneity**: Habitat heterogeneity (similarity of vegetation index with surrounding pixels)   
 
 ```{r, echo = TRUE, eval = FALSE}
-abiotic <- c("latitude", "area", "dist", "age_Ma", "max_elev",
+abiotic <- c("latitude", "area", "dist", "age_MA", "max_elev",
              "mean_temp", "mean_prec", "mean_homogeneity")
 
 ggpairs(islands[, abiotic],
@@ -238,7 +286,7 @@ ggpairs(islands[, abiotic],
 ```
 
 ```{r, echo = FALSE, eval = TRUE, message=FALSE, warning=FALSE}
-abiotic <- c("latitude", "area", "dist", "age_Ma", "max_elev",
+abiotic <- c("latitude", "area", "dist", "age_MA", "max_elev",
              "mean_temp", "mean_prec", "mean_homogeneity")
 
 suppressWarnings(
@@ -530,10 +578,10 @@ AIC(SAR0, SAR1, SAR2, SAR3)
 1.  Apply a log10 transformation to area, elevation, precipitation, and temperature following:  
 _Kreft, H. et al. 2008. Global diversity of island floras from a macroecological perspective. Ecology Letters 11:116-127._  
 
-2. Simplify the geology column; change all values that are **floor** or **volcanic** to **oceanic**  
+2. Simplify the geology column; change all values that are **floor** or **volcanic** to **oceanic** and afterwards set all values that are not **atoll**, **fragment**, **oceanic** or **shelf** to NA.  
 
 3. Fit a multiple linear regression to predict biodiversity patterns on islands using the following biogeographic and environmental
-variables: island area, distance, temperature, precipitation, and island geology.  
+variables: island area, distance, elevation, temperature, precipitation and island geology.  
 
 4. Use manual backward selection to specify the best model  
 
@@ -554,6 +602,7 @@ islands$log_spec_num <- log10(islands$spec_num + 1)
 islands$log_max_elev <- log10(islands$max_elev + 1)
 islands$log_mean_prec <- log10(islands$mean_prec)
 islands$log_mean_temp <- log10(islands$mean_temp + 5)
+str(islands)
 ```
 
 &nbsp;
@@ -568,6 +617,9 @@ islands$geology[which(islands$geology %in%
 
 islands$geology[which(islands$geology == "floor")] <- "oceanic"
 islands$geology[which(islands$geology == "volcanic")] <- "oceanic"
+
+
+islands$geology[which(!islands$geology %in% c("atoll" , "fragment", "oceanic" , "shelf"))] <- NA
 
 summary(as.factor(islands$geology))
 ```
@@ -610,7 +662,7 @@ islands$archipelago[which(islands$entity_ID %in% c(131:139))] <- "Azores"
 islands_gdm <- islands[!is.na(islands$archipelago),]
 
 # Log-transforming age
-islands_gdm$log_age_Ma <- log10(islands_gdm$age_Ma)
+islands_gdm$log_age_MA <- log10(islands_gdm$age_MA)
 ```
 &nbsp;
 
@@ -623,7 +675,7 @@ _Species = Area x Time x Time^2^_
 Hawaii <- islands_gdm[which(islands_gdm$archipelago == "Hawaii"), ]
 
 # The ATT^2 model
-gdm1 <- lm(spec_num ~ log_area + age_Ma + I(age_Ma^2), data = Hawaii)
+gdm1 <- lm(spec_num ~ log_area + age_MA + I(age_MA^2), data = Hawaii)
 summary(gdm1)
 crPlots(gdm1)
 ```
@@ -634,7 +686,7 @@ crPlots(gdm1)
 _Species = log(Area) x log(Time) x log(Time)^2^_    
 
 ```{r, echo=TRUE}
-gdm2 <- lm(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2), data = Hawaii)
+gdm2 <- lm(spec_num ~ log_area + log_age_MA + I(log_age_MA^2), data = Hawaii)
 summary(gdm2)
 AIC(gdm1, gdm2)
 
@@ -647,11 +699,11 @@ crPlots(gdm2)
 _Species = log(Area) + log(Time) + log(Time)^2^ + (1|archipelago)_    
 
 ```{r, echo=TRUE}
-gdm_all <- lme4::glmer(spec_num ~ log_area + log_age_Ma + I(log_age_Ma^2) +
+gdm_all <- lme4::glmer(spec_num ~ log_area + log_age_MA + I(log_age_MA^2) +
                          (1|archipelago), data = islands_gdm, family = poisson)
 summary(gdm_all)
 
 effect_plot(gdm_all, pred = "log_area", outcome.scale = "response", plot.points = TRUE)
-effect_plot(gdm_all, pred = "log_age_Ma", outcome.scale = "response", plot.points = TRUE)
+effect_plot(gdm_all, pred = "log_age_MA", outcome.scale = "response", plot.points = TRUE)
 model_performance(gdm_all, metrics = "common")
 ```
