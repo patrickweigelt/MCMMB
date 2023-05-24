@@ -90,22 +90,9 @@ library(RColorBrewer) # fancy colour palettes
 ```
 &nbsp;
 
-## 1. Load data into R  
+# 1. Load data into R  
 
-### a. Load a phylogeny \& look at structure of 'multiPhylo' object  
-
-*Explanation of structure of a phylogeny in R*  
-**edge**: a two-column matrix where each row represents a branch (or edge) of the tree. The nodes and the tips are symbolized with integers. The n tips are numbered from 1 to n, and the m (internal) nodes from n+1 to n+m (the root being n + 1). For each row, the first column gives the ancestor.    
-
-**edge.length (optional)**: A numeric vector giving the lengths of the branches given by edge.  
-
-**tip.label**: A vector of mode character giving the labels of the tips. The order of these labels corresponds to the integers 1 to n in edge.    
-
-**Nnode**: An integer value giving the number of nodes in the tree (m).  
-
-**node.label** (optional): A vector of mode character giving the labels of the nodes (ordered in the same way as the tip.label).    
-
-**root.edge** (optional): A numeric value giving the length of the branch at the root if it exists. 
+## a. Load a phylogeny \& look at structure of 'multiPhylo' object  
 
 **load multi-tree object into R**  
 
@@ -122,7 +109,22 @@ palmtrees[[1]]
 
 palmtree <- palmtrees[[1]]
 str(palmtree)
+```
 
+*Explanation of structure of a phylogeny in R*  
+**edge**: a two-column matrix where each row represents a branch (or edge) of the tree. The nodes and the tips are symbolized with integers. The n tips are numbered from 1 to n, and the m (internal) nodes from n+1 to n+m (the root being n + 1). For each row, the first column gives the ancestor.    
+
+**edge.length (optional)**: A numeric vector giving the lengths of the branches given by edge.  
+
+**tip.label**: A vector of mode character giving the labels of the tips. The order of these labels corresponds to the integers 1 to n in edge.    
+
+**Nnode**: An integer value giving the number of nodes in the tree (m).  
+
+**node.label** (optional): A vector of mode character giving the labels of the nodes (ordered in the same way as the tip.label).    
+
+**root.edge** (optional): A numeric value giving the length of the branch at the root if it exists. 
+
+```{r echo=TRUE}
 # Number of nodes (m) (n is the number of tips)
 palmtree$Nnode
 
@@ -142,17 +144,15 @@ We can also plot the phylogenetic tree.
 ```{r echo=TRUE, fig.height=9, fig.width=9}
 plot(palmtree, type = "fan", cex = 0.3,
      edge.color = "gray70", tip.color = "#ef8a62",
-     main = "Phylogenetic tree for 2539 palm species")
+     main = paste("Phylogenetic tree for", palmtree$Nnode, "palm species"))
 ```
 &nbsp;
 
-
-### b. Loading palm distribution data  
+## b. Loading palm distribution data  
 
 Data from  Kreft, H., Sommer, J.H. & Barthlott, W. (2006).  
 The significance of geographic range size for spatial diversity  
 patterns in Neotropical palms. _Ecography_, 29, 21-30.  
-
 
 ```{r echo=TRUE}
 species <- read.csv("data/palms_species_per_gridcell.csv",
@@ -162,8 +162,7 @@ length(unique(species$grid_id)) # number of grid cells
 ```
 &nbsp;
 
-
-### c. Exercise I  
+## c. Exercise I  
 
 **Tasks**:    
 1. Add a column for the full species name with "_" as separator: "species".      
@@ -199,30 +198,34 @@ unique(species$species[which(!species$species %in% palmtree$tip.label)])[1:5]
 ```
 &nbsp;
 
+# 2. Taxonomic standardization  
 
-
-## 2. Taxonomic standardization  
+Missing species from the phylogeny may be synonyms of accepted species names,
+and are therefore undetected in the phylogenetic tree.  
+Let's standardize the missing species names.
 
 **Write species missing from phylogeny into a vector**
 ```{r echo=TRUE}
 specmissing <- unique(species$species[which(!species$species %in% palmtree$tip.label)])
 head(specmissing)
-
-specmissing <- gsub("_", " ", specmissing) # replace underscore with a space
-head(specmissing)
+length(specmissing)
 ```
 &nbsp;
-
 
 **Match palm species names to those in [The Plant List](http://www.theplantlist.org/)**
 It is always important to check whether you have access to an updated taxonomy.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+specmissing <- gsub("_", " ", specmissing) # replace underscore with a space
+head(specmissing)
+
 taxstand <- TPL(specmissing, diffchar = 2, max.distance = 1)
 # head(warnings())
 head(taxstand)[, c(1, 11:16)]
 ```
 &nbsp;
+
+See also TNRS R package, and the WCVP taxonomic backbone.
 
 **Replace old names by new names \& overwrite the combined species name**
 ```{r echo=TRUE}
@@ -246,16 +249,21 @@ length(specmissing)
 ```
 &nbsp;
 
-_Missing species would have to be looked up and added manually to the phylogeny by an expert._   
+Instead of 80 missing species, we only have 18 after taxonomic harmonization.
+<br>
+
+_Remaining missing species would have to be looked up and added manually to the phylogeny by an expert._   
 _If missing species cannot be added reliably, we need to remove them from the dataset for analysis._  
 
 ```{r echo=TRUE}
 # Removal of the species not in the phylogeny
+length(unique(species$species))
 species <- species[which(!species$species %in% specmissing), ]
+length(unique(species$species))
 ```
 &nbsp; 
 
-## 3. Loading grid shapefile and changing resolution  
+# 3. Loading grid shapefile and changing resolution  
 **Read in polygon shapefile**  
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # gridcells corresponding to palm distribution data and americas coastline
@@ -271,7 +279,11 @@ names(grid)[1] <- "grid_id"
 ```
 &nbsp; 
 
-**Convert the grid shapefile to a coarser resolution to have fewer grid cells**  
+<br>
+We will now convert the grid shapefile to a coarser resolution to have fewer grid cells.
+<br>
+
+**Extract the grid centroids**  
 ```{r echo=TRUE}
 # convert into points shapefile
 grid_centroids <- st_centroid(grid)
@@ -285,8 +297,7 @@ ggplot(grid_centroids) +
 
 **Add coordinates to SpatialPolygonsDataframe**  
 ```{r echo=TRUE}
-
-# Add latitude and longitude as columns
+# Add latitude and longitude of grid centroids as extra columns
 head(grid)
 grid <- cbind(grid, st_coordinates(grid_centroids))
 names(grid)[4:5] <- c("longitude", "latitude")
@@ -294,7 +305,10 @@ head(grid)
 ```
 &nbsp; 
 
-**Make new IDs for neighbouring cells**  
+**Make new IDs for neighboring cells**  
+Two steps: i) we build an empty matrix with the new IDs, ii) with a `for-loop`, we
+add the new IDs into the `grid` object.
+
 ```{r echo=TRUE}
 range(grid$longitude)
 range(grid$latitude)
@@ -305,24 +319,25 @@ latitude  <- seq(-35, 35, by = 2)
 new_ID_matrix <- matrix(c(1:(length(longitude)*length(latitude))),
                         nrow = length(longitude), ncol = length(latitude),
                         dimnames = list(longitude, latitude), byrow = TRUE)
+dim(new_ID_matrix)
 new_ID_matrix[1:5, 1:5]
 
+# Filling
 grid$new_ID <- NA
 
 for(i in 1:nrow(grid)){
   grid$new_ID[i] <- new_ID_matrix[which(longitude < grid$longitude[i] & 
-                                               (longitude + 2) > grid$longitude[i]),
-                                       which(latitude < grid$latitude[i] &
-                                               (latitude + 2) > grid$latitude[i])]
+                                          (longitude + 2) > grid$longitude[i]),
+                                  which(latitude < grid$latitude[i] &
+                                          (latitude + 2) > grid$latitude[i])]
 }
 
 head(grid)
 ```
 &nbsp; 
 
-**Join neighbouring cells based on new IDs \& aggregate species distribution data using the new grid**  
+**Join neighboring cells based on new IDs \& aggregate species distribution data using the new grid**  
 ```{r echo=TRUE}
-
 grid_2degrees <- group_by(grid, new_ID)
 grid_2degrees <- summarise(grid_2degrees, do_union = TRUE, is_coverage = TRUE)
 
@@ -339,8 +354,7 @@ head(species)
 ```
 &nbsp;
 
-
-## 4. Calculating phylogenetic community metrics  
+# 4. Calculating phylogenetic community metrics  
 **Prune phylogeny to exclude species not in palm distribution data**  
 _Make sure that the same number of species in your data set are in your phylogeny_
 
@@ -388,29 +402,32 @@ with $l$ the length of a branch $b$.
 # ?pd
 pd_palms <- pd(species_grid, palmtree_pruned)
 dim(pd_palms) # one value per grid cell
-pd_palms <- data.frame(new_ID=as.integer(row.names(species_grid)), pd_palms)
+head(pd_palms)
+
+# Adding the ID of grid cells
+pd_palms <- data.frame(new_ID = as.integer(row.names(species_grid)), pd_palms)
 head(pd_palms)
 ```
 &nbsp;
 
-`pd()` calculates Faith's PD and a corrected version of it being the residuals of a regression with total abundance or species richness per plot. Lets look into this:
+`pd()` calculates Faith's PD and a corrected version of it being the residuals of a regression with total abundance or species richness per plot. Let's look into this:
 
 ```{r message=FALSE, warning=FALSE, echo=TRUE, fig.height=5, fig.width=8}
 pd_model <- lm(PD ~ SR, data = pd_palms)
 pd_palms$residuals <- residuals(pd_model)
+head(pd_palms)
 
 plot_grid(nrow = 1, ncol = 2,
-ggplot(pd_palms, aes(SR, PD)) +
-  geom_point(color = "black", alpha = 0.3) +
-  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
-  labs(x = "Species_number", y = "Faith's PD") +
-  theme_bw(),
-ggplot(pd_palms, aes(SR, residuals)) +
-  geom_point(color = "black", alpha = 0.3) +
-  labs(x = "Species_number", y = "Faith's PD residuals") +
-  theme_bw())
+          ggplot(pd_palms, aes(SR, PD)) +
+            geom_point(color = "black", alpha = 0.3) +
+            stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+            labs(x = "Species_number", y = "Faith's PD") +
+            theme_bw(),
+          ggplot(pd_palms, aes(SR, residuals)) +
+            geom_point(color = "black", alpha = 0.3) +
+            labs(x = "Species_number", y = "Faith's PD residuals") +
+            theme_bw())
 ```
-
 
 **Calculate generic phylogenetic metrics (absolute and standardized)**  
 
@@ -436,7 +453,7 @@ These indices are described in Webb el al. (2002).
 ```{r message=FALSE, warning=FALSE, echo=TRUE, fig.height=5, fig.width=8}
 c.data <- comparative.comm(palmtree_pruned , species_grid)
 pd.null <- generic.null(c.data, c(.pd, .mpd, .mntd), null.model = "richness",
-                        comp.fun = .ses,permute = 100) 
+                        comp.fun = .ses, permute = 100) 
 colnames(pd.null) <- c("Faith_PD", "Corrected_FaithPD", "MPD", "MNTD")
 rownames(pd.null) <- sites(c.data)
 pd.null <- data.frame(pd.null)
@@ -447,37 +464,39 @@ dim(pd.null); head(pd.null)
 # select columns of interest for final data set
 pd.out <- pd.null[, c("new_ID", "Faith_PD.observed", "Faith_PD.SES",
                       "MPD.observed", "MPD.SES", "MNTD.observed", "MNTD.SES")] 
-pd.out[is.na(pd.out)] <- 0  # change NAs to zeroes; zero phylogenetic diversity if grid has only 1 spp!
+head(pd.out)
+# change NAs to zeroes; zero phylogenetic diversity if grid has only 1 spp!
+pd.out[is.na(pd.out)] <- 0
 
 head(pd.out)
 head(pd_palms)
 
-palmdiversity <- left_join(pd_palms, pd.out)
+palmdiversity <- left_join(pd_palms, pd.out, by = "new_ID")
+head(palmdiversity)
 
+# Plot
 plot_grid(nrow = 1, ncol = 2,
-ggplot(palmdiversity, aes(SR, Faith_PD.SES)) +
-  geom_point(color = "black", alpha = 0.3) +
-  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
-  labs(x = "Species_number", y = "Faith's PD standardized") +
-  theme_bw(),
-ggplot(palmdiversity, aes(Faith_PD.observed, Faith_PD.SES)) +
-  geom_point(color = "black", alpha = 0.3) +
-  stat_smooth(method = "lm", formula = y ~ x, color = "red") +
-  labs(x = "Faith's PD observed", y = "Faith's PD standardized") +
-  theme_bw())
+          ggplot(palmdiversity, aes(SR, Faith_PD.SES)) +
+            geom_point(color = "black", alpha = 0.3) +
+            stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+            labs(x = "Species_number", y = "Faith's PD standardized") +
+            theme_bw(),
+          ggplot(palmdiversity, aes(Faith_PD.observed, Faith_PD.SES)) +
+            geom_point(color = "black", alpha = 0.3) +
+            stat_smooth(method = "lm", formula = y ~ x, color = "red") +
+            labs(x = "Faith's PD observed", y = "Faith's PD standardized") +
+            theme_bw())
 ```
 &nbsp;
 
-
-### a. Exercise II  
+## a. Exercise II  
 
 **Tasks**:  
-1. Plot correlations among the diversity metrics in the palm diversity data.frame.   
-2. Join the 'palmdiversity' data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting.   
+1. Plot correlations among the diversity metrics in the palm diversity data.frame (use `ggpairs()`).   
+2. Join the `palmdiversity` data.frame to the grid_2degrees shapefile to be able to link the diversity metrics and the poylgons for plotting.   
 3. Plot maps with colours according to the diversity metrics.  
 
 **Exercise II solutions:**
-
 
 _Plot correlations among the diversity metrics_  
 ```{r echo=FALSE, fig.height=10, fig.width=10}
@@ -493,47 +512,45 @@ ggpairs(palmdiversity[, c(3:10)],
 _Join the palmdiversity data.frame to the shapefile with the new gridcell IDs_  
 
 ```{r echo=FALSE}
-head(grid_2degrees)
+head(grid_2degrees); head(palmdiversity)
 grid_2degrees <- left_join(grid_2degrees, palmdiversity, by = "new_ID")
 head(grid_2degrees)
 ```
 &nbsp;
 
-
 _Plot maps with different colours for each diversity metric_  
 
 *Species richness, PD, MPD \& MNTD (absolute)*  
 ```{r echo=FALSE, fig.height=10, fig.width=6.6, message=FALSE, warning=FALSE}
-
 plot_grid(nrow = 2, ncol = 2,
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = SR)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Palm species richness") +
-  scale_fill_viridis_c("Species\nnumber") +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40),
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = PD)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Faith's Phylogenetic diversity") +
-  scale_fill_viridis_c("PD (my)") +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40),
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = MPD.observed)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Mean pairwise distance") +
-  scale_fill_viridis_c("MPD (my)") +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40),
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = MNTD.observed)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Mean nearest taxon distance") +
-  scale_fill_viridis_c("MNTD (my)") +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40))
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = SR)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Palm species richness") +
+            scale_fill_viridis_c("Species\nnumber") +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40),
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = PD)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Faith's Phylogenetic diversity") +
+            scale_fill_viridis_c("PD (my)") +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40),
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = MPD.observed)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Mean pairwise distance") +
+            scale_fill_viridis_c("MPD (my)") +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40),
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = MNTD.observed)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Mean nearest taxon distance") +
+            scale_fill_viridis_c("MNTD (my)") +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40))
 
 # par(mfrow = c(2, 2), mar = rep(1, 4), oma = rep(0, 4))
 # 
@@ -574,35 +591,33 @@ ggplot(grid_2degrees) +
 ```
 &nbsp;
 
-
 *PD, MPD \& MNTD (standardized)*  
 ```{r echo=FALSE, fig.height=5, fig.width=10}
-
 plot_grid(nrow = 1, ncol = 3,
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = Faith_PD.SES)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Standardized Faith's PD") +
-  scale_fill_gradient2("PDses", low = brewer.pal(11, "PiYG")[1],
-  mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40),
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = MPD.SES)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Standardized MPD") +
-  scale_fill_gradient2("MPD", low = brewer.pal(11, "PiYG")[1],
-  mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40),
-ggplot(grid_2degrees) +
-  geom_sf(color = NA, aes(fill = MNTD.SES)) +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  labs(title = "Standardized MNTD") +
-  scale_fill_gradient2("MNTD", low = brewer.pal(11, "PiYG")[1],
-  mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
-  theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
-  ylim(-40, 40))
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = Faith_PD.SES)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Standardized Faith's PD") +
+            scale_fill_gradient2("PDses", low = brewer.pal(11, "PiYG")[1],
+                                 mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40),
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = MPD.SES)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Standardized MPD") +
+            scale_fill_gradient2("MPD", low = brewer.pal(11, "PiYG")[1],
+                                 mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40),
+          ggplot(grid_2degrees) +
+            geom_sf(color = NA, aes(fill = MNTD.SES)) +
+            geom_sf(data = americas, fill = NA, color = "black") +
+            labs(title = "Standardized MNTD") +
+            scale_fill_gradient2("MNTD", low = brewer.pal(11, "PiYG")[1],
+                                 mid = brewer.pal(11, "PiYG")[6], high = brewer.pal(11, "PiYG")[11], midpoint = 0) +
+            theme_void() + theme(plot.title = element_text(margin=margin(0,0,10,0))) + 
+            ylim(-40, 40))
 
 
 # par(mfrow = c(1, 3), mar = rep(1, 4), oma = rep(0, 4))
@@ -633,7 +648,6 @@ ggplot(grid_2degrees) +
 # plot(grid_2degrees, col = my.col.fr4, border = NA)
 # title(main = "standardised MNTD", line = -3)
 # plot(americas, add = TRUE)
-
 ```
 &nbsp;
 
