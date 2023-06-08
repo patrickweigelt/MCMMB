@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 8: Functional biogeography"
 author: "Pierre Denelle, Holger Kreft & Patrick Weigelt"
-date: "June 15th, 2022"
+date: "June 7th, 2023"
 output: 
   html_document: 
     fig_height: 6
@@ -16,6 +16,10 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c("top", "right"), color = "black")
+```
+
 &nbsp;
 _[back to overview](index.html)_
 &nbsp;
@@ -26,8 +30,6 @@ _[back to overview](index.html)_
 * `dplyr`
 * `RColorBrewer`
 * `psych`
-* `rgdal`
-* `rgeos`
 * `ade4`
 * `fundiversity`
 * `sf`
@@ -55,8 +57,6 @@ Now you can conveniently copy code from the viewer into your script.
 library(dplyr)
 library(RColorBrewer)
 library(psych)
-library(rgdal)
-library(rgeos)
 library(ade4)
 library(fundiversity)
 library(sf)
@@ -70,8 +70,6 @@ library(fundiversity) # Functional diversity
 library(dplyr) # data.frame operations
 library(RColorBrewer) # color gradients
 library(psych) # pair plot
-library(rgdal) # shapefile
-library(rgeos) # grid cells centroids
 library(ade4) # Dissimilarity matrix and PCoA
 library(sf) # spatial analyses
 library(ggplot2) # plot
@@ -107,7 +105,7 @@ st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
 
 # have a look at the grid's attribute table
 head(grid)
-head(species)
+
 # Latitude and longitude centroids have already been calculated
 
 # Plot
@@ -144,7 +142,7 @@ Among the traits available, we have different trait types, related to growth for
 
 ### 1.2.1. Trait description
 
-Traits can be either binary traits (0 or 1, sometimes 2 when one species varies in that trait)., categorical or continuous.
+Traits can be either binary traits (0 or 1, sometimes 2 when one species varies in that trait), categorical or continuous.
 
 ```{r non_armed_stem, fig.label = "Cocos_nucifera", out.width = "10%", echo = FALSE}
 knitr::include_graphics("figures/Cocos_nucifera.jpg")
@@ -160,7 +158,6 @@ table(tra$Climbing)
 table(tra$Acaulescent)
 table(tra$Erect)
 
-# http://idtools.org/id/palms/palmid/gallery.php
 table(tra$StemArmed); table(tra$LeavesArmed)
 table(tra$StemArmed, tra$LeavesArmed)
 
@@ -173,7 +170,7 @@ prpX <- prop.table(table(tra$StemArmed))
 prpY <- prop.table(table(tra$StemArmed, tra$LeavesArmed), margin = 1)
 text(prpX/2 * c(1,-1) + 0:1,
      prpY/2 * c(-1,-1,1,1) + c(1,1,0,0),
-     paste("n=", table(tra$StemArmed, tra$LeavesArmed)))
+     paste("n=", table(tra$StemArmed, tra$LeavesArmed), sep=""))
 ```
 
 We have two traits related to stem size: maximum height and diameter of the stem.
@@ -189,6 +186,9 @@ ggplot(tra, aes(MaxStemHeight_m, MaxStemDia_cm)) +
 ```
 
 The world's tallest monocotyledon:
+```{r tallest}
+tra$SpecName[which(tra$Climbing == 0)][which.max(tra$MaxStemHeight_m[which(tra$Climbing == 0)])]
+```
 ```{r tallest_palm, fig.label = "Ceroxylon quindiuense", out.width = "20%", echo = FALSE}
 knitr::include_graphics("figures/Ceroxylon_quindiuense.jpg")
 ```
@@ -347,16 +347,16 @@ We also saw that not all species have a trait value. We therefore need to make a
 <br>
 
 ```{r tra_coverage}
-head(tapply(species_height$MaxStemHeight_m,
+tail(tapply(species_height$MaxStemHeight_m,
             species_height$new_ID,
-            function(x) sum(is.na(x))/length(x))) # coverage calculation
+            function(x) sum(!is.na(x))/length(x))) # coverage calculation
 
 grid_coverage_height <- species_height %>%
   group_by(new_ID) %>%
-  summarise(coverage_height = sum(is.na(MaxStemHeight_m))/
+  summarise(coverage_height = sum(!is.na(MaxStemHeight_m))/
               length(MaxStemHeight_m))
 
-dim(grid_coverage_height); head(grid_coverage_height)
+dim(grid_coverage_height); tail(grid_coverage_height)
 
 # Plot
 grid <- left_join(grid, grid_coverage_height, by = "new_ID")
@@ -368,7 +368,7 @@ ggplot(grid) +
   theme_bw()
 ```
 
-We can see that the coverage has a huge influence on the conclusion we drew before.
+We can see that the coverage has an influence on the conclusion we drew before.
 <br>
 
 # 3. Trait space
@@ -398,7 +398,7 @@ pca_palm <- PCA(sp_tra_pca, scale.unit = FALSE, graph = TRUE)
 pca_palm$eig
 
 # PCA plot
-# Individual coordinates with categories (same order than in original data)
+# Individual coordinates with categories (same order as in original data)
 PCs <- as.data.frame(pca_palm$ind$coord[, 1:2])
 
 # Variables coordinates
@@ -450,7 +450,7 @@ ggplot(grid) +
 
 # 4. Functional diversity
 Finally, we here compute a set of functional diversity indices that can inform us on the assembly processes within a given assemblage of species.  
-We here focus on functional richness which is the volume of functional space occupied by a community convex hull that encompasses all points.  
+We focus on functional richness which is the volume of the functional space occupied by a community convex hull that encompasses all points.  
 
 ```{r frich_image, fig.label = "Functional richness", out.width = "50%", echo = FALSE}
 knitr::include_graphics("figures/frich.JPG")
@@ -465,7 +465,7 @@ We here at calculating and then mapping the functional richness per grid cell.
 
 ```{r frich}
 # Before using the functions from fundiversity, we need to build a
-# cell-species matrix
+# species-by-sites matrix
 cell_sp <- as.matrix(table(species$new_ID, species$species))
 cell_sp[1:3, 1:3]
 
