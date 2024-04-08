@@ -338,7 +338,7 @@ Please note that temperature has been multiplied by 10.
 
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
-elev <- rast("data/mn30_grd/mn30_grd/") + 0 # +0 to treat raster as numeric
+elev <- rast("data/mn30_grd/") + 0 # +0 to treat raster as numeric
 
 plot(elev)
 
