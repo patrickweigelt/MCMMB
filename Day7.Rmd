@@ -195,6 +195,11 @@ table(unique(species$species) %in% palmtree$tip.label) # need for unique species
 
 # first five palm species
 unique(species$species[which(!species$species %in% palmtree$tip.label)])[1:5]
+# Species that are NOT in the phylogeny
+unique(species$species)[!(unique(species$species) %in% palmtree$tip.label)]
+# dplyr
+setdiff(species$species, palmtree$tip.label)
+
 ```
 &nbsp;
 
