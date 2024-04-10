@@ -7,6 +7,8 @@ output:
   html_document: 
     theme: flatly
     toc: yes
+editor_options:
+ chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -406,12 +408,12 @@ getwd()
 
 **Load raster library**  
 ```{r, eval=FALSE}
-# install.packages("raster") # install the raster package in case not done yet
-library(raster)
+# install.packages("terra") # install the raster package in case not done yet
+library(terra)
 ```
 
 ```{r, echo=FALSE}
-library(raster, quietly = TRUE)
+library(terra, quietly = TRUE)
 ```
 
 ```{r, echo=FALSE}
@@ -421,7 +423,7 @@ if (file.exists("D:/rastertemp")){rasterOptions(tmpdir="D:/rastertemp/")} # rast
 
 **Import global digital elevation model and plot it**  
 ```{r}
-elev <- raster("data/mn30_grd/mn30_grd/")
+elev <- rast("data/mn30_grd/mn30_grd/") + 0 # +0 to treat raster as numeric
 par(mfrow=c(1,1))
 plot(elev, main = "Elevation")
 ```
@@ -429,8 +431,8 @@ plot(elev, main = "Elevation")
 
 **Import climate data from Chelsa and plot it**  
 ```{r}
-bio1 <- raster("data/CHELSA_bio10_01.tif")
-bio12 <- raster("data/CHELSA_bio10_12.tif")
+bio1 <- rast("data/CHELSA_bio10_01.tif")
+bio12 <- rast("data/CHELSA_bio10_12.tif")
 ```
 
 ```{r}
@@ -444,10 +446,10 @@ plot(bio12, main = "Precipitation") # Precipitation (mm)
 
 ```{r}
 crs(bio1)
-bio1@crs
-bio1@ncols
-bio1@nrows
-area(bio1)
+crs(bio1)
+ncol(bio1)
+nrow(bio1)
+cellSize(bio1)
 ```
 30 arc seconds resolution = ~1km² at the equator
 &nbsp;
