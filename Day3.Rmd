@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 3: Download point occurrences & fit species distribution models"
 author: "Patrick Weigelt, Pierre Denelle, & Holger Kreft"
-date: "April 26th, 2023"
+date: "April 24th, 2024"
 output: 
   html_document: 
     fig_height: 7
@@ -142,7 +142,7 @@ For today's practical, we will use occurrence data downloaded from
 [BIEN](http://bien.nceas.ucsb.edu/bien/tools/). This file is also available via StudIP ('Data/Data/BIEN_data.csv).
 
 ```{r, echo=TRUE}
-#spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, only.new.world = TRUE) # Download via the internet (this can take quite some time!)
+#spec_occ <- BIEN_occurrence_species(c("Geonoma pauciflora","Geonoma undata","Phytelephas tenuicaulis","Mauritia flexuosa"), cultivated = FALSE, new.world = TRUE) # Download via the internet (this can take quite some time!)
 
 spec_occ <- read.csv("data/BIEN_data.csv") # Or load species occurrence data from disk
 
