@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 2: data.frames and GIS shapefiles in R; subsetting, joining & aggregating "
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "April 19, 2023"
+date: "April 17th, 2024"
 output: 
   html_document: 
     theme: flatly
