@@ -187,7 +187,7 @@ st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
 ```{r, echo=TRUE}
 par(mfrow = c(2, 2))
 plot(st_geometry(grid),
-     col = ifelse(grid$Geonoma.pauciflora == 1, "#ef8a62", "#7fbf7b"), 
+     col = ifelse(grid$Geonoma.pauciflora == 1, "#af8dc3", "#7fbf7b"), 
      border = FALSE, main = "Geonoma pauciflora")
 #species 1
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma pauciflora")],
@@ -197,7 +197,7 @@ plot(st_geometry(americas), add = TRUE)
 
 #species 2
 plot(st_geometry(grid),
-     col=ifelse(grid$Geonoma.undata==1,"#ef8a62", "#7fbf7b"), 
+     col=ifelse(grid$Geonoma.undata==1,"#af8dc3", "#7fbf7b"), 
      border=FALSE, main = "Geonoma undata")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],
        spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Geonoma undata")],
@@ -206,7 +206,7 @@ plot(st_geometry(americas), add = TRUE)
 
 #species 3
 plot(st_geometry(grid),
-     col=ifelse(grid$Phytelephas.tenuicaulis==1,"#ef8a62","#7fbf7b"), 
+     col=ifelse(grid$Phytelephas.tenuicaulis==1,"#af8dc3","#7fbf7b"), 
      border=FALSE, main = "Phytelephas tenuicaulis")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],
        spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Phytelephas tenuicaulis")],
@@ -215,7 +215,7 @@ plot(st_geometry(americas), add = TRUE)
 
 #species 4
 plot(st_geometry(grid),
-     col=ifelse(grid$Mauritia.flexuosa==1,"#ef8a62","#7fbf7b"), 
+     col=ifelse(grid$Mauritia.flexuosa==1,"#af8dc3","#7fbf7b"), 
      border=FALSE, main = "Mauritia flexuosa")
 points(spec_occ$longitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],
        spec_occ$latitude[which(spec_occ$scrubbed_species_binomial == "Mauritia flexuosa")],
@@ -262,7 +262,7 @@ geo_pau_abs <- rbind(grid_centroids[sample(nrow(grid_centroids),
 par(mfrow = c(2, 2))
 
 plot(st_geometry(geo_pau_abs),
-     col = ifelse(geo_pau_abs$present == 1, "#ef8a62", "#7fbf7b"), 
+     col = ifelse(geo_pau_abs$present == 1, "#af8dc3", "#7fbf7b"), 
      main = "Geonoma pauciflora", pch = 3)
 plot(st_geometry(americas), add = TRUE)
 
@@ -282,7 +282,7 @@ geo_und_abs <- rbind(
   geo_und)
 
 plot(st_geometry(geo_und_abs),
-     col=ifelse(geo_und_abs$present == 1,"#ef8a62", "#7fbf7b"), 
+     col=ifelse(geo_und_abs$present == 1,"#af8dc3", "#7fbf7b"), 
      main="Geonoma undata", pch = 3)
 plot(st_geometry(americas), add = TRUE)
 
@@ -302,7 +302,7 @@ phy_ten_abs <- rbind(
   phy_ten)
 
 plot(st_geometry(phy_ten_abs),
-     col=ifelse(phy_ten_abs$present==1, "#ef8a62", "#7fbf7b"), 
+     col=ifelse(phy_ten_abs$present==1, "#af8dc3", "#7fbf7b"), 
      main="Phytelephas tenuicaulis", pch = 3)
 plot(st_geometry(americas), add = TRUE)
 
@@ -322,7 +322,7 @@ mau_fle_abs <- rbind(
   mau_fle)
 
 plot(st_geometry(mau_fle_abs),
-     col = ifelse(mau_fle_abs$present == 1,"#ef8a62", "#7fbf7b"), 
+     col = ifelse(mau_fle_abs$present == 1,"#af8dc3", "#7fbf7b"), 
      main="Mauritia flexuosa", pch = 3)
 plot(st_geometry(americas), add = TRUE)
 ```
@@ -356,7 +356,7 @@ plot(bio1)
 &nbsp;
 
 **Extract environmental data for each point (presences/absences)**
-```{r, echo=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
 
 # extract environmental data for presences and absences
 geo_pau_abs$elev <- extract(elev, geo_pau_abs)[, "mn30_grd"]
@@ -515,7 +515,7 @@ More details on the evaluation of the performance of SDMs
 
 **Create new data for predictions**  
 
-```{r, echo=TRUE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 new_extent <- ext(-97, -35, -30, 17) # crop the raster layers to smaller extent
 
 elev <- crop(elev, new_extent) # crop raster layers to smaller extent
