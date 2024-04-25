@@ -11,7 +11,6 @@
 
 <meta name="author" content="Patrick Weigelt, Pierre Denelle &amp; Holger Kreft" />
 
-<meta name="date" content="2023-04-19" />
 
 <title>Modern concepts and methods in Macroecology and Biogeography</title>
 
@@ -534,7 +533,7 @@ and Biogeography</h1>
 subsetting, joining &amp; aggregating</h3>
 <h4 class="author">Patrick Weigelt, Pierre Denelle &amp; Holger
 Kreft</h4>
-<h4 class="date">April 19, 2023</h4>
+<h4 class="date">April 17th, 2024</h4>
 
 </div>
 
@@ -795,7 +794,7 @@ library(raster)</code></pre>
 <p><strong>Load spatial poylgons into R</strong></p>
 <pre class="r"><code>grid &lt;- st_read(&quot;data/30min_grid_select50/30min_grid_select50%.shp&quot;)</code></pre>
 <pre><code>## Reading layer `30min_grid_select50%&#39; from data source 
-##   `C:\Users\Patrick\Teaching\Macroecology\Practicals\MCMMB\data\30min_grid_select50\30min_grid_select50%.shp&#39; 
+##   `C:\Users\patty\Documents\Teaching\Macroecology\Practicals\MCMMB\data\30min_grid_select50\30min_grid_select50%.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 6038 features and 3 fields
 ## Geometry type: MULTIPOLYGON
@@ -804,7 +803,7 @@ library(raster)</code></pre>
 ## CRS:           NA</code></pre>
 <pre class="r"><code>americas &lt;- st_read(&quot;data/americas/americas.shp&quot;)</code></pre>
 <pre><code>## Reading layer `americas&#39; from data source 
-##   `C:\Users\Patrick\Teaching\Macroecology\Practicals\MCMMB\data\americas\americas.shp&#39; 
+##   `C:\Users\patty\Documents\Teaching\Macroecology\Practicals\MCMMB\data\americas\americas.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 1 feature and 15 fields
 ## Geometry type: MULTIPOLYGON
@@ -840,7 +839,7 @@ plot(st_geometry(americas), add = TRUE)</code></pre>
 ##   User input: +proj=longlat +ellps=WGS84 +no_defs 
 ##   wkt:
 ## GEOGCRS[&quot;unknown&quot;,
-##     DATUM[&quot;Unknown based on WGS84 ellipsoid&quot;,
+##     DATUM[&quot;Unknown based on WGS 84 ellipsoid&quot;,
 ##         ELLIPSOID[&quot;WGS 84&quot;,6378137,298.257223563,
 ##             LENGTHUNIT[&quot;metre&quot;,1],
 ##             ID[&quot;EPSG&quot;,7030]]],
@@ -861,7 +860,7 @@ plot(st_geometry(americas), add = TRUE)</code></pre>
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: -116.0007 ymin: -35 xmax: -35.00066 ymax: 36.5
-## CRS:           +proj=longlat +ellps=WGS84 +no_defs
+## Geodetic CRS:  +proj=longlat +ellps=WGS84 +no_defs
 ## First 5 geometries:</code></pre>
 <pre><code>## MULTIPOLYGON (((-114.0007 36, -114.5007 36, -11...</code></pre>
 <pre><code>## MULTIPOLYGON (((-113.5007 36, -114.0007 36, -11...</code></pre>
@@ -876,7 +875,7 @@ plot(st_geometry(americas), add = TRUE)</code></pre>
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: -115.0007 ymin: 35.5 xmax: -113.0007 ymax: 36.5
-## CRS:           +proj=longlat +ellps=WGS84 +no_defs
+## Geodetic CRS:  +proj=longlat +ellps=WGS84 +no_defs
 ##    ID AREA PORTION                       geometry
 ## 1 538 0.25     100 MULTIPOLYGON (((-114.0007 3...
 ## 2 539 0.25     100 MULTIPOLYGON (((-113.5007 3...
@@ -936,7 +935,7 @@ grid[which(grid$grid_id %in% c(5328:5332)), 1:5]</code></pre>
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: -82.00066 ymin: 22.5 xmax: -79.50066 ymax: 23
-## CRS:           +proj=longlat +ellps=WGS84 +no_defs
+## Geodetic CRS:  +proj=longlat +ellps=WGS84 +no_defs
 ##     grid_id    AREA PORTION Acoelorraphe.wrightii Acrocomia.aculeata
 ## 558    5328 0.19638  78.552                     1                  1
 ## 559    5329 0.25000 100.000                     1                  1
