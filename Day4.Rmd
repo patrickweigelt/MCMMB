@@ -53,23 +53,25 @@ Now you can conveniently copy code from the viewer into your script.
 **Load R packages**  
 
 ```{r, include = FALSE}
-library(dplyr)
-library(classInt)
-library(colorRamps)
-library(performance)
-library(sf)
-library(ggplot2)
-library(cowplot)
+library("dplyr")
+library("classInt")
+library("colorRamps")
+library("performance")
+library("sf")
+library("ggplot2")
+library("cowplot")
+library("viridis")
 ```
 
 ```{r, eval = FALSE}
-library(dplyr)
-library(classInt)
-library(colorRamps)
-library(performance)
-library(sf)
-library(ggplot2)
-library(cowplot)
+library("dplyr")
+library("classInt")
+library("colorRamps")
+library("performance")
+library("sf")
+library("ggplot2")
+library("cowplot")
+library("viridis")
 ```
 
 # 1. Loading palm data set and shapefiles
@@ -190,7 +192,7 @@ head(grid)
 With a base R approach.
 ```{r}
 # Defining a color palette
-library(viridis)
+library("viridis")
 cols <- viridis(n = 10)
 colours <- colorRamp(cols)(grid$spec_num/max(grid$spec_num))
 colours <- rgb(colours[,1], colours[,2], colours[,3], maxColorValue = 255)
