@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 5: Environmental drivers of neotropical palm diversity"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 10th, 2023"
+date: "May 15th, 2024"
 output: 
   html_document: 
     theme: flatly
@@ -94,7 +94,7 @@ For today's exercise, we again use the elevation, temperature ('bio1'), and prec
 
 ```{R, echo=TRUE}
 # Import global digital elevation model at 30 arc seconds resolution
-elev <- rast("data/mn30_grd/mn30_grd/") + 0 # + 0 to treat raster as numeric
+elev <- rast("data/mn30_grd/") + 0 # + 0 to treat raster as numeric
 plot(elev, main="Elevation a.s.l. (m)", col = terrain.colors(255)) 
 ```
 &nbsp;

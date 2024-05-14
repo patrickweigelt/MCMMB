@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 4: The latitudinal diversity gradient"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 3rd, 2023"
+date: "May 8rd, 2024"
 output: 
   html_document: 
     theme: flatly
