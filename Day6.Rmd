@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 6: Island Biogeography"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 17th, 2023"
+date: "May 22nd, 2024"
 output: 
   html_document: 
     fig_height: 7

@@ -738,8 +738,8 @@ bio1_mean &lt;- extract(bio1, grid[c(1:10), ], fun = mean)</code></pre>
 <pre class="r"><code>nrow(grid)/10*system.time(bio1_mean &lt;- extract(bio1, grid[c(1:10), ],
                                                fun = mean))/60</code></pre>
 <pre><code>## Warning: [extract] transforming vector data to the CRS of the raster</code></pre>
-<pre><code>##     user   system  elapsed 
-## 0.000000 0.000000 1.106967</code></pre>
+<pre><code>##    user  system elapsed 
+##  0.0000  0.0000  0.6038</code></pre>
 <pre class="r"><code># about a minute (used to be around 20 minutes with raster package)</code></pre>
 <p>Note: There are faster packages for dealing with raster layers
 available now (<em>velox</em>, <em>fasterRaster</em>). Here, we want to
