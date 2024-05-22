@@ -357,7 +357,7 @@ head(predicted_richness_SAR1)
 ## c) Exercise I  
 1. Make histograms of species richness and area  
 2. Apply a log10 transformation to species richness and area, make new columns of the transformed variables, and plot histograms of them  
-3. Fit a linear model to log predict species richness using log area 
+3. Fit a linear model to predict log species richness using log area 
 4. Make a plot of the results  
 
 &nbsp;
