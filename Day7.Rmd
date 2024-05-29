@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 7: Phylogenetic diversity"
 author: "Patrick Weigelt, Pierre Denelle & Holger Kreft"
-date: "May 23th, 2023"
+date: "May 29th, 2024"
 output: 
   html_document: 
     fig_height: 7
@@ -26,10 +26,11 @@ _[back to overview](index.html)_
 &nbsp;
 
 
-**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/74501b33f332a6d238443bfbd502cc6c?cid=1746ae3fe971afbf90b74e3d64389586) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
+**Preparation:** Please open your RStudio project and download the new data ('Phylogeny_ConservativeCon_Checklist.zip', 'palms_specsxsites_phylo.csv' and 'palmtree_pruned.nex') for today from [Stud-IP](https://studip.uni-goettingen.de/dispatch.php/course/files/index/04ed58d2396f403863695c2c87fac20a?cid=9def2280fd13b1ea9b0ae99373749090) and unzip and copy them into your .Rproj folder '/Data/'. You can use `getwd()` to locate your current working directory, which should be your project folder. Please install the following R-packages using `install.packages()`:  
 
 * `ape`  
-* `Taxonstand`  
+* `rWCVP`
+* `remotes`
 * `sf`  
 * `dplyr` 
 * `psych`  
@@ -39,6 +40,8 @@ _[back to overview](index.html)_
 * `cowplot`
 * `GGally`
 * `RColorBrewer`
+
+And install `rWCVPdata` using `remotes::install_github('matildabrown/rWCVPdata')`.
 
 &nbsp;
 
@@ -60,8 +63,9 @@ Now you can conveniently copy code from the viewer into your script.
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(dplyr)
-library(sf) #  Geospatial fun
-library(Taxonstand)
+library(sf)
+library(rWCVP)
+library(rWCVPdata)
 library(ape)
 library(picante)
 library(pez)
@@ -77,7 +81,8 @@ library(dplyr) # basic data manipulation
 
 library(sf) #  Geospatial fun
 
-library(Taxonstand) # Taxonomic standardisation of plant species names
+library(rWCVP) # Taxonomic standardisation of plant species names
+library(rWCVPdata) # According data for standardization
 library(ape) # Analyses of phylogenetics and evolution
 library(picante) # Phylogenies and ecology
 library(pez) # Phylogenies and ecology
@@ -88,6 +93,7 @@ library(cowplot) # for multi-panel plots
 library(GGally) # pairs plot
 library(RColorBrewer) # fancy colour palettes
 ```
+
 &nbsp;
 
 # 1. Load data into R  
@@ -101,7 +107,7 @@ An all-evidence species-level supertree for the palms (Arecaceae).
 _Molecular Phylogenetics and Evolution_, 100, 57-69.  
 
 ```{r echo=TRUE}
-palmtrees <- read.nexus("data/Phylogeny_ConservativeCon_Checklist/Phylogeny_ConservativeCon_Checklist.nex")
+palmtrees <- read.nexus("data/Phylogeny_ConservativeCon_Checklist.nex")
 
 palmtrees
 
@@ -211,38 +217,33 @@ Let's standardize the missing species names.
 
 **Write species missing from phylogeny into a vector**
 ```{r echo=TRUE}
-specmissing <- unique(species$species[which(!species$species %in% palmtree$tip.label)])
+specmissing <- unique(species[which(!species$species %in% palmtree$tip.label),c(2:5)])
 head(specmissing)
-length(specmissing)
+nrow(specmissing)
 ```
 &nbsp;
 
-**Match palm species names to those in [The Plant List](http://www.theplantlist.org/)**
+**Match palm species names to those in [World Checklist of Vascular Plants](https://powo.science.kew.org/)**.  
 It is always important to check whether you have access to an updated taxonomy.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-specmissing <- gsub("_", " ", specmissing) # replace underscore with a space
-head(specmissing)
-
-taxstand <- TPL(specmissing, diffchar = 2, max.distance = 1)
-# head(warnings())
-head(taxstand)[, c(1, 11:16)]
+taxstand <- wcvp_match_names(specmissing,
+                 name_col = "species",
+                 id_col = "spp_Id")
+head(taxstand)
 ```
 &nbsp;
 
-See also TNRS R package, and the WCVP taxonomic backbone.
+See also TNRS R package.
 
-**Replace old names by new names \& overwrite the combined species name**
+**Replace old names by new names**
 ```{r echo=TRUE}
-for (i in 1:nrow(taxstand)){
-  species$GENUS[which(species$GENUS == taxstand$Genus[i] &
-                        species$EPITHET == taxstand$Species[i])] <- taxstand$New.Genus[i]
-  species$EPITHET[which(species$GENUS == taxstand$Genus[i] &
-                          species$EPITHET == taxstand$Species[i])] <- taxstand$New.Species[i]
-}
+taxstand$wcvp_name <- gsub(" ", "_", taxstand$wcvp_name)
 
 # update the combined species name
-species$species <- paste(species$GENUS, species$EPITHET, sep = "_")
+for (i in 1:nrow(taxstand)){
+  species$species[which(species$species == taxstand$species[i])] <- taxstand$wcvp_name[i]
+}
 ```
 &nbsp;
 
@@ -254,7 +255,7 @@ length(specmissing)
 ```
 &nbsp;
 
-Instead of 80 missing species, we only have 18 after taxonomic harmonization.
+Instead of 80 missing species, we only have 39 after taxonomic harmonization.
 <br>
 
 _Remaining missing species would have to be looked up and added manually to the phylogeny by an expert._   
@@ -663,6 +664,6 @@ plot_grid(nrow = 1, ncol = 3,
 
 [Kreft, H., Sommer, J.H. and Barthlott, W. (2006), The significance of geographic range size for spatial diversity patterns in Neotropical palms. Ecography, 29: 21-30.](https://doi.org/10.1111/j.2005.0906-7590.04203.x)
 
-[The Plant List](http://www.theplantlist.org/)
+[World Checklist of Vascular Plants](https://powo.science.kew.org/)
 
 [Phylogenies and Community Ecology Campbell O. Webb, David D. Ackerly, Mark A. McPeek, Michael J. Donoghue Annual Review of Ecology and Systematics 2002 33:1, 475-505](https://www.annualreviews.org/doi/abs/10.1146/annurev.ecolsys.33.010802.150448)
