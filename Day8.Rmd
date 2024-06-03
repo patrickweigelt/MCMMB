@@ -2,7 +2,7 @@
 title: "Modern concepts and methods in Macroecology and Biogeography"
 subtitle: "Day 8: Functional biogeography"
 author: "Pierre Denelle, Holger Kreft & Patrick Weigelt"
-date: "June 7th, 2023"
+date: "June 5th, 2024"
 output: 
   html_document: 
     fig_height: 6
@@ -54,59 +54,70 @@ Now you can conveniently copy code from the viewer into your script.
 **Load R packages & island data set**  
 
 ```{r message = FALSE, warning = FALSE, include = FALSE}
-library(dplyr)
-library(RColorBrewer)
-library(psych)
-library(ade4)
-library(fundiversity)
-library(sf)
-library(ggplot2)
-library(GGally)
-library(FactoMineR)
+library("ade4") # Dissimilarity matrix and PCoA
+library("dplyr") # data.frame operations
+library("FactoMineR") # PCA
+library("fundiversity") # Functional diversity
+library("ggplot2") # plot
+library("GGally") # pair plot
+library("psych") # pair plot
+library("RColorBrewer") # color gradients
+library("sf") # spatial analyses
 ```
 
 ```{r eval = FALSE}
-library(fundiversity) # Functional diversity
-library(dplyr) # data.frame operations
-library(RColorBrewer) # color gradients
-library(psych) # pair plot
-library(ade4) # Dissimilarity matrix and PCoA
-library(sf) # spatial analyses
-library(ggplot2) # plot
-library(GGally) # pair plot
-library(FactoMineR) # PCA
+library("ade4") # Dissimilarity matrix and PCoA
+library("dplyr") # data.frame operations
+library("FactoMineR") # PCA
+library("fundiversity") # Functional diversity
+library("ggplot2") # plot
+library("GGally") # pair plot
+library("psych") # pair plot
+library("RColorBrewer") # color gradients
+library("sf") # spatial analyses
 ```
 
 &nbsp;
 
 # 1. Data  
-## 1.1.  Loading palm distribution data  
-Data from  Kreft, H., Sommer, J.H. & Barthlott, W. (2006).  
-The significance of geographic range size for spatial diversity  
-patterns in Neotropical palms. _Ecography_, 29, 21-30.  
+## 1.1. Palm distribution data  
+Data from
+[Kreft, H., Sommer, J.H. & Barthlott, W. (2006)](https://doi.org/10.1111/j.2005.0906-7590.04203.x).  
+The significance of geographic range size for spatial diversity  patterns in
+Neotropical palms. _Ecography_, 29, 21-30.  
 
 We here import a transformed version of the data to speed up the calculations. Now each cell is at a 2 degrees resolution, and species occurrences have been aggregated into these bigger cells. See [practical 7](https://gift.uni-goettingen.de/mcmmb/Day7.html#loading-grid-shapefile-and-changing-resolution) for more details.
 
 ```{r echo=TRUE}
 species <- readRDS("data/palm_species_per_gridcell_2degrees.rds")
 
-head(species)
 length(unique(species$new_ID)) # number of grid cells
 n_distinct(species$species) # number of species
+```
 
+We also import the georeferenced grid and the outline of Americas.
+The CRS is missing, and has to be filled manually.
+Latitude and longitude centroids have already been calculated.
+
+```{r spatial_data, echo = TRUE, eval = FALSE}
 # Spatial data
-# gridcells corresponding to palm distribution data and americas coastline
 grid <- st_read("data/2degrees_grid/data_2degrees_grid_.shp")
 americas <- st_read("data/americas/americas.shp")
+```
 
+```{r spatial_data2, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+suppressWarnings(
+  grid <- st_read("data/2degrees_grid/data_2degrees_grid_.shp")
+)
+suppressWarnings(
+  americas <- st_read("data/americas/americas.shp")
+)
+```
+
+```{r echo=TRUE}
 # coordinate system
 st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
 st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
-
-# have a look at the grid's attribute table
-head(grid)
-
-# Latitude and longitude centroids have already been calculated
 
 # Plot
 ggplot(grid) +
@@ -117,47 +128,44 @@ ggplot(grid) +
 &nbsp;
 
 ## 1.2. Trait data
-A database of palm traits has recently been published. These data come from Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019).  
-PalmTraits 1.0, a species-level functional trait database of palms worldwide.  
-_Scientific Data_, 6(1), 1–13.  
-
-When using a functional trait table, several facets have to be inspected. Specifically, we should look at:
-- trait type (*continuous*, _ordinal_, _categorical_, _binary_)
-- trait coverage (how many species have a trait value)
-- trait distribution (if too asymmetrical, log-transformation)
-- trait correlation (are some traits carrying the same information?)
-- ecological significance (is the trait varying against environment? biotic variable? physiological process?)  
-
-Let's go through these points.  
+A database of palm traits has recently been published. These data come from
+[Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019). PalmTraits 1.0, a species-level functional trait database of palms worldwide. Scientific Data, 6(1), 1–13.](https://www.nature.com/articles/s41597-019-0189-0)  
 
 ```{r tra_palm}
-# Traits
 tra <- read.table("data/palm_traits/PalmTraits_1.0.txt",
                   stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 dim(tra)
-head(tra)
+tra[1:2, ]
 ```
 
-Among the traits available, we have different trait types, related to growth form and habit, armature, stem size, leaf and fruit.
+When using a functional trait table, we should look at:  
+- trait type (*continuous*, _ordinal_, _categorical_, _binary_)  
+- trait coverage (percentage of species having a trait value)  
+- trait distribution (if too asymmetrical, the trait can be transformed)  
+- trait correlation (are some traits carrying the same information?)  
+- ecological significance (is the trait varying against environment? biotic variable? physiological process?)   
 
-### 1.2.1. Trait description
+Let's go through these points.  
 
-Traits can be either binary traits (0 or 1, sometimes 2 when one species varies in that trait), categorical or continuous.
 
-```{r non_armed_stem, fig.label = "Cocos_nucifera", out.width = "10%", echo = FALSE}
-knitr::include_graphics("figures/Cocos_nucifera.jpg")
-```
+Among the traits available, we have different trait types, related to growth
+form and habit, armature, stem size, leaf and fruit.
 
-```{r armed_stem, fig.label = "Aiphanes_minima", out.width = "10%", echo = FALSE}
-knitr::include_graphics("figures/Aiphanes_minima.jpg")
-```
+### 1.2.1. Trait type
+
+Traits can be either binary traits (0 or 1, sometimes 2 when one species varies
+in that trait), categorical or continuous.
 
 ```{r}
-# Frequency of each category
-table(tra$Climbing)
-table(tra$Acaulescent)
-table(tra$Erect)
+str(tra)
+```
 
+To get the frequency of caterogies of categorical and binary traits, we can
+use the function `table()`.  
+The next chunk illustrates for example how to plot the joined proportion of
+palm species with armed leaves and stems.  
+
+```{r}
 table(tra$StemArmed); table(tra$LeavesArmed)
 table(tra$StemArmed, tra$LeavesArmed)
 
@@ -172,6 +180,8 @@ text(prpX/2 * c(1,-1) + 0:1,
      prpY/2 * c(-1,-1,1,1) + c(1,1,0,0),
      paste("n=", table(tra$StemArmed, tra$LeavesArmed), sep=""))
 ```
+
+For sake of simplicity, we will only use continuous traits.  
 
 We have two traits related to stem size: maximum height and diameter of the stem.
 
@@ -235,24 +245,10 @@ suppressWarnings(
 )
 ```
 
-```{r}
-# Also some categorical traits
-ggplot(tra, aes(FruitSizeCategorical, AverageFruitLength_cm)) +
-  geom_boxplot() +
-  labs(x = "FruitSizeCategorical", y = "AverageFruitLength (cm)") +
-  theme_bw()
-
-table(tra$FruitShape) # too detailed and not complete
-# table(tra$FruitColorDescription)
-# table(tra$MainFruitColors)
-table(tra$Conspicuousness) # summarises colors
-```
-
 Conclusion:
-- for sake of simplicity, we will here only use continuous traits.
-- stem: height and diameter are highly correlated, we just take the height
-- leaf: many leaf traits are correlated, we'll take only Blade length. We also take the maximum number of leaves.
-- fruit: many fruit traits are correlated, we'll take only AverageFruitLength_cm
+- stem: height and diameter are highly correlated, we just take the height  
+- leaf: many leaf traits are correlated, we'll take only Blade length. We also take the maximum number of leaves.  
+- fruit: many fruit traits are correlated, we'll take only AverageFruitLength_cm  
 
 ## 1.3. Merging tables
 We here make a table with one row per species and the traits in columns.  
@@ -644,4 +640,12 @@ ordiplot(pcoa_palm,
 ef <- envfit(pcoa_palm, sp_tra_complete[, tra_select])
 ef
 plot(ef)
+```
+
+```{r non_armed_stem, fig.label = "Cocos_nucifera", out.width = "10%", echo = FALSE}
+knitr::include_graphics("figures/Cocos_nucifera.jpg")
+```
+
+```{r armed_stem, fig.label = "Aiphanes_minima", out.width = "10%", echo = FALSE}
+knitr::include_graphics("figures/Aiphanes_minima.jpg")
 ```
