@@ -36,6 +36,7 @@ _[back to overview](index.html)_
 * `ggplot2`
 * `GGally`
 * `FactoMineR`
+* `cowplot`
 
 &nbsp;
 
@@ -63,6 +64,7 @@ library("GGally") # pair plot
 library("psych") # pair plot
 library("RColorBrewer") # color gradients
 library("sf") # spatial analyses
+library("cowplot") # combine several plots
 ```
 
 ```{r eval = FALSE}
@@ -75,59 +77,13 @@ library("GGally") # pair plot
 library("psych") # pair plot
 library("RColorBrewer") # color gradients
 library("sf") # spatial analyses
+library("cowplot") # combine several plots
 ```
 
 &nbsp;
 
-# 1. Data  
-## 1.1. Palm distribution data  
-Data from
-[Kreft, H., Sommer, J.H. & Barthlott, W. (2006)](https://doi.org/10.1111/j.2005.0906-7590.04203.x).  
-The significance of geographic range size for spatial diversity  patterns in
-Neotropical palms. _Ecography_, 29, 21-30.  
-
-We here import a transformed version of the data to speed up the calculations. Now each cell is at a 2 degrees resolution, and species occurrences have been aggregated into these bigger cells. See [practical 7](https://gift.uni-goettingen.de/mcmmb/Day7.html#loading-grid-shapefile-and-changing-resolution) for more details.
-
-```{r echo=TRUE}
-species <- readRDS("data/palm_species_per_gridcell_2degrees.rds")
-
-length(unique(species$new_ID)) # number of grid cells
-n_distinct(species$species) # number of species
-```
-
-We also import the georeferenced grid and the outline of Americas.
-The CRS is missing, and has to be filled manually.
-Latitude and longitude centroids have already been calculated.
-
-```{r spatial_data, echo = TRUE, eval = FALSE}
-# Spatial data
-grid <- st_read("data/2degrees_grid/data_2degrees_grid_.shp")
-americas <- st_read("data/americas/americas.shp")
-```
-
-```{r spatial_data2, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
-suppressWarnings(
-  grid <- st_read("data/2degrees_grid/data_2degrees_grid_.shp")
-)
-suppressWarnings(
-  americas <- st_read("data/americas/americas.shp")
-)
-```
-
-```{r echo=TRUE}
-# coordinate system
-st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
-st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
-
-# Plot
-ggplot(grid) +
-  geom_sf() +
-  geom_sf(data = americas, fill = NA, color = "black") +
-  theme_bw()
-```
-&nbsp;
-
-## 1.2. Trait data
+# 1. Trait data  
+## 1.1. Trait data
 A database of palm traits has recently been published. These data come from
 [Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019). PalmTraits 1.0, a species-level functional trait database of palms worldwide. Scientific Data, 6(1), 1–13.](https://www.nature.com/articles/s41597-019-0189-0)  
 
@@ -138,30 +94,70 @@ dim(tra)
 tra[1:2, ]
 ```
 
-When using a functional trait table, we should look at:  
-- trait type (*continuous*, _ordinal_, _categorical_, _binary_)  
-- trait coverage (percentage of species having a trait value)  
-- trait distribution (if too asymmetrical, the trait can be transformed)  
-- trait correlation (are some traits carrying the same information?)  
-- ecological significance (is the trait varying against environment? biotic variable? physiological process?)   
+
+> When using a functional trait table, we should look at:  
+> - **trait type** (*continuous*, _ordinal_, _categorical_, _binary_)  
+> - **trait coverage** (percentage of species having a trait value)  
+> - **trait distribution** (if too asymmetrical, the trait can be transformed)  
+> - **trait correlation** (are some traits carrying the same information?)  
+> - **ecological significance** (is the trait varying against environment? biotic variable?    physiological process?)   
+
 
 Let's go through these points.  
 
+### 1.1.1. Trait type
 
-Among the traits available, we have different trait types, related to growth
-form and habit, armature, stem size, leaf and fruit.
-
-### 1.2.1. Trait type
-
-Traits can be either binary traits (0 or 1, sometimes 2 when one species varies
-in that trait), categorical or continuous.
+The traits available relate to growth form and habit, armature, stem size,
+leaves and fruits. They can be either binary traits (0 or 1, sometimes 2 when
+one species varies in that trait), categorical or continuous.
 
 ```{r}
 str(tra)
 ```
 
-To get the frequency of caterogies of categorical and binary traits, we can
-use the function `table()`.  
+### 1.1.2. Trait coverage
+
+Percentage of species having a trait value informed per trait.
+
+```{r}
+nrow(tra) # total number of species
+
+# Continuous traits
+summary(tra$AverageFruitWidth_cm)
+summary(tra$MaxStemHeight_m)
+
+# Binary traits
+summary(tra$Climbing)
+
+# Categorical traits
+summary(tra$FruitSizeCategorical)
+table(tra$FruitSizeCategorical)
+```
+
+### 1.1.3. Trait distribution
+
+To visualize the distribution of a specific trait value, we can plot a
+histogram, a boxplot or a violin plot.  
+<br>
+*Side note*<br>
+[The R Graph Gallery](https://r-graph-gallery.com/) provides many nice examples
+of plot types along with R code.
+<br>
+```{r}
+plot_grid(
+  ggplot(tra) +
+    geom_boxplot(aes(x = 1, y = MaxStemHeight_m)),
+  
+  ggplot(tra) +
+    geom_violin(aes(x = 1, y = MaxStemHeight_m)),
+  
+  ggplot(tra) +
+    geom_histogram(aes(MaxStemHeight_m)),
+  nrow = 1)
+```
+
+For categorical and binary traits, we can use the function `table()` to
+retrieve the proportion of each value.  
 The next chunk illustrates for example how to plot the joined proportion of
 palm species with armed leaves and stems.  
 
@@ -181,29 +177,44 @@ text(prpX/2 * c(1,-1) + 0:1,
      paste("n=", table(tra$StemArmed, tra$LeavesArmed), sep=""))
 ```
 
-For sake of simplicity, we will only use continuous traits.  
-
-We have two traits related to stem size: maximum height and diameter of the stem.
+### 1.1.4. Trait correlation
+Some traits can carry a very similar information. To see this, you can look at
+the correlation between two traits.
+<br>
+One way to look at this is to plot one trait directly against another. For
+example, we have two traits related to stem size: maximum height and diameter
+of stem, and we can see how much they are related.
 
 ```{r stem_size}
+ggplot(tra, aes(MaxStemHeight_m, MaxStemDia_cm)) +
+  geom_point() +
+  annotate(x = 100, y = 100, geom = "label",
+           label = paste0("Pearson correlation coefficient = ",
+                          round(cor(tra$MaxStemHeight_m,
+                                    tra$MaxStemDia_cm,
+                                    use = "complete.obs"), 2))) +
+  labs(x = "Maximum Stem Height (m)",
+       y = "Maximum Stem Diameter (cm)") +
+  theme_bw()
+```
+
+Additional categorical trait can add further insight into such plots. In the
+example above, the climbing feature is providing more details.
+
+```{r stem_size2}
 ggplot(tra, aes(MaxStemHeight_m, MaxStemDia_cm)) +
   geom_point(alpha = 0.5,
              aes(color = as.factor(Climbing))) +
   scale_color_viridis_d("Climbing") +
   labs(x = "Maximum Stem Height (m)",
        y = "Maximum Stem Diameter (cm)") +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "bottom")
 ```
 
-The world's tallest monocotyledon:
-```{r tallest}
-tra$SpecName[which(tra$Climbing == 0)][which.max(tra$MaxStemHeight_m[which(tra$Climbing == 0)])]
-```
-```{r tallest_palm, fig.label = "Ceroxylon quindiuense", out.width = "20%", echo = FALSE}
-knitr::include_graphics("figures/Ceroxylon_quindiuense.jpg")
-```
-
-Many leaf traits are available, and they may carry similar information. Let's make a pair plot to have a quick look at this.
+When you have more than two traits to look at, the best way to visualize the
+correlation between multiple traits is to use a correlation pair plot. Let's
+make one for all the traits related to leaves and fruits.
 
 ![Palm leaf](https://gardeningsolutions.ifas.ufl.edu/images/plants/palms/pinnate_leaf_drawing.png)
 
@@ -224,17 +235,12 @@ suppressWarnings(
 )
 ```
 
-The last three traits are highly correlated. We will just keep the blade length.
-
-Similarly, many fruit traits are available. Let's make another pair plot.
 <br>
 
 ```{r fruit_traits, echo = TRUE, eval = FALSE}
 ggpairs(tra[, c("AverageFruitLength_cm", "MinFruitLength_cm",
                 "MaxFruitLength_cm", "AverageFruitWidth_cm",
                 "MinFruitWidth_cm", "MaxFruitWidth_cm")])
-
-# All traits are highly correlated, we'll take only AverageFruitLength_cm
 ```
 
 ```{r, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
@@ -245,30 +251,36 @@ suppressWarnings(
 )
 ```
 
-Conclusion:
+For the leaves traits, the last three traits are highly correlated. We can just
+keep the blade length and the number of leaves. Regarding the fruit traits,
+they are all highly correlated, we'll take only AverageFruitLength_cm.
+
+## 1.2. Trait selection
+Conclusion: <br>
+- to keep it easy: we just keep four continuous traits
 - stem: height and diameter are highly correlated, we just take the height  
-- leaf: many leaf traits are correlated, we'll take only Blade length. We also take the maximum number of leaves.  
-- fruit: many fruit traits are correlated, we'll take only AverageFruitLength_cm  
+- leaf: many leaf traits are correlated, we'll take only Blade length and the
+maximum number of leaves.  
+- fruit: many fruit traits are correlated, we'll take only AverageFruitLength_cm 
 
-## 1.3. Merging tables
-We here make a table with one row per species and the traits in columns.  
-
-```{r merge}
+<br>
+We here create a vector with our selected traits.
+```{r}
 # Vector of traits we want to keep
 tra_select <- c("MaxStemHeight_m", "MaxLeafNumber", "Max_Blade_Length_m",
                 "AverageFruitLength_cm")
-
-# Replace space with underscore in trait table before merging
-tra$SpecName <- gsub(" ", "_", tra$SpecName)
-sp_tra <- left_join(species[!duplicated(species$species), ], # we here remove duplicates per species
-                    tra[, c("SpecName", tra_select)],
-                    by = c("species" = "SpecName")) # species are not called the same in both tables
-dim(sp_tra)
-head(sp_tra)
-
-# Only columns of interest
-sp_tra <- sp_tra[, c("species", tra_select)]
 ```
+<br>
+And then we make a species x trait table (species in rows and traits in columns).  
+<br>
+
+```{r merge}
+# Only species column and traits of interest
+sp_tra <- tra[, c("SpecName", tra_select)]
+```
+
+Let's make a pair plot once again to ensure our selected traits are not
+highly correlated.  
 
 ```{r, echo = TRUE, eval = FALSE}
 # Distribution of continuous traits
@@ -281,7 +293,11 @@ suppressWarnings(
 )
 ```
 
-Some traits are highly asymmetrical, this can drive the construction of functional spaces and functional metrics.
+The correlation coefficients are all below 65%. However, some traits are
+highly asymmetrical.  
+This can heavily affect the construction of functional spaces and the 
+calculation of functional metrics. <br>
+We therefore **log-transform** all the traits.  
 
 ```{r}
 # Log-transforming all the continuous traits
@@ -300,12 +316,77 @@ ggplot(sp_tra, aes(AverageFruitLength_cm, log_fruit_length)) +
 tra_select <- c("log_height", "log_leaf_nb", "log_blade", "log_fruit_length")
 ```
 
+## 1.3. Final trait table
+We here merge the trait data with the distribution data from
+[Kreft, H., Sommer, J.H. & Barthlott, W. (2006)](https://doi.org/10.1111/j.2005.0906-7590.04203.x).  
+The significance of geographic range size for spatial diversity  patterns in
+Neotropical palms. _Ecography_, 29, 21-30.  
+<br>
+We here import a transformed version of the data to speed up the calculations. Now each cell is at a 2 degrees resolution, and species occurrences have been aggregated into these bigger cells. See [practical 7](https://gift.uni-goettingen.de/mcmmb/Day7.html#loading-grid-shapefile-and-changing-resolution) for more details.
+<br>
+
+```{r echo=TRUE}
+species <- readRDS("data/palm_species_per_gridcell_2degrees.rds")
+
+length(unique(species$new_ID)) # number of grid cells
+n_distinct(species$species) # number of species
+```
+
+We can remove from our trait table all the species that are not present in
+our species distribution table.
+<br>
+
+```{r}
+dim(sp_tra[which(sp_tra$SpecName %in% unique(species$species)), ])
+
+head(species$species)
+head(sp_tra$SpecName)
+
+# Replace space with underscore in trait table before merging
+sp_tra$species <- gsub(" ", "_", sp_tra$SpecName)
+
+sp_tra <- sp_tra[which(sp_tra$species %in% species$species), ]
+dim(sp_tra)
+sp_tra[1:2, ]
+```
+
+
 # 2. Trait maps
-Since we have spatial data, one first straightforward thing to do is to map the traits.  
+Since our distribution data is linked to a georeferenced grid cell, we can
+map the distribution of our traits.  
+
+We first import the georeferenced grid and the outline of Americas.
+The CRS is missing, and has to be filled manually.
+Latitude and longitude centroids have already been calculated.
+
+```{r spatial_data, echo = TRUE, eval = FALSE}
+# Spatial data
+grid <- st_read("data/2degrees_grid/data_2degrees_grid_.shp")
+americas <- st_read("data/americas/americas.shp")
+```
+
+```{r spatial_data2, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+suppressMessages(
+  grid <- st_read("data/2degrees_grid/data_2degrees_grid_.shp")
+)
+suppressMessages(
+  americas <- st_read("data/americas/americas.shp")
+)
+```
+
+```{r echo=TRUE}
+# coordinate system
+st_crs(grid) <- "+proj=longlat +ellps=WGS84 +no_defs"
+st_crs(americas) <- "+proj=longlat +ellps=WGS84 +no_defs"
+```
+&nbsp;
 
 ## 2.1. Trait distribution
-We here aim at mapping the distribution of one trait. We do it here with the maximal stem height.
+We here aim at mapping the distribution of one trait. We do it here with the
+maximal stem height.
 <br>
+
+First, we merge the species x grid cell table with our trait table.
 
 ```{r tra_distribution}
 # Merging palm height with spatial data frame
@@ -314,19 +395,27 @@ species_height <- left_join(
   sp_tra[, c("species", "MaxStemHeight_m")],
   by = "species")
 head(species_height)
+```
 
-# Calculating the average height per cell
-# tapply function
+We can then calculate the average species height per grid cell.
+
+```{r tra_distribution2}
+# Calculating the average height per cell with tapply function
 head(tapply(species_height$MaxStemHeight_m,
             species_height$new_ID,
             function(x) mean(x, na.rm = TRUE))) # argument na.rm necessary here
 
+# With dplyr
 grid_mean_height <- species_height %>%
   group_by(new_ID) %>%
   summarise(mean_height = mean(MaxStemHeight_m, na.rm = TRUE))
 
 dim(grid_mean_height); head(grid_mean_height)
+```
 
+Once this merge has been done, we can map the average height per cell.
+
+```{r tra_distribution3}
 # Plot
 grid$new_ID <- as.character(grid$new_ID)
 grid <- left_join(grid, grid_mean_height, by = "new_ID")
@@ -339,7 +428,9 @@ ggplot(grid) +
 ```
 
 ## 2.2. Trait coverage
-We also saw that not all species have a trait value. We therefore need to make a trait coverage assessment.
+We saw that not all species have a trait value. This lack of information can be
+spatially distributed in an uneven way. We therefore need to make an assessment
+of the spatial trait coverage.
 <br>
 
 ```{r tra_coverage}
@@ -367,96 +458,13 @@ ggplot(grid) +
 We can see that the coverage has an influence on the conclusion we drew before.
 <br>
 
-# 3. Trait space
-Another classical analysis in functional ecology is to build trait spaces that summarize the main axes of variations between species.  
+# 3. Functional diversity
+When we have several functional traits, we can compute a set of functional diversity indices that can inform us on the assembly processes within a given assemblage of species. <br>  
 
-The main objective is then to reduce dimensionality, in order to get the main axes of variation between species, through the use of multivariate analyses.  
+We here focus on the following indices: functional richness, functional evenness, dispersion and divergence (see the lecture for definition of these indices).  
 
-Since we only have continuous traits, we can build this space using a PCA. If there are some categorical traits, you can first calculate a distance matrix and then compute a PCoA (see Bonus if interested).
-
-```{r}
-# PCA with FactoMineR
-sp_tra_pca <- sp_tra
-rownames(sp_tra_pca) <- sp_tra_pca$species
-sp_tra_pca <- sp_tra_pca[, tra_select]
-
-pca_palm <- PCA(sp_tra_pca, scale.unit = FALSE, graph = FALSE)
-
-dim(sp_tra_pca)
-dim(sp_tra_pca[complete.cases(sp_tra_pca), ])
-
-# Removing NAs
-sp_tra_pca <- sp_tra_pca[complete.cases(sp_tra_pca), ]
-
-pca_palm <- PCA(sp_tra_pca, scale.unit = FALSE, graph = TRUE)
-
-# Look at percentage of variation explained by the PCA axes
-pca_palm$eig
-
-# PCA plot
-# Individual coordinates with categories (same order as in original data)
-PCs <- as.data.frame(pca_palm$ind$coord[, 1:2])
-
-# Variables coordinates
-vPCs <- data.frame(pca_palm$var$coord[, 1:2])
-# Customary circle
-angle <- data.frame(x = sin(seq(-pi, pi, length = 50)),
-                    y = cos(seq(-pi, pi, length = 50)))
-
-# stat_density2d around TRY and Tenerife data
-ggplot(PCs, aes(Dim.1, Dim.2)) +
-  geom_point(alpha = 0.5) +
-  geom_path(data = angle, inherit.aes = TRUE, aes(x, y),
-            colour = "grey70") +
-  geom_text(data = vPCs, aes(4.5 * Dim.1, 4.5 * Dim.2,
-                             label = rownames(vPCs)),
-            color = "orange2", size = 3, fontface = "bold") +
-  labs(x = paste0("PC1 (", round(pca_palm$eig[1, 2], 1), " %)"),
-       y = paste0("PC2 (", round(pca_palm$eig[2, 2], 1), " %)")) +
-  geom_segment(data = vPCs,
-               aes(x = 0, y = 0, xend = Dim.1 * 4, yend = Dim.2 * 4),
-               arrow = arrow(length = unit(1/2, "picas")),
-               color = "black", size = 1) +
-  coord_equal() +
-  theme_bw()
-```
-
-We can now consider the coordinates of species on these 2 PCA axes as traits.  
-
-```{r}
-PCs$species <- rownames(PCs)
-species <- left_join(species, PCs, by = "species")
-
-# We can also map the PCA coordinates
-grid_mean_PC1 <- species %>%
-  group_by(new_ID) %>%
-  summarise(mean_PC1 = mean(Dim.1, na.rm = TRUE))
-
-dim(grid_mean_PC1); head(grid_mean_PC1)
-
-# Plot
-grid <- left_join(grid, grid_mean_PC1, by = "new_ID")
-
-ggplot(grid) +
-  geom_sf(aes(fill = mean_PC1), color = NA) +
-  geom_sf(data = americas, color = "black", fill = NA) +
-  scale_fill_viridis_c("Average coordinates on PC1") +
-  theme_bw()
-```
-
-# 4. Functional diversity
-Finally, we here compute a set of functional diversity indices that can inform us on the assembly processes within a given assemblage of species.  
-We focus on functional richness which is the volume of the functional space occupied by a community convex hull that encompasses all points.  
-
-```{r frich_image, fig.label = "Functional richness", out.width = "50%", echo = FALSE}
-knitr::include_graphics("figures/frich.JPG")
-```
-<br>
-
-And also functional evenness, dispersion and divergence.  
-
-## 4.1. FD per grid cell
-We here at calculating and then mapping the functional richness per grid cell.
+## 3.1. FD per grid cell
+We here at calculating and then mapping the functional richness per grid cell using the `fundiversity` package.
 <br>
 
 ```{r frich}
@@ -465,35 +473,46 @@ We here at calculating and then mapping the functional richness per grid cell.
 cell_sp <- as.matrix(table(species$new_ID, species$species))
 cell_sp[1:3, 1:3]
 
-# And we use the PCA coordinates as traits
-head(PCs)
+# And we use the selected traits from our species x trait table
+rownames(sp_tra) <- sp_tra$species
+sp_tra[1:2, tra_select]
 
 # Functional richness
-fd_palm <- fd_fric(traits = PCs[, c("Dim.1", "Dim.2")],
+fd_palm <- fd_fric(traits = sp_tra[, tra_select],
                    sp_com = cell_sp)
-dim(fd_palm); head(fd_palm)
+```
 
+Many cells are not having a Frich value.
+
+```{r frich2}
+dim(fd_palm)
+summary(fd_palm$FRic)
+```
+
+We can now add to this table further indices of functional diversity.
+
+```{r frich3}
 # Functional dispersion
 fd_palm <- left_join(fd_palm,
-                     fd_fdis(traits = PCs[, c("Dim.1", "Dim.2")],
+                     fd_fdis(traits = sp_tra[, tra_select],
                              sp_com = cell_sp),
                      by = "site")
 
 # Functional divergence
 fd_palm <- left_join(fd_palm,
-                     fd_fdiv(traits = PCs[, c("Dim.1", "Dim.2")],
+                     fd_fdiv(traits = sp_tra[, tra_select],
                              sp_com = cell_sp),
                      by = "site")
 
 # Functional evenness
 fd_palm <- left_join(fd_palm,
-                     fd_feve(traits = PCs[, c("Dim.1", "Dim.2")],
+                     fd_feve(traits = sp_tra[, tra_select],
                              sp_com = cell_sp),
                      by = "site")
 dim(fd_palm); head(fd_palm)
 ```
 
-We can have a look at the correlations between these different indices, and also with species richness.
+By doing a pair plot, we can have a look at the correlations between these different indices, and also with species richness.
 
 ```{r}
 # Adding species richness to grid
@@ -514,39 +533,97 @@ suppressWarnings(
 )
 ```
 
-We can also map the results.
+Like for phylogenetic diversity, there is a positive correlation between functional richness and species richness. To take this bias into account, we should perform a null model. We won't do it here, but the principle is to reshuffle the trait values per cell a certain number of times and then to compute the Standardized Effect Size (see practical 7).  
+<br>
+
+## 3.2. Map of FD
+Like for individual traits, we can also map the FD per cell.
 
 ```{r frich_map}
 # Merge results with grid
 grid <- left_join(grid, fd_palm, by = c("new_ID" = "site"))
 
-ggplot(grid) +
-  geom_sf(aes(fill = FRic), color = NA) +
-  geom_sf(data = americas, color = "black", fill = NA) +
-  scale_fill_viridis_c("Functional Richness") +
-  theme_bw()
+plot_grid(
+  ggplot(grid) +
+    geom_sf(aes(fill = SR), color = NA) +
+    geom_sf(data = americas, color = "black", fill = NA) +
+    scale_fill_viridis_c("Species Richness") +
+    labs(title = "Species richness") +
+    theme_bw() +
+    theme(legend.position = "bottom"),
+  ggplot(grid) +
+    geom_sf(aes(fill = FRic), color = NA) +
+    geom_sf(data = americas, color = "black", fill = NA) +
+    scale_fill_viridis_c("Functional Richness") +
+    labs(title = "Functional richness") +
+    theme_bw() +
+    theme(legend.position = "bottom"),
+    ggplot(grid) +
+    geom_sf(aes(fill = FDis), color = NA) +
+    geom_sf(data = americas, color = "black", fill = NA) +
+    scale_fill_viridis_c("Functional dispersion") +
+    labs(title = "Functional dispersion") +
+    theme_bw() +
+    theme(legend.position = "bottom"),
+  nrow = 1)
 ```
 
-## 4.2. Link with SR
-Like for phylogenetic diversity, there is a positive correlation between functional richness and species richness. We here plot this bias.
-<br>
+# 4. Trait space
+Another classical analysis in functional ecology is to build trait spaces that summarize the main axes of variations between species.  
 
-```{r frich_SR}
-sr_frich <- lm(FRic ~ SR, data = grid)
-summary(sr_frich)
+The main objective is then to reduce dimensionality, in order to get the main axes of variation between species, through the use of multivariate analyses.  
 
-sr_frich2 <- lm(FRic ~ SR + I(SR^2), data = grid)
-summary(sr_frich2)
+Since we only have continuous traits, we can build this space using a PCA.  
+*Side-node*  
+If there are some categorical traits, you can first calculate a distance matrix and then compute a PCoA (see Bonus if interested).  
 
-ggplot(grid, aes(SR, FRic)) +
-  geom_point() +
-  stat_smooth(method = "lm", formula = y ~ x, color = "firebrick3") +
-  stat_smooth(method = "lm", formula = y ~ x + I(x^2), color = "darkblue") +
-  labs(x = "Species richness", y = "Functional richness") +
-  theme_bw()
+We use the `FactoMineR` package to build the PCA.
+
+```{r}
+sp_tra_pca <- sp_tra[, tra_select]
+
+pca_palm <- PCA(sp_tra_pca, scale.unit = FALSE, graph = FALSE)
+
+dim(sp_tra_pca)
+dim(sp_tra_pca[complete.cases(sp_tra_pca), ])
+
+# Removing NAs
+sp_tra_pca <- sp_tra_pca[complete.cases(sp_tra_pca), ]
+
+pca_palm <- PCA(sp_tra_pca, scale.unit = FALSE, graph = TRUE)
+
+# Look at percentage of variation explained by the PCA axes
+pca_palm$eig
 ```
 
-To take this bias into account, we should perform a null model. We won't do it here, but the principle is to reshuffle the trait values per cell a certain number of times and then to compute the Standardized Effect Size (see practical 7).  
+If needed, the PCA coordinates can be extracted manually in order to customize the plots with `ggplot2`.
+
+```{r}
+# PCA plot
+# Individual coordinates with categories (same order as in original data)
+PCs <- as.data.frame(pca_palm$ind$coord[, 1:2])
+
+# Variables coordinates
+vPCs <- data.frame(pca_palm$var$coord[, 1:2])
+# Customary circle
+angle <- data.frame(x = sin(seq(-pi, pi, length = 50)),
+                    y = cos(seq(-pi, pi, length = 50)))
+
+# Plot
+ggplot(PCs, aes(Dim.1, Dim.2)) +
+  geom_point(alpha = 0.5) +
+  geom_path(data = angle, inherit.aes = TRUE, aes(x, y), colour = "grey70") +
+  geom_text(data = vPCs, aes(Dim.1, Dim.2, label = rownames(vPCs)),
+            color = "orange2", size = 3, fontface = "bold") +
+  labs(x = paste0("PC1 (", round(pca_palm$eig[1, 2], 1), " %)"),
+       y = paste0("PC2 (", round(pca_palm$eig[2, 2], 1), " %)")) +
+  geom_segment(data = vPCs,
+               aes(x = 0, y = 0, xend = Dim.1, yend = Dim.2),
+               arrow = arrow(length = unit(1/2, "picas")),
+               color = "black", linewidth = 1) +
+  coord_equal() +
+  theme_bw()
+```
 
 # References
 [Kissling, W. D., Balslev, H., Baker, W. J., Dransfield, J., Göldel, B., Lim, J. Y., Onstein, R. E., & Svenning, J.-C. (2019). PalmTraits 1.0, a species-level functional trait database of palms worldwide. Scientific Data, 6(1), 1–13.](https://www.nature.com/articles/s41597-019-0189-0)  
@@ -648,4 +725,13 @@ knitr::include_graphics("figures/Cocos_nucifera.jpg")
 
 ```{r armed_stem, fig.label = "Aiphanes_minima", out.width = "10%", echo = FALSE}
 knitr::include_graphics("figures/Aiphanes_minima.jpg")
+```
+
+The world's tallest monocotyledon:
+```{r tallest}
+tra$SpecName[which(tra$Climbing == 0)][which.max(tra$MaxStemHeight_m[which(tra$Climbing == 0)])]
+```
+
+```{r tallest_palm, fig.label = "Ceroxylon quindiuense", out.width = "20%", echo = FALSE}
+knitr::include_graphics("figures/Ceroxylon_quindiuense.jpg")
 ```
